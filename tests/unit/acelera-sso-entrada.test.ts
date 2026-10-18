@@ -93,7 +93,13 @@ describe("planejarEntrada", () => {
 
   it("passe sem org.id é recusado", () => {
     const p = Buffer.from(
-      JSON.stringify({ sub: "u", email: "a@b.co", aud: "crm-comercial", exp: AGORA + 60, nonce: "n" }),
+      JSON.stringify({
+        sub: "u",
+        email: "a@b.co",
+        aud: "crm-comercial",
+        exp: AGORA + 60,
+        nonce: "n",
+      }),
     ).toString("base64url");
     const corpo = `crm1.${p}`;
     const t = `${corpo}.${createHmac("sha256", CHAVE).update(corpo).digest("base64url")}`;

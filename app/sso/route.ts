@@ -129,7 +129,11 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
       if (error) return voltar("vinculo");
       if (data) {
-        vinculo = { id: data.id as string, role: data.role as string, revogado: Boolean(data.revoked_at) };
+        vinculo = {
+          id: data.id as string,
+          role: data.role as string,
+          revogado: Boolean(data.revoked_at),
+        };
       }
     }
 
@@ -160,7 +164,11 @@ export async function GET(request: NextRequest) {
       });
       if (error && error.code !== "23505") return voltar("vinculo");
     } else if (plano.vinculo === "atualizar" && vinculo) {
-      await admin.from("user_organizations").update({ role: plano.papel }).eq("id", vinculo.id);
+      await admin
+        .from("user_organizations")
+        .update({ role: plano.papel })
+        .eq("id", vinculo.id)
+        .eq("organization_id", org.id);
     }
 
     // Sessão: o cookie é gravado pelo client SSR desta requisição.

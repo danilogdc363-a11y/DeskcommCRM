@@ -93,34 +93,35 @@ O CRM já tem white-label nativo (`docs/white-label.md`). **Nenhuma tela foi edi
 - `.env` (semente): `APP_NAME=Acelera CRM`, `APP_ACCENT_HEX=#FF7300`. Só vale na primeira
   leitura — depois **o banco manda**. Numa instalação que já existe, aplique em **`/admin/marca`**.
 - Logo e ícone: a tela aceita **PNG ou JPG até 512 KB** (SVG é recusado). Originais vetoriais em
-  `acelera/marca/`. Exportar: logo `acelera-horizontal.svg` → PNG ~96 px de altura, transparente;
-  ícone `acelera-icone.svg` → PNG 512×512.
+  `acelera/marca/`. Exportar: logo `acelera/marca/acelera-horizontal.svg` → PNG ~96 px de altura, transparente;
+  ícone `acelera/marca/acelera-icone.svg` → PNG 512×512.
 - E-mails de acesso (GoTrue) leem o `.env`: depois de mudar `APP_ACCENT_HEX`, rodar
   `bash hostgator-setup-kit/marca-emails.sh` (ou ajustar os templates no Supabase do CRM).
 
-## 3. Construir a imagem do `app` a partir deste fork (EasyPanel)
+## 3. Rodar no EasyPanel a partir deste fork
 
-`NEXT_PUBLIC_*` **não** são args de build: a imagem sai com placeholders e os valores reais entram
-em runtime pelo `.env` (`<PublicEnvScript/>` + `lib/env.ts`). O único arg é `APP_VERSION`.
-Só o `app` muda; `worker`, `scheduler`, `voice-agent` etc. seguem nas imagens `v1.84.0` do upstream
-(o fork não mexe em código deles). Build pede ~4 GB de RAM (ou swap) e leva 15–25 min.
+O compose versionado é **`docker-compose.easypanel.yml`** (raiz do repo, branch `acelera/1.84.0`):
+`app`, `worker` e `scheduler` são **construídos** daqui (`Dockerfile`, `Dockerfile.worker`,
+`Dockerfile.scheduler`); `waha`, `redis` e `srh` ficam nas imagens pinadas; sem `caddy` (o HTTPS é
+do EasyPanel).
 
-```yaml
-  app:
-    build:
-      context: https://github.com/danilogdc363-a11y/DeskcommCRM.git#acelera/1.84.0
-      dockerfile: Dockerfile
-      args:
-        APP_VERSION: 1.84.0-acelera
-    image: deskcomm-app:1.84.0-acelera
-    pull_policy: build
-    # ...resto do serviço app igual ao atual (mem_limit, env_file, environment,
-    # depends_on, healthcheck, logging)
-```
+- No EasyPanel: serviço **Compose** → Fonte **Git** → repositório
+  `https://github.com/danilogdc363-a11y/DeskcommCRM`, branch `acelera/1.84.0`, arquivo
+  `docker-compose.easypanel.yml`. Variáveis na aba Ambiente (as mesmas de hoje + `ACELERA_*`/`APP_*`).
+  Domínio: serviço `app`, porta `3000`.
+- `NEXT_PUBLIC_*` **não** são args de build (a imagem sai com placeholders e lê o `.env` ao subir).
+  O único arg é `APP_VERSION`.
+- Atualizar: `git push` na branch → **Implantar** (ou ligue o Auto Deploy por webhook do GitHub).
+- Volumes do WhatsApp (`waha-data`, `waha-media`): use os MESMOS nomes do compose atual, senão é
+  preciso parear o número de novo.
+- Build do Next pede **~3–4 GB de RAM** e leva 15–25 min; o `mem_limit: 768m` vale só para o
+  contêiner rodando, não para o build. Se o build morrer por memória (exit 137 / "JavaScript heap
+  out of memory"): crie swap de 4 GB na VPS, ou construa a imagem fora (GitHub Actions →
+  GHCR) e troque `build:` por `image:` no compose.
 
 ## 4. Arquivos do fork (para conferir num merge do upstream)
 
-Novos (não conflitam): `ACELERA.md`, `acelera/marca/*.svg`, `lib/acelera-sso/{pass,config,entrada}.ts`,
+Novos (não conflitam): `ACELERA.md`, `docker-compose.easypanel.yml`, `acelera/marca/*.svg`, `lib/acelera-sso/{pass,config,entrada}.ts`,
 `app/sso/route.ts`, `tests/unit/acelera-sso-{pass,entrada}.test.ts`.
 
 Alterados (poucas linhas, marcadas com `ACELERA (fork)`):

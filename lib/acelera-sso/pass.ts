@@ -42,9 +42,9 @@ export function assinarPasseDeTeste(
   dados: Omit<PasseAcelera, "aud"> & { aud?: string },
   chave: string,
 ): string {
-  const payload = Buffer.from(
-    JSON.stringify({ aud: AUDIENCIA_DO_PASSE, ...dados }),
-  ).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ aud: AUDIENCIA_DO_PASSE, ...dados })).toString(
+    "base64url",
+  );
   const corpo = `${PREFIXO_DO_PASSE}.${payload}`;
   return `${corpo}.${assinar(corpo, chave)}`;
 }
@@ -132,4 +132,3 @@ export function papelNoCrm(papelNoOs: string, padraoDeMembro: string | undefined
   const validos = ["viewer", "agent", "manager", "admin"];
   return padraoDeMembro && validos.includes(padraoDeMembro) ? padraoDeMembro : "agent";
 }
-
