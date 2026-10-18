@@ -18,7 +18,7 @@ const DADOS = {
   email: "Ana@Acelera.com",
   name: "Ana",
   role: "admin",
-  org: "acelera",
+  org: { id: "11111111-1111-1111-1111-111111111111", slug: "acelera", name: "Acelera" },
   exp: AGORA + 60,
   nonce: "nonce-fixo",
 };

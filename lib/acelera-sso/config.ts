@@ -5,7 +5,6 @@
 
 export type ConfigAcelera = {
   segredo: string | null;
-  organizacaoId: string | null;
   papelDeMembro: string | undefined;
   soSso: boolean;
   urlDeLoginDoOs: string | null;
@@ -15,7 +14,6 @@ export function configAcelera(e: Record<string, string | undefined> = process.en
   const url = e.ACELERA_OS_LOGIN_URL?.trim();
   return {
     segredo: e.ACELERA_SSO_SECRET?.trim() || null,
-    organizacaoId: e.ACELERA_SSO_ORG_ID?.trim() || null,
     papelDeMembro: e.ACELERA_SSO_MEMBER_ROLE?.trim() || undefined,
     soSso: e.ACELERA_SSO_ONLY?.trim() === "true",
     urlDeLoginDoOs: url && /^https?:\/\//.test(url) ? url : null,

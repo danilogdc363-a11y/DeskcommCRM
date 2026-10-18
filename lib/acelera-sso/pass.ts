@@ -6,7 +6,7 @@
  *
  * Formato (tem que bater com `lib/crm-comercial/pass.ts` do Acelera OS):
  *   crm1.<payload base64url>.<HMAC-SHA256(chave, "crm1." + payload) base64url>
- * payload = JSON { sub, email, name, role, org, aud: "crm-comercial", exp, nonce }
+ * payload = JSON { sub, email, name, role, org: { id, slug, name }, aud: "crm-comercial", exp, nonce }
  *
  * Módulo puro (sem I/O): a rota `/sso` cuida de replay, usuário e sessão.
  */
@@ -22,7 +22,8 @@ export type PasseAcelera = {
   email: string;
   name: string;
   role: string;
-  org: string;
+  /** Workspace do OS. O `id` é a chave que liga ele à organização no CRM. */
+  org: { id: string; slug: string; name: string };
   aud: string;
   exp: number;
   nonce: string;
@@ -80,7 +81,9 @@ export function conferirPasse(
     !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dados.email) ||
     typeof dados.sub !== "string" ||
     typeof dados.nonce !== "string" ||
-    !dados.nonce
+    !dados.nonce ||
+    typeof dados.org?.id !== "string" ||
+    !dados.org.id
   ) {
     return { ok: false, motivo: "campos" };
   }
@@ -91,7 +94,14 @@ export function conferirPasse(
       email: dados.email.toLowerCase(),
       name: typeof dados.name === "string" ? dados.name.slice(0, 120) : "",
       role: typeof dados.role === "string" ? dados.role : "member",
-      org: typeof dados.org === "string" ? dados.org : "",
+      org: {
+        id: dados.org.id,
+        slug: typeof dados.org.slug === "string" ? dados.org.slug : "",
+        name:
+          typeof dados.org.name === "string" && dados.org.name.trim()
+            ? dados.org.name.trim().slice(0, 120)
+            : "Minha empresa",
+      },
       aud: dados.aud,
       exp: dados.exp,
       nonce: dados.nonce,
