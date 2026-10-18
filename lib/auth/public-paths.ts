@@ -7,6 +7,9 @@ export const PUBLIC_PATHS: RegExp[] = [
   /^\/api\/v1\/rastreio\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   /^\/$/,
   /^\/login(\/.*)?$/,
+  // ACELERA (fork): login único vindo do Acelera OS. A identidade vem do passe
+  // assinado conferido DENTRO da rota (`app/sso/route.ts`). Ver ACELERA.md.
+  /^\/sso$/,
   /^\/signup$/,
   /^\/auth\/confirm$/,
   // A VOLTA DA ENTRADA COM GOOGLE (issue #1388). Quem chega aqui é o NAVEGADOR
