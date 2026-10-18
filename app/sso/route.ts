@@ -14,7 +14,7 @@
  *     sai) + `verifyOtp` com o `token_hash` — o mesmo `verifyOtp` de
  *     `/auth/confirm`, que grava o cookie `sb-deskcomm-auth`;
  *  6. grava `active_org` (quem tem várias organizações cai na que veio do OS)
- *     e segue para `/app` pela PONTE (`respostaDePonte`): a chegada vem de
+ *     e segue para `/app` pela PONTE (`pontaDeCarregamento`, versão com carregamento da `respostaDePonte`): a chegada vem de
  *     outro site e o cookie é SameSite=Strict (issue #1646).
  */
 import { cookies } from "next/headers";
@@ -24,7 +24,7 @@ import { configAcelera } from "@/lib/acelera-sso/config";
 import { INTEGRACAO_ACELERA_OS, planejarEntrada } from "@/lib/acelera-sso/entrada";
 import { conferirPasse, NoncesUsados } from "@/lib/acelera-sso/pass";
 import { audit } from "@/lib/audit";
-import { respostaDePonte } from "@/lib/auth/ponte-de-volta";
+import { pontaDeCarregamento } from "@/lib/acelera-sso/ponte";
 import { slugDoProvisionamento } from "@/lib/auth/provision";
 import { marcaDaSaida } from "@/lib/branding/saida";
 import { env } from "@/lib/env";
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
     });
 
     const marca = await marcaDaSaida(null);
-    return respostaDePonte("/app", marca.nome, "Entrando no CRM…");
+    return pontaDeCarregamento("/app", marca.nome, marca.accent);
   } catch {
     return voltar("erro");
   }
