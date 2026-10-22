@@ -237,6 +237,18 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // ACELERA (só do fork): atalho direto para o funil "Orçamentos" da
+    // organização Acelera Delivery. O id é desse funil; em outra organização
+    // a página responde "não encontrado" — o fork só atende a Acelera.
+    href: "/app/pipelines/b90d61dc-a9af-4b1c-a8f2-994823bc34bf",
+    label: "Orçamentos",
+    description: "Atalho para o funil de Orçamentos.",
+    icon: "Funnel",
+    group: "crm",
+    section: "O dia a dia da venda",
+    sidebar: true,
+  },
+  {
     // A campanha vive no CRM e não em Conexões: quem a usa está pensando em
     // QUEM vai falar, não no número que fala. O ritmo (que é de Conexões) ela
     // herda, e só sabe deixar mais devagar.
