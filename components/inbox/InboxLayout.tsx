@@ -830,6 +830,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
               buscaAberta={buscaAberta}
               botaoBuscaRef={botaoBuscaRef}
               onAlternarFicha={alternarPainelDoContato}
+              fichaAberta={painelDoContato || fichaAberta}
             />
             {buscaAberta && (
               <div className="flex items-center gap-2 border-b border-border px-4 py-1.5">

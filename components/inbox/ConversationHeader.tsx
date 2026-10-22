@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { JanelaSelo } from "@/components/inbox/JanelaSelo";
 import { ChannelLogo } from "@/components/inbox/ChannelLogo";
-import { Phone, ArrowRight, MagnifyingGlass, DotsThreeVertical } from "@/lib/ui/icons";
+import { Phone, ArrowRight, MagnifyingGlass, DotsThreeVertical, IdentificationCard } from "@/lib/ui/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -68,6 +68,8 @@ interface Props {
   onAbrirConversa?: (id: string) => void;
   /** ACELERA (layout WhatsApp): clicar na foto/nome abre ou fecha os dados do contato. */
   onAlternarFicha?: () => void;
+  /** Se os dados do contato estão abertos (realça o botão "Contato"). */
+  fichaAberta?: boolean;
 }
 
 function iniciais(nome: string): string {
@@ -110,6 +112,7 @@ export function ConversationHeader({
   buscaAberta,
   botaoBuscaRef,
   onAlternarFicha,
+  fichaAberta = false,
 }: Props) {
   const t = useT();
   const { user, activeOrg } = useAuth();
@@ -464,6 +467,23 @@ export function ConversationHeader({
             conversationId={conversation.id}
             snoozeUntil={conversation.snooze_until ?? null}
           />
+        )}
+        {/* ACELERA: porta visível para os dados do contato (fechados por padrão).
+            Ícone + rótulo para ninguém precisar descobrir que o nome é clicável;
+            fica realçado enquanto o painel está aberto. */}
+        {onAlternarFicha && c?.id && (
+          <Button
+            size="sm"
+            variant={fichaAberta ? "secondary" : "ghost"}
+            className="gap-1.5"
+            onClick={onAlternarFicha}
+            aria-pressed={fichaAberta}
+            title={fichaAberta ? t("Fechar dados do contato") : t("Ver dados do contato")}
+            data-testid="alternar-dados-do-contato"
+          >
+            <IdentificationCard size={18} aria-hidden />
+            {t("Contato")}
+          </Button>
         )}
         {/* ACELERA (layout WhatsApp Web): as ações de atendimento moram no "⋮",
             como o menu da conversa do WhatsApp. Ficam à vista só busca,
