@@ -1,0 +1,68 @@
+/* ACELERA — CRM NA PALETA DO ACELERA OS.
+ *
+ * Só do fork (ver ACELERA.md). Copia os neutros do Acelera OS
+ * (repo danilogdc363-a11y/CRM, app/globals.css) para os tokens `--color-*`
+ * deste produto, e fixa o laranja da marca (#FF7300, guia de marca da
+ * Acelera) como acento:
+ *   - escuro: cinzas do VS Code dark, sem preto puro (#1F1F1F fundo,
+ *     #252526 superfícies, #2D2D2D elevado, #3C3C3C bordas);
+ *   - claro: off-white levemente quente, nada de #FFFFFF chapado.
+ *
+ * Especificidade de propósito: `:root:root:root` (0,3,0) vence o
+ * `:root:root` da marca injetada (`lib/branding/css.ts`), e a versão escura
+ * (0,4,0) vence `:root:root[data-theme="dark"]`. Fora de @layer para vencer o
+ * globals.css sem `!important`. O Inbox tem o tema próprio de WhatsApp
+ * (acelera-whatsapp.css), escopado em `.wa-inbox`.
+ */
+
+:root:root:root {
+  color-scheme: light;
+  --color-bg: oklch(0.94 0.005 80);
+  --color-surface: oklch(0.975 0.004 80);
+  --color-surface-elevated: oklch(0.91 0.005 80);
+  --color-text: oklch(0.27 0.005 80);
+  --color-text-muted: oklch(0.48 0.005 80);
+  --color-text-subtle: oklch(0.58 0.005 80);
+  --color-border: oklch(0.86 0.006 80);
+  --color-border-strong: oklch(0.78 0.006 80);
+
+  --color-brand: #ff7300;
+  --color-accent-50: #fff4eb;
+  --color-accent-100: #ffe3cc;
+  --color-accent-200: #ffc799;
+  --color-accent-300: #ffa559;
+  --color-accent-400: #ff8a26;
+  --color-accent-500: #ff7300;
+  --color-accent-600: #e66800;
+  --color-accent-700: #bf5600;
+  --color-accent-800: #994500;
+  --color-accent-900: #7a3700;
+  --color-accent-950: #4a2100;
+  --color-accent: #ff7300;
+  --color-accent-fg: #ffffff;
+  --color-accent-hover: #e66800;
+  --color-accent-soft: rgba(255, 115, 0, 0.12);
+
+  --popover: oklch(0.99 0.003 80);
+  --ring: #ff7300;
+}
+
+:root:root:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #1f1f1f;
+  --color-surface: #252526;
+  --color-surface-elevated: #2d2d2d;
+  --color-text: oklch(0.93 0 0);
+  --color-text-muted: #9d9d9d;
+  --color-text-subtle: #7a7a7a;
+  --color-border: #3c3c3c;
+  --color-border-strong: #4a4a4a;
+
+  --color-accent: #ff7300;
+  --color-accent-fg: #ffffff;
+  --color-accent-hover: #ff8a26;
+  --color-accent-soft: rgba(255, 115, 0, 0.16);
+
+  --popover: #2d2d2d;
+  --ring: #ff7300;
+}
