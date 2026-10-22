@@ -16,7 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { JanelaSelo } from "@/components/inbox/JanelaSelo";
 import { ChannelLogo } from "@/components/inbox/ChannelLogo";
-import { Phone, ArrowRight, MagnifyingGlass } from "@/lib/ui/icons";
+import { Phone, ArrowRight, MagnifyingGlass, DotsThreeVertical, IdentificationCard } from "@/lib/ui/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useClaimConversation } from "@/hooks/inbox/useClaimConversation";
 import { useReleaseConversation } from "@/hooks/inbox/useReleaseConversation";
@@ -58,6 +66,17 @@ interface Props {
   botaoBuscaRef?: RefObject<HTMLButtonElement | null>;
   /** Seleciona outra conversa no Inbox — a aba Número do Transferir abre a do outro número. */
   onAbrirConversa?: (id: string) => void;
+  /** ACELERA (layout WhatsApp): clicar na foto/nome abre ou fecha os dados do contato. */
+  onAlternarFicha?: () => void;
+  /** Se os dados do contato estão abertos (realça o botão "Contato"). */
+  fichaAberta?: boolean;
+}
+
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return (partes[0] ?? "").slice(0, 2).toUpperCase();
+  return ((partes[0]?.[0] ?? "") + (partes[partes.length - 1]?.[0] ?? "")).toUpperCase();
 }
 
 /**
@@ -92,6 +111,8 @@ export function ConversationHeader({
   onBuscar,
   buscaAberta,
   botaoBuscaRef,
+  onAlternarFicha,
+  fichaAberta = false,
 }: Props) {
   const t = useT();
   const { user, activeOrg } = useAuth();
@@ -217,7 +238,7 @@ export function ConversationHeader({
     // fileira que rola na horizontal — a mesma régua de não esconder ação, sem
     // pagar em altura. `py-2` pelo mesmo motivo: cada pixel de altura ali é
     // tirado da conversa.
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background px-3 py-2 md:gap-3 md:px-4 md:py-3">
+    <div className="wa-cabecalho flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background px-3 py-2 md:gap-3 md:px-4 md:py-3">
       {/* FAIXA DA CARTEIRA (#2591, regra 2): "este cliente pertence à carteira de
           A". `w-full` a põe numa linha própria acima da identidade, sem disputar
           espaço com a barra de ações — a faixa só existe quando o dono é OUTRA
@@ -225,10 +246,41 @@ export function ConversationHeader({
       {c?.id && (
         <FaixaDaCarteira contactId={c.id} quemAtendeId={conversation.assigned_to_user_id} />
       )}
+      <div className="flex min-w-0 items-center gap-3">
+      {/* ACELERA (layout WhatsApp): foto do contato à esquerda; ela e o nome
+          abrem/fecham os dados do contato, como no WhatsApp Web. */}
+      {c?.id && (
+        <button
+          type="button"
+          onClick={onAlternarFicha}
+          disabled={!onAlternarFicha}
+          aria-label={t("Dados do contato")}
+          title={t("Dados do contato")}
+          className="shrink-0 rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={`/api/v1/contacts/${c.id}/avatar`} alt="" className="object-cover" />
+            <AvatarFallback className="bg-surface-elevated text-xs font-medium text-text-muted">
+              {iniciais(displayName)}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      )}
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-1.5">
           <ChannelLogo channel={conversation.channel_sessions} size={20} />
-          <h2 className="min-w-0 truncate text-sm font-semibold" title={displayName}>{displayName}</h2>
+          {onAlternarFicha ? (
+            <button
+              type="button"
+              onClick={onAlternarFicha}
+              className="min-w-0 truncate text-left text-base font-medium hover:underline focus-visible:outline-hidden focus-visible:underline"
+              title={t("Dados do contato")}
+            >
+              <h2 className="truncate" title={displayName}>{displayName}</h2>
+            </button>
+          ) : (
+            <h2 className="min-w-0 truncate text-sm font-semibold" title={displayName}>{displayName}</h2>
+          )}
           <Badge variant="outline" className="h-4 shrink-0 px-1.5 text-[10px]">
             {t(STATUS_LABEL[status] ?? status)}
           </Badge>
@@ -287,6 +339,7 @@ export function ConversationHeader({
             <Phone size={11} weight="regular" aria-hidden /> {phone}
           </p>
         )}
+      </div>
       </div>
 
       {/* `shrink-0` saiu daqui: era ele que impunha o piso de largura. Agora a
@@ -360,16 +413,6 @@ export function ConversationHeader({
             {t("Assumir")}
           </Button>
         )}
-        {isMineAssigned && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={release.isPending}
-            onClick={() => release.mutate({ conversation_id: conversation.id })}
-          >
-            {t("Liberar")}
-          </Button>
-        )}
         {/* O INTERRUPTOR. Um botão, dois rótulos, um slot.
             Fica ANTES de transferir/fechar porque é a ação que a pessoa procura
             quando terminou o que tinha para fazer aqui.
@@ -420,94 +463,116 @@ export function ConversationHeader({
           </Button>
         )}
         {!encerrada && (
-          <Button size="sm" variant="outline" onClick={() => setReassignOpen(true)}>
-            {t("Transferir")}
-          </Button>
-        )}
-        {!encerrada && (
           <SnoozeButton
             conversationId={conversation.id}
             snoozeUntil={conversation.snooze_until ?? null}
           />
         )}
-        {!encerrada && (
+        {/* ACELERA: porta visível para os dados do contato (fechados por padrão).
+            Ícone + rótulo para ninguém precisar descobrir que o nome é clicável;
+            fica realçado enquanto o painel está aberto. */}
+        {onAlternarFicha && c?.id && (
           <Button
             size="sm"
-            variant="outline"
-            disabled={close.isPending}
-            onClick={() => setConfirmFecharOpen(true)}
+            variant={fichaAberta ? "secondary" : "ghost"}
+            className="gap-1.5"
+            onClick={onAlternarFicha}
+            aria-pressed={fichaAberta}
+            title={fichaAberta ? t("Fechar dados do contato") : t("Ver dados do contato")}
+            data-testid="alternar-dados-do-contato"
           >
-            {t("Fechar")}
+            <IdentificationCard size={18} aria-hidden />
+            {t("Contato")}
           </Button>
         )}
-        {encerrada && <Button size="sm" variant="outline" disabled={reopen.isPending}
-          onClick={() => reopen.mutate({ conversation_id: conversation.id, expected_revision: conversation.service_revision })}>
-          {t("Reabrir")}
-        </Button>}
-        {/* ARQUIVAR (#923): tira da frente sem destruir.
-            A conversa já arquivada não mostra o botão — arquivar duas vezes não
-            é um gesto que exista, e o botão só reapareceria como um clique que
-            não muda nada. Fechada E resolvida mostram: são exatamente as que se
-            quer mandar para o arquivo depois de encerradas, e é o caminho que
-            faz a aba "Arquivadas" deixar de ser uma pasta morta.
-            A permissão é a mesma de fechar (a rota `/conversations/[id]` é
-            `requireSupportWrite`): quem pode encerrar, pode arquivar. */}
-        {status !== "archived" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={arquivar.isPending}
-            onClick={() => setConfirmArquivarOpen(true)}
-          >
-            {arquivar.isPending ? t("Arquivando...") : t("Arquivar")}
-          </Button>
-        )}
-        {/* PESSOAL (spec 21, etapa 15): marcar tira a conversa do inbox na
-            hora; desmarcar relista. O `data-testid` é contrato do e2e da
-            spec (`contato-pessoal-sai-da-operacao.spec.ts`). */}
-        {podeMarcarPessoal && c?.id && !ehPessoal && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={marcarPessoal.isPending}
-            data-testid="marcar-pessoal"
-            title={t("Tira este contato da operação: a conversa sai do inbox.")}
-            onClick={() => setConfirmPessoalOpen(true)}
-          >
-            {t("Marcar como pessoal")}
-          </Button>
-        )}
-        {podeMarcarPessoal && c?.id && ehPessoal && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={desmarcarPessoal.isPending}
-            data-testid="desmarcar-pessoal"
-            title={t("Devolve este contato à operação: a conversa volta ao inbox.")}
-            onClick={() => desmarcarPessoal.mutate()}
-          >
-            {desmarcarPessoal.isPending ? t("Desmarcando...") : t("Desmarcar pessoal")}
-          </Button>
-        )}
-        {/* `xl:hidden` porque a partir de 1280px o painel lateral de CRM entra
-            na tela — e ele já tem um "Ver contato", para o MESMO contato, a um
-            palmo de distância. Duas portas idênticas na mesma tela não são
-            redundância inofensiva: são a linha a mais que empurrava a barra de
-            ações para uma segunda fileira justo na largura mais apertada.
-            Medido: sem a duplicata, os botões voltam a caber em UMA linha em
-            1280px.
-
-            Abaixo de 1280 o painel não existe, e aí esta é a única porta para o
-            contato — por isso a condição é a mesma do painel, e não um valor
-            escolhido à parte. Não é esconder ação; é não repeti-la. */}
-        {c?.id && (
-          <Button asChild size="sm" variant="ghost" className="xl:hidden">
-            <Link href={`/app/contacts/${c.id}`} className="flex items-center gap-1">
-              {t("Ver contato")}
-              <ArrowRight size={12} weight="regular" aria-hidden />
-            </Link>
-          </Button>
-        )}
+        {/* ACELERA (layout WhatsApp Web): as ações de atendimento moram no "⋮",
+            como o menu da conversa do WhatsApp. Ficam à vista só busca,
+            chamadas, Assumir, a chave do automático e o adiar. Os `data-testid`
+            de pessoal continuam nos itens do menu. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-11 px-0 lg:w-8"
+              aria-label={t("Mais opções")}
+              title={t("Mais opções")}
+              data-testid="menu-da-conversa"
+            >
+              <DotsThreeVertical size={20} weight="bold" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-52">
+            {onAlternarFicha && c?.id && (
+              <DropdownMenuItem onSelect={onAlternarFicha}>{t("Dados do contato")}</DropdownMenuItem>
+            )}
+            {c?.id && (
+              <DropdownMenuItem asChild>
+                <Link href={`/app/contacts/${c.id}`} className="flex items-center gap-1">
+                  {t("Ver contato")}
+                  <ArrowRight size={12} weight="regular" aria-hidden />
+                </Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            {isMineAssigned && (
+              <DropdownMenuItem
+                disabled={release.isPending}
+                onSelect={() => release.mutate({ conversation_id: conversation.id })}
+              >
+                {t("Liberar")}
+              </DropdownMenuItem>
+            )}
+            {!encerrada && (
+              <DropdownMenuItem onSelect={() => setReassignOpen(true)}>{t("Transferir")}</DropdownMenuItem>
+            )}
+            {!encerrada && (
+              <DropdownMenuItem disabled={close.isPending} onSelect={() => setConfirmFecharOpen(true)}>
+                {t("Fechar")}
+              </DropdownMenuItem>
+            )}
+            {encerrada && (
+              <DropdownMenuItem
+                disabled={reopen.isPending}
+                onSelect={() =>
+                  reopen.mutate({
+                    conversation_id: conversation.id,
+                    expected_revision: conversation.service_revision,
+                  })
+                }
+              >
+                {t("Reabrir")}
+              </DropdownMenuItem>
+            )}
+            {/* ARQUIVAR (#923): a conversa já arquivada não mostra o item. */}
+            {status !== "archived" && (
+              <DropdownMenuItem disabled={arquivar.isPending} onSelect={() => setConfirmArquivarOpen(true)}>
+                {arquivar.isPending ? t("Arquivando...") : t("Arquivar")}
+              </DropdownMenuItem>
+            )}
+            {/* PESSOAL (spec 21, etapa 15): `data-testid` é contrato do e2e. */}
+            {podeMarcarPessoal && c?.id && !ehPessoal && (
+              <DropdownMenuItem
+                disabled={marcarPessoal.isPending}
+                data-testid="marcar-pessoal"
+                title={t("Tira este contato da operação: a conversa sai do inbox.")}
+                onSelect={() => setConfirmPessoalOpen(true)}
+              >
+                {t("Marcar como pessoal")}
+              </DropdownMenuItem>
+            )}
+            {podeMarcarPessoal && c?.id && ehPessoal && (
+              <DropdownMenuItem
+                disabled={desmarcarPessoal.isPending}
+                data-testid="desmarcar-pessoal"
+                title={t("Devolve este contato à operação: a conversa volta ao inbox.")}
+                onSelect={() => desmarcarPessoal.mutate()}
+              >
+                {desmarcarPessoal.isPending ? t("Desmarcando...") : t("Desmarcar pessoal")}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
         {/* O aviso pertence à operação automática. Abaixo da barra ele não
             alarga a ficha do contato nem muda a posição dos botões.
