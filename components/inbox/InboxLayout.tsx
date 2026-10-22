@@ -490,7 +490,40 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
    * divisória nenhuma e sem estilo nenhum na grade. No celular nada muda.
    */
   const gradeRef = useRef<HTMLDivElement | null>(null);
-  const [faixa, setFaixa] = useState<Faixa | null>(null);
+  const [faixaDaTela, setFaixa] = useState<Faixa | null>(null);
+  /* ACELERA — PAINEL DO CONTATO SOB DEMANDA (layout WhatsApp Web).
+   * A ficha não ocupa uma terceira coluna fixa: abre ao clicar no nome/foto do
+   * cabeçalho, como o "Dados do contato" do WhatsApp. Fechada, a faixa vira de
+   * duas colunas e a lista ganha a largura do WhatsApp. A escolha fica no
+   * navegador. Abaixo do `xl` o clique abre a ficha em gaveta (Sheet). */
+  const [painelDoContato, setPainelDoContato] = useState(false);
+  useEffect(() => {
+    try {
+      setPainelDoContato(window.localStorage.getItem("acelera:inbox:painel-contato") === "1");
+    } catch {}
+  }, []);
+  const alternarPainelDoContato = useCallback(() => {
+    if (window.innerWidth < 1280) {
+      setFichaAberta(true);
+      return;
+    }
+    setPainelDoContato((aberto) => {
+      try {
+        window.localStorage.setItem("acelera:inbox:painel-contato", aberto ? "0" : "1");
+      } catch {}
+      return !aberto;
+    });
+  }, []);
+  const faixa = useMemo<Faixa | null>(() => {
+    if (!faixaDaTela || !faixaDaTela.temFicha || painelDoContato) return faixaDaTela;
+    // Id próprio: a largura salva com a ficha aberta não vale para a grade de duas colunas.
+    return {
+      ...faixaDaTela,
+      id: `${faixaDaTela.id}-sem-ficha` as Faixa["id"],
+      temFicha: false,
+      lista: faixaDaTela.id === "2xl" ? 440 : 380,
+    };
+  }, [faixaDaTela, painelDoContato]);
   const [larguras, setLarguras] = useState<LargurasDoInbox | null>(null);
   // Espelho do estado para o fim do arraste (pointerup) persistir o valor mais
   // recente sem depender de um render que ainda não aconteceu.
@@ -643,7 +676,12 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
     <OpenConversationProvider conversationId={selectedId}>
     <div
       ref={gradeRef}
-      className="grid relative h-[calc(100dvh-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full grid-cols-1 md:grid-cols-[300px_1fr] xl:grid-cols-[272px_1fr_296px] 2xl:grid-cols-[300px_1fr_320px]"
+      className={cn(
+        "wa-inbox grid relative h-[calc(100dvh-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full grid-cols-1 md:grid-cols-[300px_1fr]",
+        painelDoContato
+          ? "xl:grid-cols-[272px_1fr_296px] 2xl:grid-cols-[300px_1fr_320px]"
+          : "xl:grid-cols-[380px_1fr] 2xl:grid-cols-[440px_1fr]",
+      )}
       style={estiloDaGrade}
       /*
        * O ESTADO DO TEMPO REAL, LEGÍVEL DE FORA — mesmo par que o dossiê do lead
@@ -683,7 +721,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
       */}
       <div
         className={cn(
-          "h-full min-h-0 flex-col border-r border-border md:flex",
+          "wa-lista h-full min-h-0 flex-col border-r border-border md:flex",
           colunas.lista,
         )}
       >
@@ -738,7 +776,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
       */}
       <div
         className={cn(
-          "h-full min-h-0 min-w-0 flex-col md:flex",
+          "wa-conversa h-full min-h-0 min-w-0 flex-col md:flex",
           colunas.conversa,
         )}
       >
@@ -791,6 +829,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
               }
               buscaAberta={buscaAberta}
               botaoBuscaRef={botaoBuscaRef}
+              onAlternarFicha={alternarPainelDoContato}
             />
             {buscaAberta && (
               <div className="flex items-center gap-2 border-b border-border px-4 py-1.5">
@@ -818,7 +857,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
                 </Button>
               </div>
             )}
-            <div className="min-h-0 flex-1 overflow-hidden">
+            <div className="wa-fundo min-h-0 flex-1 overflow-hidden">
               <ChatThread
                 conversationId={selectedConversation.id}
                 searchTerm={buscaAberta ? busca.termo : ""}
@@ -881,7 +920,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
             {t("Conversa não encontrada ou fora do seu acesso.")}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+          <div className="wa-vazio flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <ChatCircle size={36} weight="thin" className="text-text-subtle" aria-hidden />
             <p className="text-sm font-medium text-text-muted">{t("Selecione uma conversa")}</p>
             <p className="text-xs text-text-muted">{t("Ou navegue com J e K")}</p>
@@ -889,7 +928,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
         )}
       </div>
 
-      <div className="hidden h-full min-h-0 min-w-0 xl:block">
+      <div className={cn("wa-ficha hidden h-full min-h-0 min-w-0", painelDoContato && "xl:block")}>
         <CRMSidePanel conversation={selectedConversation} />
       </div>
 
