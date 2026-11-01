@@ -6241,6 +6241,7 @@ export const DICIONARIO: Traducoes = {
   },
   "Quando chegar mensagem no WhatsApp": { es: "Cuando llegue un mensaje por WhatsApp" },
   "Quando uma mensagem não for entregue": { es: "Cuando un mensaje no se entregue" },
+  "Quando a equipe enviar mensagem no WhatsApp": { es: "Cuando el equipo envíe un mensaje por WhatsApp" },
   "Código do erro": { es: "Código del error" },
   "Janela de 24 horas fechada: texto livre é recusado pela plataforma (131047). Envie um modelo aprovado ou aguarde o cliente escrever.": {
     es: "Ventana de 24 horas cerrada: la plataforma rechaza el texto libre (131047). Envía una plantilla aprobada o espera a que el cliente escriba.",
