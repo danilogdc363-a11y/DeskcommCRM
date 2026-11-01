@@ -104,6 +104,8 @@ export interface ConversaoOffline {
     fbp?: string;
     ip?: string;
     userAgent?: string;
+    /** O id do formulário nativo da Meta: liga direto ao anúncio. */
+    leadId?: string;
   };
   valorCentavos: number | null;
   moeda: string;

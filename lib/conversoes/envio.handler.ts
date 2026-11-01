@@ -95,6 +95,7 @@ function sinaisDoFormulario(campos: unknown) {
     fbp: texto(c.meta_fbp),
     ip: texto(c.meta_ip),
     userAgent: texto(c.meta_user_agent),
+    leadId: texto(c.meta_lead_id),
   };
 }
 
