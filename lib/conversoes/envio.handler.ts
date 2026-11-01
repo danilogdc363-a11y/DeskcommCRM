@@ -85,6 +85,19 @@ export interface EventoDeEtapa {
   eventoMeta?: string;
 }
 
+/** (Acelera) Os `meta_*` que o formulário do Acelera OS grava no lead. */
+function sinaisDoFormulario(campos: unknown) {
+  if (!campos || typeof campos !== "object") return undefined;
+  const c = campos as Record<string, unknown>;
+  const texto = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  return {
+    fbc: texto(c.meta_fbc),
+    fbp: texto(c.meta_fbp),
+    ip: texto(c.meta_ip),
+    userAgent: texto(c.meta_user_agent),
+  };
+}
+
 export async function processarConversao(
   row: EventRow,
   qualificacao?: EventoDeEtapa,
@@ -103,7 +116,7 @@ export async function processarConversao(
   // ⚠️ Filtro de organização junto do id: o client é service-role e bypassa RLS.
   const { data, error } = await admin
     .from("crm_leads")
-    .select("id, status, value_cents, currency, closed_at, contact_id")
+    .select("id, status, value_cents, currency, closed_at, contact_id, custom_fields")
     .eq("id", row.entity_id)
     .eq("organization_id", row.organization_id)
     .maybeSingle();
@@ -127,6 +140,7 @@ export async function processarConversao(
     currency: string | null;
     closed_at: string | null;
     contact_id: string | null;
+    custom_fields?: unknown;
   };
 
   // O filtro que faz `lead.stage_changed` valer a pena escutar: a grande maioria
@@ -149,6 +163,7 @@ export async function processarConversao(
   if (!leitura.temAtribuicao) return ok("skipped", leitura.motivo);
 
   const { plataforma, cliqueDeOrigem, telefone } = leitura.atribuicao;
+  const email = "email" in leitura.atribuicao ? leitura.atribuicao.email : undefined;
   const identificadoresGoogle =
     "identificadoresGoogle" in leitura.atribuicao
       ? leitura.atribuicao.identificadoresGoogle
@@ -425,6 +440,8 @@ export async function processarConversao(
     cliqueDeOrigem,
     identificadoresGoogle,
     telefone,
+    email,
+    sinaisDoNavegador: sinaisDoFormulario(lead.custom_fields),
     // A coluna tem `DEFAULT 'BRL'` e um CHECK de ISO-4217; o fallback só cobre a
     // linha que teve a moeda apagada à mão.
     moeda: moedaDaVenda ?? "BRL",
