@@ -15,6 +15,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const LIMITE_DE_MENSAGENS = 5_000;
 
 export interface MensagemDoDossie {
+  id: string;
   at: string;
   direction: "inbound" | "outbound";
   sent_via: string;
@@ -72,6 +73,7 @@ export function montarDossie(input: {
   const mensagens = input.messages
     .filter((m) => m.type !== "reaction" && m.type !== "system")
     .map((m) => ({
+      id: String(m.id),
       at: String(m.sent_at),
       direction: m.direction === "outbound" ? ("outbound" as const) : ("inbound" as const),
       sent_via: String(m.sent_via ?? ""),
@@ -173,7 +175,7 @@ export async function lerDossieDoLead(
   if (conversaIds.length) {
     const { data, error: errMsg } = await supabase
       .from("messages")
-      .select("sent_at, direction, sent_via, type, body, media_url")
+      .select("id, sent_at, direction, sent_via, type, body, media_url")
       .eq("organization_id", organizationId)
       .in("conversation_id", conversaIds)
       .order("sent_at", { ascending: true })

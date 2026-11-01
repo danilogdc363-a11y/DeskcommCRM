@@ -27,9 +27,9 @@ const base = {
   contact: { id: "c1", name: null, display_name: "Ana", phone_number: "+5511999999999", email: null, tags: [] },
   stageActivities: [{ performed_at: "2026-10-05T10:00:00Z", payload: { to: "Reunião marcada" } }],
   messages: [
-    { sent_at: "2026-10-01T10:01:00Z", direction: "outbound", sent_via: "automation", type: "text", body: "Opa" },
-    { sent_at: "2026-10-01T10:02:00Z", direction: "inbound", sent_via: "crm", type: "reaction", body: "👍" },
-    { sent_at: "2026-10-01T10:03:00Z", direction: "inbound", sent_via: "crm", type: "audio", body: null, media_url: "https://x/a.ogg" },
+    { id: "m1", sent_at: "2026-10-01T10:01:00Z", direction: "outbound", sent_via: "automation", type: "text", body: "Opa" },
+    { id: "m2", sent_at: "2026-10-01T10:02:00Z", direction: "inbound", sent_via: "crm", type: "reaction", body: "👍" },
+    { id: "m3", sent_at: "2026-10-01T10:03:00Z", direction: "inbound", sent_via: "crm", type: "audio", body: null, media_url: "https://x/a.ogg" },
   ],
 };
 
