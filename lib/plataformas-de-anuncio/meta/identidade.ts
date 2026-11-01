@@ -76,6 +76,17 @@ export function identidadeDaMeta(settings: unknown): IdentidadeDaConversaoMeta {
 }
 
 /**
+ * (Acelera) Reportar à Meta o contato sem origem registrada? A Meta casa pelo
+ * telefone em hash e só credita o anúncio se a pessoa viu ou clicou em um.
+ */
+export function reportaSemOrigem(settings: unknown): boolean {
+  if (!settings || typeof settings !== "object") return false;
+  const conversions = (settings as Record<string, unknown>).conversions;
+  if (!conversions || typeof conversions !== "object") return false;
+  return (conversions as Record<string, unknown>).meta_report_without_origin === true;
+}
+
+/**
  * Lê a identidade pela credencial. LANÇA quando a leitura falha — mesmo
  * contrato de `lerVendaPeloCanal`: quem chama (`envio.handler`) espera e tenta
  * de novo. Silenciar a falha aqui mandaria o evento SEM os ids e transformaria
