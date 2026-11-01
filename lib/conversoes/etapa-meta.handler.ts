@@ -55,8 +55,13 @@ async function handle(row: EventRow): Promise<HandlerResult> {
       return await enviar(row, evento, registro.event_occurred_at, registro.meta_event_name);
     }
 
-    if (row.event_type !== "lead.stage_changed") return ignorar("outro_evento");
-    const etapaId = z.uuid().safeParse(row.payload.to_stage_id);
+    // (Acelera) Lead que já nasce na etapa também entrou nela: `lead.created`
+    // traz a etapa em `stage_id`. É o "primeiro contato" do funil.
+    if (row.event_type !== "lead.stage_changed" && row.event_type !== "lead.created")
+      return ignorar("outro_evento");
+    const etapaId = z
+      .uuid()
+      .safeParse(row.event_type === "lead.created" ? row.payload.stage_id : row.payload.to_stage_id);
     if (!etapaId.success || !row.created_at || !Number.isFinite(Date.parse(row.created_at)))
       return ignorar("sem_etapa_ou_data");
 
@@ -102,6 +107,6 @@ async function handle(row: EventRow): Promise<HandlerResult> {
 export const conversaoDeEtapaMetaHandler: EventHandler = {
   key: KEY,
   naOrgParada: "pula",
-  events: ["lead.stage_changed", "ad_conversion.retry_requested"],
+  events: ["lead.created", "lead.stage_changed", "ad_conversion.retry_requested"],
   handle,
 };
