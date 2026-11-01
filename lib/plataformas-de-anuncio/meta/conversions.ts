@@ -163,6 +163,7 @@ async function enviar(
     if (sinais?.fbp) userData.fbp = sinais.fbp;
     if (sinais?.ip) userData.client_ip_address = sinais.ip;
     if (sinais?.userAgent) userData.client_user_agent = sinais.userAgent;
+    if (sinais?.leadId) userData.lead_id = sinais.leadId;
   }
 
   const customData: Record<string, unknown> = {};
