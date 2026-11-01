@@ -54,6 +54,15 @@ export const CONVERSAS_IGNORADAS = {
   groups: true,
 } as const;
 
+/** (Acelera) Uma mensagem como o acervo do canal a devolve. */
+export interface MensagemDoAcervo {
+  id: string;
+  timestamp: number;
+  fromMe: boolean;
+  body?: string | null;
+  hasMedia?: boolean;
+}
+
 /**
  * O ACERVO DO NÚMERO — o histórico que existe ANTES da vinculação.
  *
@@ -863,6 +872,25 @@ export class WahaClient {
       throw new Error(`waha_${res.status}`);
     }
     return res.json() as Promise<{ numberExists: boolean; chatId?: string | null; pn?: string | null }>;
+  }
+
+  /** (Acelera) Lê o acervo do chat, sem baixar mídia. Só responde com o acervo ligado. */
+  async listarMensagensDoChat(
+    session: string,
+    chatId: string,
+    pagina: { limit: number; offset: number },
+  ): Promise<MensagemDoAcervo[]> {
+    const url = new URL(
+      `${this.baseUrl}/api/${encodeURIComponent(session)}/chats/${encodeURIComponent(chatId)}/messages`,
+    );
+    url.searchParams.set("limit", String(pagina.limit));
+    url.searchParams.set("offset", String(pagina.offset));
+    url.searchParams.set("downloadMedia", "false");
+    const res = await this.fetchComTeto(url, {
+      headers: { "X-Api-Key": this.apiKey, Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`waha_${res.status}`);
+    return res.json() as Promise<MensagemDoAcervo[]>;
   }
 
   async sendContactVcard(
