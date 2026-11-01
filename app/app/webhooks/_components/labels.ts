@@ -35,6 +35,9 @@ export const TRIGGER_LABELS: Record<TriggerEvent, string> = {
   // caminhos que emitem (recusa da plataforma e pré-voo), sem prometer que a
   // causa é sempre a mesma.
   "message.failed": "Quando uma mensagem não for entregue",
+  // Acelera: só a fala da EQUIPE (Inbox ou celular conectado) — IA e automação
+  // não entram, por isso a frase diz "a equipe".
+  "message.team_sent": "Quando a equipe enviar mensagem no WhatsApp",
   "lead.tag_added": "Quando um lead ganhar uma tag",
   "contact.tag_added": "Quando um contato ganhar uma tag",
   // #2812 — a frase diz a TRANSIÇÃO (ficha que estava SEM número recebe um), e
