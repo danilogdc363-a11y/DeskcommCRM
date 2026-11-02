@@ -45,7 +45,9 @@ describe("dossiê do lead", () => {
   });
 
   it("avisa quando a conversa bateu no teto", () => {
-    const muitas = Array.from({ length: LIMITE_DE_MENSAGENS }, () => base.messages[0]);
+    const [primeira] = base.messages;
+    if (!primeira) throw new Error("a base do teste precisa de uma mensagem");
+    const muitas = Array.from({ length: LIMITE_DE_MENSAGENS }, () => primeira);
     expect(montarDossie({ ...base, messages: muitas }).messages_truncated).toBe(true);
   });
 

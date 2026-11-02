@@ -18090,6 +18090,9 @@ export const DICIONARIO: Traducoes = {
   "O que falta no site": { es: "Lo que falta en el sitio" },
   "O que o site já tem": { es: "Lo que el sitio ya tiene" },
   "WhatsApp": { es: "WhatsApp" },
+  // ACELERA (fork): o grupo do topo do menu e a linha sob a marca.
+  "Menu Principal": { es: "Menú principal" },
+  "CRM comercial": { es: "CRM comercial" },
   "Endereço e mapa": { es: "Dirección y mapa" },
   "Descrição no Google": { es: "Descripción en Google" },
   "Estratégia de abordagem": { es: "Estrategia de abordaje" },
