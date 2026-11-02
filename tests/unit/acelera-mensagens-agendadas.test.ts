@@ -217,7 +217,7 @@ describe("dia e hora em São Paulo", () => {
 
 describe("migration", () => {
   const sql = readFileSync(
-    resolve(process.cwd(), "supabase/migrations/20261102000001_acelera_0004_mensagens_agendadas.sql"),
+    resolve(process.cwd(), "supabase/migrations/20261102162531_acelera_0004_mensagens_agendadas.sql"),
     "utf8",
   );
   it("nasce com RLS por organização e a tela só cancela", () => {
