@@ -134,3 +134,7 @@ Dependências do core usadas (se mudarem no upstream, revisar): `respostaDePonte
 
 Para atualizar: criar `acelera/<nova versão>` a partir da tag nova e `git cherry-pick` os commits
 do fork; conflito só pode aparecer nos dois arquivos alterados.
+
+## Botões do comercial na conversa
+
+No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
