@@ -89,6 +89,9 @@ function classifica4xx(codigo: number | null, mensagem: string): ResultadoDeEnvi
   return { tipo: "permanente", detalhe: mensagem };
 }
 
+/** (Acelera) Nomes do Tintim que `business_messaging` não aceita (invalid event name). */
+const EVENTOS_FORA_DA_CONVERSA = new Set(["Contact", "Respondidos", "Schedule"]);
+
 async function enviar(
   credencial: CredencialDeConversao,
   conversao: ConversaoOffline,
@@ -119,7 +122,10 @@ async function enviar(
   // `business_messaging` sem `ctwa_clid` é recusado, e `website` exige dados do
   // navegador que o CRM não tem — `system_generated` é a origem declarada para
   // venda registrada em sistema, casada pelo telefone em hash.
-  const comClique = conversao.cliqueDeOrigem.trim() !== "";
+  // (Acelera) Estes nomes a Meta recusa como evento de conversa: saem casados
+  // pelo telefone, mesmo quando o lead tem clique.
+  const comClique =
+    conversao.cliqueDeOrigem.trim() !== "" && !EVENTOS_FORA_DA_CONVERSA.has(nomeNoFio ?? "");
   if (!comClique && !conversao.telefone && !conversao.email) {
     return {
       tipo: "permanente",
