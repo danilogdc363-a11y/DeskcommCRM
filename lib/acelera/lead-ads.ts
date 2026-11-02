@@ -12,6 +12,9 @@ import { baseDaGraphDeAnuncio } from "@/lib/plataformas-de-anuncio/meta/graph-ba
 
 const TEMPO_LIMITE_MS = 8_000;
 const CAMPOS_DO_LEAD = "id,created_time,ad_id,adset_id,campaign_id,form_id,platform,field_data";
+// Os nomes vêm na MESMA leitura do lead, sem chamada a mais. Se o token não
+// puder ver a conta de anúncio, a Meta recusa o pedido inteiro: aí relê sem eles.
+const CAMPOS_COM_NOMES = `${CAMPOS_DO_LEAD},ad_name,adset_name,campaign_name`;
 
 type Fetch = typeof fetch;
 
@@ -44,14 +47,21 @@ export function idsDeLeadDoAviso(corpo: unknown): string[] {
 interface LeadDaMeta {
   id: string;
   ad_id?: string;
+  ad_name?: string;
   adset_id?: string;
+  adset_name?: string;
   campaign_id?: string;
+  campaign_name?: string;
   form_id?: string;
   platform?: string;
   field_data?: { name?: string; values?: unknown[] }[];
 }
 
-/** Corpo plano da captação: as respostas como vieram e a origem do anúncio. */
+/**
+ * Corpo plano da captação: as respostas como vieram e a origem do anúncio.
+ * As UTMs levam o NOME, como no lead do site (`{{campaign.name}}`), para tag e
+ * regra serem montadas pelo nome; o id fica em `meta_*_id`. Sem nome, vai o id.
+ */
 export function corpoDaCaptacao(lead: LeadDaMeta): Record<string, string> {
   const corpo: Record<string, string> = {
     external_id: `meta_lead:${lead.id}`,
@@ -59,9 +69,16 @@ export function corpoDaCaptacao(lead: LeadDaMeta): Record<string, string> {
     utm_source: lead.platform === "ig" ? "instagram" : "facebook",
     utm_medium: "lead_ads",
   };
-  if (lead.campaign_id) corpo.utm_campaign = lead.campaign_id;
-  if (lead.adset_id) corpo.utm_adset = lead.adset_id;
-  if (lead.ad_id) corpo.utm_ad = lead.ad_id;
+  const niveis = [
+    ["campaign", lead.campaign_id, lead.campaign_name, "utm_campaign"],
+    ["adset", lead.adset_id, lead.adset_name, "utm_adset"],
+    ["ad", lead.ad_id, lead.ad_name, "utm_ad"],
+  ] as const;
+  for (const [nivel, id, nome, utm] of niveis) {
+    if (id) corpo[`meta_${nivel}_id`] = id;
+    const rotulo = nome?.trim() || id;
+    if (rotulo) corpo[utm] = rotulo;
+  }
   if (lead.form_id) corpo.meta_form_id = lead.form_id;
   for (const campo of lead.field_data ?? []) {
     const valor = (campo.values ?? []).filter((v) => typeof v === "string").join(", ");
@@ -133,10 +150,13 @@ export async function importarLeadDaMeta(
   const destino = env.ACELERA_LEADS_INBOUND_URL;
   if (!token || !destino) throw new Error("lead_ads_nao_configurado");
 
-  const resposta = await buscar(`${baseDaGraphDeAnuncio()}/${leadId}?fields=${CAMPOS_DO_LEAD}`, {
-    headers: { authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
-  });
+  const ler = (campos: string) =>
+    buscar(`${baseDaGraphDeAnuncio()}/${leadId}?fields=${campos}`, {
+      headers: { authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+    });
+  let resposta = await ler(CAMPOS_COM_NOMES);
+  if (resposta.status === 400 || resposta.status === 403) resposta = await ler(CAMPOS_DO_LEAD);
   if (!resposta.ok) throw new Error(`graph_${resposta.status}`);
   const lead = (await resposta.json()) as LeadDaMeta;
 
