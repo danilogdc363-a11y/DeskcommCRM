@@ -1,7 +1,7 @@
 # ACELERA (fork) — compose do CRM comercial no EasyPanel (ver ACELERA.md §3).
 #
 # app, worker e scheduler são CONSTRUÍDOS a partir deste repositório (branch
-# acelera/1.84.0). waha, redis e srh seguem nas imagens pinadas da v1.84.0.
+# acelera/1.98.9). waha, redis e srh seguem nas imagens pinadas do upstream.
 # Sem caddy: o HTTPS e o domínio são do EasyPanel (Domínios → serviço `app`,
 # porta 3000).
 #
@@ -21,8 +21,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
-    image: acelera-crm-app:${APP_VERSION:-1.84.0-acelera}
+        APP_VERSION: ${APP_VERSION:-1.98.9-acelera}
+    image: acelera-crm-app:${APP_VERSION:-1.98.9-acelera}
     pull_policy: build
     mem_limit: 768m
     restart: unless-stopped
@@ -48,8 +48,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
       args:
-        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
-    image: acelera-crm-worker:${APP_VERSION:-1.84.0-acelera}
+        APP_VERSION: ${APP_VERSION:-1.98.9-acelera}
+    image: acelera-crm-worker:${APP_VERSION:-1.98.9-acelera}
     pull_policy: build
     mem_limit: 512m
     restart: unless-stopped
@@ -70,8 +70,8 @@ services:
       context: .
       dockerfile: Dockerfile.scheduler
       args:
-        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
-    image: acelera-crm-scheduler:${APP_VERSION:-1.84.0-acelera}
+        APP_VERSION: ${APP_VERSION:-1.98.9-acelera}
+    image: acelera-crm-scheduler:${APP_VERSION:-1.98.9-acelera}
     pull_policy: build
     restart: unless-stopped
     depends_on:
