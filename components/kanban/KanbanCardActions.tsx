@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useT } from "@/hooks/i18n/useT";
+import { useNovoClienteUrl } from "@/hooks/acelera/useNovoClienteUrl";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +55,9 @@ export function KanbanCardActions({ lead, pipelineId, etapas, onMoverPara }: Kan
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const winMutation = useWinLead(pipelineId);
+  // ACELERA (fork): lead ganho vira cliente pela tela "Novo cliente" do OS.
+  const novoClienteUrl = useNovoClienteUrl();
+  const cadastroUrl = novoClienteUrl(lead.id);
   const editMutation = useEditLead(pipelineId);
   // Excluir um card é a mesma ação da barra de seleção, com um id só: mesma
   // rota, mesmo gate de papel, mesmo evento e auditoria.
@@ -179,11 +184,31 @@ export function KanbanCardActions({ lead, pipelineId, etapas, onMoverPara }: Kan
           <DropdownMenuItem
             disabled={winMutation.isPending}
             onSelect={() => {
-              winMutation.mutate({ leadId: lead.id });
+              winMutation.mutate(
+                { leadId: lead.id },
+                {
+                  onSuccess: () => {
+                    if (!cadastroUrl) return;
+                    toast.success(t("Lead ganho"), {
+                      action: {
+                        label: t("Cadastrar cliente"),
+                        onClick: () => window.open(cadastroUrl, "_blank", "noopener,noreferrer"),
+                      },
+                    });
+                  },
+                },
+              );
             }}
           >
             {t("Marcar como ganho")}
           </DropdownMenuItem>
+          {lead.status === "won" && cadastroUrl && (
+            <DropdownMenuItem asChild>
+              <a href={cadastroUrl} target="_blank" rel="noopener noreferrer">
+                {t("Cadastrar cliente")}
+              </a>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onSelect={() => {
               setLoseOpen(true);

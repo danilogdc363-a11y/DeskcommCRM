@@ -102,6 +102,20 @@ export interface ConversaoOffline {
   identificadoresGoogle?: IdentificadoresGoogle;
   /** E.164 sem `+`, ainda EM CLARO: o hash é responsabilidade do transporte. */
   telefone: string | null;
+  /** Em claro: o hash é responsabilidade do transporte. */
+  email?: string;
+  /**
+   * (Acelera) Dados do navegador que o formulário guardou no lead. Só valem no
+   * envio sem clique, onde ajudam a Meta a reconhecer a pessoa.
+   */
+  sinaisDoNavegador?: {
+    fbc?: string;
+    fbp?: string;
+    ip?: string;
+    userAgent?: string;
+    /** O id do formulário nativo da Meta: liga direto ao anúncio. */
+    leadId?: string;
+  };
   valorCentavos: number | null;
   moeda: string;
   /**

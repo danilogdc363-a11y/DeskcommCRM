@@ -21,6 +21,8 @@ que o `next/font/google` baixava.
 | `source-serif-4-200-900-latin.woff2` | Source Serif 4 | variável 200–900 | latin | `sourceserif4/v14` |
 | `ibm-plex-sans-300-700-latin.woff2` | IBM Plex Sans | variável, usada em 300–700 | latin | `ibmplexsans/v23` |
 | `jetbrains-mono-100-800-latin.woff2` | JetBrains Mono | variável 100–800 | latin | `jetbrainsmono/v24` |
+| `inter-400-700-latin.woff2` | Inter (ACELERA, fork) | variável 400–700 | latin | `inter/v20` |
+| `anton-400-latin.woff2` | Anton (ACELERA, fork) | 400 | latin | `anton/v27` |
 
 ## Como baixar de novo
 

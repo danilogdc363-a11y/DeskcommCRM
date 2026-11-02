@@ -180,7 +180,8 @@ describe("ConversationHeader — Fechar e Arquivar por AlertDialog", () => {
     const user = userEvent.setup();
     render(<ConversationHeader conversation={conversa("open")} />);
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
 
     const dialogo = await screen.findByRole("alertdialog");
     expect(within(dialogo).getByText("Fechar esta conversa?")).toBeTruthy();
@@ -190,7 +191,8 @@ describe("ConversationHeader — Fechar e Arquivar por AlertDialog", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(closeMutate).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo2 = await screen.findByRole("alertdialog");
     await user.click(within(dialogo2).getByRole("button", { name: "Fechar" }));
 
@@ -205,7 +207,8 @@ describe("ConversationHeader — Fechar e Arquivar por AlertDialog", () => {
     const user = userEvent.setup();
     render(<ConversationHeader conversation={conversa("open")} />);
 
-    await user.click(screen.getByRole("button", { name: "Arquivar" }));
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Arquivar" }));
 
     const dialogo = await screen.findByRole("alertdialog");
     expect(within(dialogo).getByText("Arquivar esta conversa?")).toBeTruthy();
@@ -228,7 +231,8 @@ describe("ConversationHeader — Fechar e Arquivar por AlertDialog", () => {
     const user = userEvent.setup();
     render(<ConversationHeader conversation={conversa("closed")} />);
 
-    await user.click(screen.getByRole("button", { name: "Arquivar" }));
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Arquivar" }));
 
     const dialogo = await screen.findByRole("alertdialog");
     expect(within(dialogo).getByText("Arquivar esta conversa?")).toBeTruthy();

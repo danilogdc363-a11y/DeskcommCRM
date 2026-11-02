@@ -18,7 +18,7 @@ import type { CapacidadeDaOrganizacao } from "@/lib/organizacao/capacidades";
  * Doutrina: docs/doctrine/sistema-vivo.md — "por qual porta se chega até mim?"
  */
 
-export type NavGroupId = "atendimento" | "crm" | "ia" | "canais" | "analise" | "organizacao";
+export type NavGroupId = "principal" | "atendimento" | "crm" | "ia" | "canais" | "analise" | "organizacao";
 
 export interface NavGroup {
   id: NavGroupId;
@@ -88,6 +88,8 @@ export interface NavMetadata {
  * mesma conversa para a sexta tela.
  */
 export const NAV_GROUPS: NavGroup[] = [
+  // ACELERA (só do fork): as duas telas do dia a dia comercial, no topo.
+  { id: "principal", label: "Menu Principal" },
   { id: "atendimento", label: "Atendimento" },
   { id: "crm", label: "CRM", hub: { href: "/app/crm", label: "Ver tudo em CRM" } },
   { id: "ia", label: "Agente de IA", hub: { href: "/app/ai", label: "Ver tudo em IA" } },
@@ -169,10 +171,10 @@ export const NAV_CATALOG = [
   // ---- Atendimento — onde o operador passa o dia ----
   {
     href: "/app/inbox",
-    label: "Inbox",
+    label: "WhatsApp",
     description: "As conversas de WhatsApp, com você e a IA atendendo lado a lado.",
     icon: "Inbox",
-    group: "atendimento",
+    group: "principal",
     sidebar: true,
     // Quantas conversas a IA passou para a equipe e esperam uma pessoa (aba Fila).
     contador: "fila",
@@ -235,6 +237,17 @@ export const NAV_CATALOG = [
     icon: "Kanban",
     group: "crm",
     section: "O dia a dia da venda",
+    sidebar: true,
+  },
+  {
+    // ACELERA (só do fork): atalho direto para o funil "Orçamentos" da
+    // organização Acelera Delivery. O id é desse funil; em outra organização
+    // a página responde "não encontrado" — o fork só atende a Acelera.
+    href: "/app/pipelines/b90d61dc-a9af-4b1c-a8f2-994823bc34bf",
+    label: "CRM",
+    description: "Atalho para o funil de Orçamentos.",
+    icon: "Funnel",
+    group: "principal",
     sidebar: true,
   },
   {

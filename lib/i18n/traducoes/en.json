@@ -3554,6 +3554,7 @@
   "Neste gatilho a automação não pode atribuir responsável nem mover o lead: a própria mudança dispararia a automação de novo, sem fim.": "With this trigger the automation can't assign an owner or move the lead: the change itself would fire the automation again, endlessly.",
   "Quando chegar mensagem no WhatsApp": "When a WhatsApp message arrives",
   "Quando uma mensagem não for entregue": "When a message isn't delivered",
+  "Quando a equipe enviar mensagem no WhatsApp": "When the team sends a WhatsApp message",
   "Código do erro": "Error code",
   "Janela de 24 horas fechada: texto livre é recusado pela plataforma (131047). Envie um modelo aprovado ou aguarde o cliente escrever.": "24-hour window closed: free text is rejected by the platform (131047). Send an approved template or wait for the client to write.",
   "Quando um lead ganhar uma tag": "When a lead gets a tag",

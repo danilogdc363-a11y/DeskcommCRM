@@ -190,6 +190,20 @@ describe("negócio de anúncio da Meta entra numa etapa com regra", () => {
     expect(evento?.user_data.ctwa_clid).toBe("ctwa-abc");
   });
 
+  it("lead que já nasce na etapa envia o evento dela, uma vez só", async () => {
+    base(daPaginaComUtmMeta);
+    const spy = aceito();
+    const nasceu = () =>
+      mudouDeEtapa({ event_type: "lead.created", payload: { stage_id: ORCAMENTO } });
+
+    const r = await conversaoDeEtapaMetaHandler.handle(nasceu());
+    await conversaoDeEtapaMetaHandler.handle(mudouDeEtapa());
+
+    expect(r.status).toBe("ok");
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(enviados(spy)[0]?.event_name).toBe("InitiateCheckout");
+  });
+
   it("sair e voltar à etapa não envia de novo", async () => {
     base(daPaginaComUtmMeta);
     const spy = aceito();

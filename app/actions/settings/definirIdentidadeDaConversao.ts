@@ -56,6 +56,7 @@ const idMeta = z
 const entradaSchema = z.object({
   page_id: idMeta,
   whatsapp_business_account_id: idMeta,
+  reportar_sem_origem: z.boolean().optional(),
 });
 
 export type IdentidadeDaConversaoInput = z.infer<typeof entradaSchema>;
@@ -94,6 +95,9 @@ export async function definirIdentidadeDaConversao(
       ...conversions,
       meta_page_id: pageId,
       meta_whatsapp_business_account_id: wabaId,
+      ...(entrada.data.reportar_sem_origem === undefined
+        ? {}
+        : { meta_report_without_origin: entrada.data.reportar_sem_origem }),
     },
   };
 
@@ -106,7 +110,11 @@ export async function definirIdentidadeDaConversao(
     organizationId: org.orgId,
     resourceType: "organization",
     resourceId: org.orgId,
-    metadata: { page_id: pageId, whatsapp_business_account_id: wabaId },
+    metadata: {
+      page_id: pageId,
+      whatsapp_business_account_id: wabaId,
+      reportar_sem_origem: entrada.data.reportar_sem_origem,
+    },
   });
 
   revalidatePath("/app/settings/conversoes");

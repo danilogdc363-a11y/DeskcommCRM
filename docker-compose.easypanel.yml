@@ -1,0 +1,129 @@
+# ACELERA (fork) — compose do CRM comercial no EasyPanel (ver ACELERA.md §3).
+#
+# app, worker e scheduler são CONSTRUÍDOS a partir deste repositório (branch
+# acelera/1.84.0). waha, redis e srh seguem nas imagens pinadas da v1.84.0.
+# Sem caddy: o HTTPS e o domínio são do EasyPanel (Domínios → serviço `app`,
+# porta 3000).
+#
+# Variáveis: as mesmas do .env de produção de hoje (aba Ambiente do EasyPanel),
+# mais as ACELERA_* e APP_* do ACELERA.md. NEXT_PUBLIC_* entram em RUNTIME, não
+# no build: a imagem sai com placeholders (Dockerfile) e lê o .env ao subir.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
+    image: acelera-crm-app:${APP_VERSION:-1.84.0-acelera}
+    pull_policy: build
+    mem_limit: 768m
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SUPABASE_DB_ADMIN_URL: ""
+      EVENT_LOG_WORKER_DRAINS: ${EVENT_LOG_WORKER_DRAINS:-true}
+    depends_on:
+      srh:
+        condition: service_started
+      waha:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    logging: *default-logging
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+      args:
+        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
+    image: acelera-crm-worker:${APP_VERSION:-1.84.0-acelera}
+    pull_policy: build
+    mem_limit: 512m
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      WAHA_API_BASE_URL: http://waha:3000
+      SUPABASE_DB_ADMIN_URL: ""
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8787/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *default-logging
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+      args:
+        APP_VERSION: ${APP_VERSION:-1.84.0-acelera}
+    image: acelera-crm-scheduler:${APP_VERSION:-1.84.0-acelera}
+    pull_policy: build
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      TZ: UTC
+      INTERNAL_SECRET: ${INTERNAL_SECRET}
+    logging: *default-logging
+
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest-2026.7.2}
+    mem_limit: 1280m
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: "sha512:${WAHA_API_KEY_SHA512}"
+      WHATSAPP_HOOK_URL: http://app:3000/api/v1/webhooks/waha
+      WHATSAPP_HOOK_EVENTS: "message.any,message.ack,message.edited,message.revoked,session.status,state.change"
+      WHATSAPP_HOOK_HMAC_KEY: ${WAHA_HMAC_SECRET}
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-NOWEB}
+      WAHA_DASHBOARD_ENABLED: "false"
+      WHATSAPP_RESTART_ALL_SESSIONS: "${WHATSAPP_RESTART_ALL_SESSIONS:-True}"
+    volumes:
+      - waha-data:/app/.sessions
+      - waha-media:/app/.media
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    logging: *default-logging
+
+  srh:
+    image: hiett/serverless-redis-http@sha256:5b0bb9239fce53abf87b2018a7a0deb9ec7bd900c5360738fe5fbeeb426f9150
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${SRH_TOKEN}
+      SRH_CONNECTION_STRING: "redis://redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  # ⚠️ Use os MESMOS nomes de volume do compose atual: volume novo = WhatsApp
+  # precisa ser pareado de novo (QR).
+  waha-data:
+  waha-media:

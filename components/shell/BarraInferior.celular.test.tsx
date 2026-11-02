@@ -85,7 +85,7 @@ describe("a barra de abas do celular", () => {
     estado.role = "admin";
     estado.caminho = "/app/inbox/abc-123";
     montar();
-    const inbox = screen.getByRole("link", { name: /Inbox/ });
+    const inbox = screen.getByRole("link", { name: /WhatsApp/ });
     // Igualdade de caminho apagaria a barra inteira justamente na tela de
     // conversa, que é onde se passa mais tempo no celular.
     expect(inbox.getAttribute("aria-current")).toBe("page");

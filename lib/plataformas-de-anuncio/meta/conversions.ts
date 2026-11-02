@@ -155,11 +155,11 @@ async function enviar(
   // e ele descreve exatamente este caso.
   const identidadeDoNavegador = conversao.identidadeDoNavegador ?? null;
   const temIdentidadeDaMeta = Boolean(identidadeDoNavegador?.fbc || identidadeDoNavegador?.fbp);
-  if (!comClique && !temIdentidadeDaMeta && !conversao.telefone) {
+  if (!comClique && !temIdentidadeDaMeta && !conversao.telefone && !conversao.email) {
     return {
       tipo: "permanente",
       detalhe:
-        "Sem o clique do anúncio e sem telefone no contato, a Meta não tem como reconhecer o cliente.",
+        "Sem o clique do anúncio e sem telefone ou e-mail no contato, a Meta não tem como reconhecer o cliente.",
     };
   }
 
@@ -204,6 +204,15 @@ async function enviar(
   // Array de propósito: o formato aceita múltiplos valores por campo, e mandar
   // string crua onde ele espera lista é aceito com aviso e ignorado no match.
   if (conversao.telefone) userData.ph = [hash(conversao.telefone)];
+  if (!comClique) {
+    if (conversao.email) userData.em = [hash(conversao.email.toLowerCase())];
+    const sinais = conversao.sinaisDoNavegador;
+    if (sinais?.fbc) userData.fbc = sinais.fbc;
+    if (sinais?.fbp) userData.fbp = sinais.fbp;
+    if (sinais?.ip) userData.client_ip_address = sinais.ip;
+    if (sinais?.userAgent) userData.client_user_agent = sinais.userAgent;
+    if (sinais?.leadId) userData.lead_id = sinais.leadId;
+  }
 
   const customData: Record<string, unknown> = {};
   if (ehCompra && conversao.valorCentavos !== null) {

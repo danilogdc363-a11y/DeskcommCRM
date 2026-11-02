@@ -109,6 +109,50 @@ async function resolveContactsAuth(req: NextRequest, requestId: string): Promise
   };
 }
 
+/**
+ * ACELERA (fork): o OS cria o contato do lead de formulário de servidor para
+ * servidor. Bearer com `mcp:write` e papel agent+; a org vem da linha do token.
+ */
+async function resolveContactsWriteAuth(req: NextRequest, requestId: string): Promise<ContactsAuth> {
+  const authHeader = req.headers.get("authorization");
+  if (extractBearer(authHeader)) {
+    try {
+      const auth = await validateBearerToken(authHeader);
+      ensureScope(auth.scopes, "mcp:write");
+      ensureRole(auth.role, "agent");
+      return {
+        ok: true,
+        organizationId: auth.organizationId,
+        actor: auth.actor,
+        supabase: createAdminClient(),
+      };
+    } catch (err) {
+      if (err instanceof McpAuthError) {
+        return {
+          ok: false,
+          response: fail(
+            err.httpStatus === 401 ? "unauthenticated" : "forbidden_role",
+            err.message,
+            err.httpStatus,
+            { requestId },
+          ),
+        };
+      }
+      throw err;
+    }
+  }
+
+  const authz = await requireRole("agent", { requestId, resource: "contacts" });
+  if (!authz.ok) return { ok: false, response: authz.response };
+  return {
+    ok: true,
+    organizationId: authz.org.orgId,
+    actor: { type: "user", id: authz.user.id },
+    supabase: await createClient(),
+    idioma: authz.user.idioma,
+  };
+}
+
 export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
 
@@ -164,17 +208,15 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (supportDenied) return supportDenied;
 
   const requestId = randomUUID();
-  const supabase = await createClient();
   // spec 13 §4: escrita é agent+ (viewer é read-only).
-  const authz = await requireRole("agent", { requestId, resource: "contacts" });
-  if (!authz.ok) return authz.response;
-  const user = authz.user;
-  const activeOrg = authz.org;
+  const auth = await resolveContactsWriteAuth(req, requestId);
+  if (!auth.ok) return auth.response;
+  const { organizationId, actor, supabase, idioma } = auth;
 
   // O documento do titular é validado pela régua do PAÍS da organização (issue
   // #1033): quem decide é a coluna `organizations.country`, nunca o corpo da
   // requisição — mesma doutrina da moeda em `lib/catalogo/moeda-da-org.ts`.
-  const perfil = await perfilDaOrganizacao(supabase, activeOrg.orgId);
+  const perfil = await perfilDaOrganizacao(supabase, organizationId);
 
   let input;
   try {
@@ -193,10 +235,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     const result = await createContactHandler(
       supabase,
       {
-        organization_id: activeOrg.orgId,
-        actor: { type: "user", id: user.id },
+        organization_id: organizationId,
+        actor,
         requestId,
-        idioma: user.idioma,
+        idioma,
       },
       input as ContactCreate,
     );

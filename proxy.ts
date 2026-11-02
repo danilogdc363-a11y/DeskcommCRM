@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { fetchDoServidor } from "@/lib/supabase/fetch-do-servidor";
 import { urlDoSupabaseNoServidor } from "@/lib/supabase/url-do-servidor";
 import { isPublicPath } from "@/lib/auth/public-paths";
+import { configAcelera, destinoSemLoginProprio } from "@/lib/acelera-sso/config";
 import { CABECALHO_SEM_CSS, PARAMETRO_SEM_CSS } from "@/lib/branding/sem-css-personalizado";
 import {
   verifyImpersonateCookieEdge,
@@ -53,6 +54,11 @@ export async function proxy(request: NextRequest) {
   // documentation of the intended deploy topology.
   const host = request.headers.get("host") ?? "";
   const isAdminSurface = host.startsWith("admin.") || pathname.startsWith("/admin");
+
+  // ACELERA (fork): com ACELERA_SSO_ONLY=true a tela de login própria some.
+  const acelera = configAcelera();
+  const semLoginProprio = destinoSemLoginProprio(pathname, request.nextUrl.searchParams, acelera);
+  if (semLoginProprio) return NextResponse.redirect(semLoginProprio);
 
   if (isPublicPath(pathname)) {
     return response;
@@ -116,6 +122,9 @@ export async function proxy(request: NextRequest) {
           },
         },
       );
+    }
+    if (acelera.soSso && acelera.urlDeLoginDoOs) {
+      return NextResponse.redirect(acelera.urlDeLoginDoOs);
     }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname + search);

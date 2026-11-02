@@ -15,6 +15,7 @@ import { useLocaleDeData } from "@/hooks/i18n/useLocaleDeData";
 import type { Locale } from "date-fns";
 import Link from "next/link";
 import { useT } from "@/hooks/i18n/useT";
+import { useNovoClienteUrl } from "@/hooks/acelera/useNovoClienteUrl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { ChipDeEtiqueta } from "@/components/tags/ChipDeEtiqueta";
@@ -428,6 +429,9 @@ function InboxLeadEditor({
     rotuloDaRecorrencia(l.recurring_value_cents, l.recurring_period, l.currency ?? "BRL", {
       sufixo: t("/mês"),
     });
+  // ACELERA (fork): lead ganho vira cliente pela tela "Novo cliente" do OS.
+  const novoClienteUrl = useNovoClienteUrl();
+  const cadastroUrl = ativo.status === "won" ? novoClienteUrl(ativo.id) : null;
 
   return (
     <div className="mt-2 space-y-2">
@@ -482,6 +486,16 @@ function InboxLeadEditor({
             {ondeEstaOLead(ativo)}
           </p>
         </div>
+      )}
+      {cadastroUrl && (
+        <a
+          href={cadastroUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block text-xs font-medium text-primary underline"
+        >
+          {t("Cadastrar cliente")}
+        </a>
       )}
       <EtapaDoNegocio key={`etapa-${ativo.id}`} lead={ativo} onMovido={onSalvo} />
       {/*

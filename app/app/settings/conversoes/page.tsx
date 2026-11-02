@@ -78,7 +78,7 @@ import { VendaPeloCanal } from "./_vendaPeloCanal";
 import { LeadSubmittedCausal } from "./_leadSubmittedCausal";
 import { ativacaoLeadMeta } from "@/lib/conversoes/ativacao-lead-meta";
 import { vendaPeloCanalLigada } from "@/lib/conversoes/venda-pelo-canal";
-import { identidadeDaMeta } from "@/lib/plataformas-de-anuncio/meta/identidade";
+import { identidadeDaMeta, reportaSemOrigem } from "@/lib/plataformas-de-anuncio/meta/identidade";
 import { RegrasDeConversaoGoogle, type EtapaAberta } from "./_regrasGoogle";
 import { listarRegrasGoogle } from "@/lib/conversoes/regras-google";
 import { RegrasDeConversaoMeta } from "./_regrasMeta";
@@ -381,6 +381,7 @@ export default async function ConversoesPage({
           <VendaPeloCanal ligada={vendaPeloCanal} idioma={idioma} />
           {estado.conectada && (
             <IdentidadeDaConversao
+              reportarSemOrigem={reportaSemOrigem(linhaDaOrganizacao?.settings)}
               pageId={identidadeMeta.pageId}
               whatsappBusinessAccountId={identidadeMeta.whatsappBusinessAccountId}
               idioma={idioma}

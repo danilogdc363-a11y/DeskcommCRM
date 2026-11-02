@@ -67,6 +67,15 @@ export const ENTIDADE_ESPERADA_POR_GATILHO = {
   // sem ele, a linha virava `failed` sozinha e o sistema do lado de fora
   // registrava "mensagem enviada" para uma mensagem que nunca chegou.
   "message.failed": "message",
+  // Acelera: a fala HUMANA da equipe (Inbox do CRM ou o celular conectado) —
+  // o mesmo recorte da 0686 (`sent_via` user/crm/external_device, sem reação,
+  // sistema, grupo nem histórico importado). Nasce da migration
+  // `acelera_0001_mensagem_da_equipe_vira_gatilho`, e não do `message.sent`,
+  // porque aquele é registro (nasce `done`) e cobre também IA e automação: uma
+  // regra "mensagem enviada contém X" casaria com o próprio texto que outra
+  // automação mandou. Uso: a frase-código que o vendedor envia move o card
+  // (ex.: "Parabéns pela sua decisão" → Fechou), como no Tintim.
+  "message.team_sent": "message",
   "lead.tag_added": "crm_lead",
   "contact.tag_added": "contact",
   // O contato GANHOU telefone (#2812): a ficha que estava sem número passa a ter

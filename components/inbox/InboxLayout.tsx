@@ -703,6 +703,16 @@ export function InboxLayout({
    */
   const gradeRef = useRef<HTMLDivElement | null>(null);
   const [faixa, setFaixa] = useState<Faixa | null>(null);
+  // ACELERA (fork): o clique no nome/foto do cabeçalho abre e fecha a ficha,
+  // como o "Dados do contato" do WhatsApp Web. No `xl` usa o recolher do
+  // produto (#3004); abaixo dele a ficha abre em gaveta (Sheet).
+  const alternarFichaPeloCabecalho = useCallback(() => {
+    if (window.innerWidth < 1280) {
+      setFichaAberta(true);
+      return;
+    }
+    alternarPainelDoContato();
+  }, [alternarPainelDoContato]);
   const [larguras, setLarguras] = useState<LargurasDoInbox | null>(null);
   // Espelho do estado para o fim do arraste (pointerup) persistir o valor mais
   // recente sem depender de um render que ainda não aconteceu.
@@ -897,7 +907,7 @@ export function InboxLayout({
     <div
       ref={gradeRef}
       className={cn(
-        "grid relative h-[calc(100dvh-var(--faixas-de-cima,0px)-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full grid-cols-1 md:grid-cols-[300px_1fr]",
+        "wa-inbox grid relative h-[calc(100dvh-var(--faixas-de-cima,0px)-3.5rem-var(--space-6)-max(var(--space-6),var(--rodape-ocupado,0px)))] w-full grid-cols-1 md:grid-cols-[300px_1fr]",
         // Recolhido (issue #3004), a terceira trilha vira o trilho estreito do
         // botão de expandir e a conversa fica com o que era da ficha. Duas
         // listas em vez de uma classe com valor em variável: o Tailwind precisa
@@ -946,7 +956,7 @@ export function InboxLayout({
       <div
         ref={listaRef}
         className={cn(
-          "h-full min-h-0 flex-col border-r border-border md:flex",
+          "wa-lista h-full min-h-0 flex-col border-r border-border md:flex",
           colunas.lista,
         )}
       >
@@ -1004,7 +1014,7 @@ export function InboxLayout({
         ref={conversaRef}
         data-teclado-aberto={tecladoAberto ? "" : undefined}
         className={cn(
-          "h-full min-h-0 min-w-0 flex-col md:flex group/conversa",
+          "wa-conversa h-full min-h-0 min-w-0 flex-col md:flex group/conversa",
           colunas.conversa,
         )}
       >
@@ -1060,6 +1070,8 @@ export function InboxLayout({
               }
               buscaAberta={buscaAberta}
               botaoBuscaRef={botaoBuscaRef}
+              onAlternarFicha={alternarFichaPeloCabecalho}
+              fichaAberta={!painelRecolhido || fichaAberta}
             />
             {buscaAberta && (
               <div className="flex items-center gap-2 border-b border-border px-4 py-1.5">
@@ -1087,7 +1099,7 @@ export function InboxLayout({
                 </Button>
               </div>
             )}
-            <div className="min-h-0 flex-1 overflow-hidden">
+            <div className="wa-fundo min-h-0 flex-1 overflow-hidden">
               <ChatThread
                 conversationId={selectedConversation.id}
                 searchTerm={buscaAberta ? busca.termo : ""}
@@ -1171,7 +1183,7 @@ export function InboxLayout({
             {t("Conversa não encontrada ou fora do seu acesso.")}
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+          <div className="wa-vazio flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <ChatCircle size={36} weight="thin" className="text-text-subtle" aria-hidden />
             <p className="text-sm font-medium text-text-muted">{t("Selecione uma conversa")}</p>
             <p className="text-xs text-text-muted">{t("Ou navegue com J e K")}</p>
@@ -1179,7 +1191,7 @@ export function InboxLayout({
         )}
       </div>
 
-      <div className="hidden h-full min-h-0 min-w-0 xl:block">
+      <div className="wa-ficha hidden h-full min-h-0 min-w-0 xl:block">
         <CRMSidePanel
           conversation={selectedConversation}
           recolhido={painelRecolhido}

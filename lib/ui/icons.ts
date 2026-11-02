@@ -126,6 +126,7 @@ export {
   DotsSixVertical as DragHandle,
   // misc
   DotsThree,
+  DotsThreeVertical,
   CaretDown,
   CaretUp,
   CaretDoubleLeft,

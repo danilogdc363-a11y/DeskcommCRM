@@ -28,6 +28,8 @@ import { Providers } from "./providers";
 import { PublicEnvScript } from "./public-env-script";
 import { EstiloDoTemaDaPlataforma } from "./tema-da-plataforma";
 import "./globals.css";
+import "./acelera-whatsapp.css";
+import "./acelera-tema.css";
 
 // Fontes versionadas em app/fonts/ (origem e licença no README de lá): o
 // next/font/google as baixava durante o build, e o build caía quando o Google
@@ -48,6 +50,24 @@ const atkinson = localFont({
   ],
   display: "swap",
   variable: "--font-atkinson",
+  // ACELERA (fork): a Atkinson fica no lugar para não mexer no upstream, mas ninguém
+  // mais a usa (`acelera-tema.css`); sem isto o navegador baixaria à toa.
+  preload: false,
+});
+
+// ACELERA (fork): as fontes do design da Acelera, lidas por `acelera-tema.css`.
+const aceleraSans = localFont({
+  src: "./fonts/inter-400-700-latin.woff2",
+  weight: "400 700",
+  display: "swap",
+  variable: "--font-acelera-sans",
+});
+
+const aceleraDisplay = localFont({
+  src: "./fonts/anton-400-latin.woff2",
+  weight: "400",
+  display: "swap",
+  variable: "--font-acelera-display",
 });
 
 const plexMono = localFont({
@@ -337,7 +357,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="pt-BR"
       data-theme="light"
       suppressHydrationWarning
-      className={`${atkinson.variable} ${plexMono.variable}`}
+      className={`${atkinson.variable} ${plexMono.variable} ${aceleraSans.variable} ${aceleraDisplay.variable}`}
     >
       <head>
         {/* Primeiro de tudo: a cor da instalação, antes do CSS e do script de tema. */}

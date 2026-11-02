@@ -66,6 +66,10 @@ vi.mock("@/hooks/inbox/useAssignableMembers", () => ({
 vi.mock("@/components/kanban/OwnerBadge", () => ({ OwnerBadge: () => null }));
 vi.mock("@/components/inbox/ReassignDialog", () => ({ ReassignDialog: () => null }));
 vi.mock("@/components/inbox/SnoozeButton", () => ({ SnoozeButton: () => null }));
+vi.mock("@/components/inbox/AcoesComerciaisDaConversa", () => ({
+  DialogosComerciais: () => null,
+  MensagensAgendadasDaConversa: () => null,
+}));
 vi.mock("@/components/inbox/JanelaSelo", () => ({ JanelaSelo: () => null }));
 // O atendimento conjunto (#2542) desenha no cabeçalho e lê react-query (exigiria
 // QueryClientProvider). Este arquivo mede o gate do BOTÃO PESSOAL; a lista de

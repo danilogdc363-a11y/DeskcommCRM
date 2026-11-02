@@ -59,6 +59,9 @@ CRONS="
 * * * * *|45|api/v1/cron/event-log-drain
 * * * * *|25|api/v1/cron/routing-worker
 */5 * * * *|25|api/v1/cron/recover-stuck-messages
+# ACELERA: mensagem agendada por conversa. Minuto a minuto porque o horario foi
+# escolhido por uma pessoa. Barato: consulta indice parcial e sai se nada venceu.
+* * * * *|55|api/v1/cron/mensagens-agendadas
 * * * * *|25|api/v1/cron/proposta-travada
 * * * * *|45|api/v1/cron/webhook-replay
 */5 * * * *|25|api/v1/cron/storage-redaction?limit=50
