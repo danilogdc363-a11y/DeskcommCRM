@@ -7,6 +7,7 @@
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { logger } from "@/lib/logger";
 import { baseDaGraphDeAnuncio } from "@/lib/plataformas-de-anuncio/meta/graph-base";
 
 const TEMPO_LIMITE_MS = 8_000;
@@ -69,6 +70,58 @@ export function corpoDaCaptacao(lead: LeadDaMeta): Record<string, string> {
   return corpo;
 }
 
+const CAMPOS_DE_CONTATO = new Set(["full_name", "phone_number"]);
+
+/**
+ * Pede ao Acelera OS o aviso no WhatsApp do comercial. O lead já está gravado:
+ * falha aqui só vira log, para a Meta não reenviar e duplicar nada.
+ */
+export async function avisarComercial(
+  lead: LeadDaMeta,
+  deps: { fetch?: Fetch; env?: Record<string, string | undefined>; agora?: number } = {},
+): Promise<void> {
+  const env = deps.env ?? process.env;
+  const url = env.ACELERA_LEADS_AVISO_URL;
+  const segredo = env.ACELERA_LEADS_AVISO_SECRET;
+  if (!url || !segredo) return;
+  const valor = (nome: string) => {
+    const campo = lead.field_data?.find((c) => c.name === nome);
+    return (campo?.values ?? []).filter((v) => typeof v === "string").join(", ") || null;
+  };
+  const respostas: Record<string, string> = {};
+  for (const campo of lead.field_data ?? []) {
+    const resposta = campo.name ? valor(campo.name) : null;
+    if (campo.name && resposta && !CAMPOS_DE_CONTATO.has(campo.name)) respostas[campo.name] = resposta;
+  }
+  const corpo = JSON.stringify({
+    nome: valor("full_name"),
+    telefone: valor("phone_number"),
+    plataforma: lead.platform === "ig" ? "instagram" : "facebook",
+    respostas,
+  });
+  const carimbo = Math.floor((deps.agora ?? Date.now()) / 1000);
+  const assinatura = createHmac("sha256", segredo)
+    .update(`${carimbo}.${lead.id}.${corpo}`)
+    .digest("hex");
+  try {
+    const resposta = await (deps.fetch ?? fetch)(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-webhook-delivery": lead.id,
+        "x-webhook-signature": `t=${carimbo},v1=${assinatura}`,
+      },
+      body: corpo,
+      signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+    });
+    if (!resposta.ok) logger.error("[acelera.lead-ads] aviso recusado", { status: resposta.status });
+  } catch (erro) {
+    logger.error("[acelera.lead-ads] aviso falhou", {
+      motivo: erro instanceof Error ? erro.message : "desconhecido",
+    });
+  }
+}
+
 /** Busca o lead na Graph e entrega à captação. Lança para a Meta reenviar o aviso. */
 export async function importarLeadDaMeta(
   leadId: string,
@@ -96,4 +149,5 @@ export async function importarLeadDaMeta(
   // 4xx é recusa da captação (ex.: sem telefone) e fica em "Leads recebidos":
   // reenviar não muda o desfecho.
   if (entrega.status >= 500 || entrega.status === 429) throw new Error(`captacao_${entrega.status}`);
+  if (entrega.ok) await avisarComercial(lead, deps);
 }

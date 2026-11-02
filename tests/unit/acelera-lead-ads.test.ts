@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   assinaturaDaMetaConfere,
+  avisarComercial,
   corpoDaCaptacao,
   idsDeLeadDoAviso,
   importarLeadDaMeta,
@@ -21,6 +22,36 @@ const lead = {
 };
 
 describe("lead ads", () => {
+  const envAviso = { ACELERA_LEADS_AVISO_URL: "https://os/aviso", ACELERA_LEADS_AVISO_SECRET: "s" };
+
+  it("avisa o comercial com assinatura e separa as respostas do contato", async () => {
+    const fetch = vi.fn(async () => new Response("{}"));
+    await avisarComercial(
+      { ...lead, field_data: [...lead.field_data, { name: "faturamento", values: ["alto"] }] },
+      { fetch: fetch as never, env: envAviso, agora: 1_000_000 },
+    );
+    const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1];
+    const corpo = init.body as string;
+    expect(JSON.parse(corpo)).toEqual({
+      nome: "Ana",
+      telefone: "+5511999999999",
+      plataforma: "instagram",
+      respostas: { faturamento: "alto" },
+    });
+    const v1 = createHmac("sha256", "s").update(`1000.123.${corpo}`).digest("hex");
+    expect((init.headers as Record<string, string>)["x-webhook-signature"]).toBe(`t=1000,v1=${v1}`);
+  });
+
+  it("falha do aviso não lança, e sem configuração não chama", async () => {
+    const falha = vi.fn(async () => {
+      throw new Error("rede");
+    });
+    await expect(avisarComercial(lead, { fetch: falha as never, env: envAviso })).resolves.toBeUndefined();
+    const nada = vi.fn();
+    await avisarComercial(lead, { fetch: nada as never, env: {} });
+    expect(nada).not.toHaveBeenCalled();
+  });
+
   it("confere a assinatura da Meta", () => {
     const sig = `sha256=${createHmac("sha256", "s").update("{}").digest("hex")}`;
     expect(assinaturaDaMetaConfere("{}", sig, "s")).toBe(true);
