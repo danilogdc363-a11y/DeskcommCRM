@@ -31,6 +31,7 @@ const CHAMADORES: Record<string, string> = {
     "propaga ao chamador; o inbound-turn engole e só perde o aviso — nada gravado, sem retentativa, e o turno da org parada já é negado antes",
   "lib/ai/runtime/finalize.ts": "devolve null ao turno; o gate já nega a org parada antes de existir turno",
   "lib/automation/actions/send-ai-message.ts": "o desfecho vira failed na execução da regra; registro do instante, sem retentativa",
+  "app/api/v1/cron/mensagens-agendadas/route.ts": "a varredura já exclui org parada; na corrida, a linha vira falhou com o motivo e não é retentada",
   "lib/automation/actions/send-whatsapp.ts": "o desfecho vira failed na execução da regra; registro do instante, sem retentativa",
   "lib/campanhas/acoes.ts": "ação disparada da tela: o erro sobe para quem clicou, sem estado gravado",
   "lib/mcp/tools/messages.ts": "ferramenta MCP: o erro sobe ao cliente; o token da org parada já é recusado antes",
