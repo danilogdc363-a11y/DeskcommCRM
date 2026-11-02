@@ -26,6 +26,14 @@
   --wa-pilula-ativa-texto: #008069;
   --wa-campo: #ffffff;
   --wa-check-lido: #53bdeb;
+  /* O acento do produto (laranja) vira o verde do WhatsApp aqui dentro: botões
+     como Assumir, a aba Responder e o microfone pintam com `bg-accent`. Variável
+     herda pela árvore, então declarar no `.wa-inbox` vence a do `:root`. */
+  --color-accent: var(--wa-verde);
+  --color-accent-500: var(--wa-verde);
+  --color-accent-fg: #ffffff;
+  --color-accent-hover: #008069;
+  --color-accent-soft: var(--wa-pilula-ativa);
   background: var(--wa-painel);
   color: var(--wa-texto);
   font-family: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell,
@@ -50,6 +58,9 @@
   --wa-pilula-ativa: #0a332c;
   --wa-pilula-ativa-texto: #00a884;
   --wa-campo: #2a3942;
+  /* No escuro o WhatsApp põe texto escuro sobre o verde. */
+  --color-accent-fg: #111b21;
+  --color-accent-hover: #06cf9c;
 }
 
 .wa-inbox .border-border,
