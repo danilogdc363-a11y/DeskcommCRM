@@ -93,8 +93,13 @@ O CRM já tem white-label nativo (`docs/white-label.md`). **Nenhuma tela foi edi
 - `.env` (semente): `APP_NAME=Acelera CRM`, `APP_ACCENT_HEX=#FF7300`. Só vale na primeira
   leitura — depois **o banco manda**. Numa instalação que já existe, aplique em **`/admin/marca`**.
 - Logo e ícone: a tela aceita **PNG ou JPG até 512 KB** (SVG é recusado). Originais vetoriais em
-  `acelera/marca/`. Exportar: logo `acelera/marca/acelera-horizontal.svg` → PNG ~96 px de altura, transparente;
-  ícone `acelera/marca/acelera-icone.svg` → PNG 512×512.
+  `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`logo-claro.png`,
+  `logo-escuro.png`, `icone.png`).
+- **Design igual ao do PXD Hub:** `app/acelera-tema.css` traz cores, cantos, sombra de cartão e a
+  tipografia do painel iFood (Inter no texto, Anton em caixa alta no `h1`). As fontes estão em
+  `app/fonts/` e são ligadas em `app/layout.tsx`. O Inbox segue com o tema próprio de WhatsApp
+  (`app/acelera-whatsapp.css`). Três testes de navegador do upstream ainda procuram "Atkinson" no
+  botão (`aviso-de-caso-no-whatsapp`, `conversa-do-caso`, `passagem-com-contexto`): falham por isso.
 - E-mails de acesso (GoTrue) leem o `.env`: depois de mudar `APP_ACCENT_HEX`, rodar
   `bash hostgator-setup-kit/marca-emails.sh` (ou ajustar os templates no Supabase do CRM).
 

@@ -1,12 +1,16 @@
-/* ACELERA — CRM NA PALETA DO ACELERA OS.
+/* ACELERA — CRM NO DESIGN DO PAINEL IFOOD (PXD HUB).
  *
- * Só do fork (ver ACELERA.md). Copia os neutros do Acelera OS
- * (repo danilogdc363-a11y/CRM, app/globals.css) para os tokens `--color-*`
- * deste produto, e fixa o laranja da marca (#FF7300, guia de marca da
- * Acelera) como acento:
- *   - escuro: cinzas do VS Code dark, sem preto puro (#1F1F1F fundo,
- *     #252526 superfícies, #2D2D2D elevado, #3C3C3C bordas);
- *   - claro: off-white levemente quente, nada de #FFFFFF chapado.
+ * Só do fork (ver ACELERA.md). Os valores são os do PXD Hub
+ * (pxd.aceleradelivery.com), que é a referência do design da Acelera:
+ *   - cinza neutro, sem tom amarelado nem preto puro: claro com fundo #F2F2F2 e
+ *     cartão branco; escuro com fundo #141414 e cartão #1F1F1F;
+ *   - laranja da marca (#FF7300) como acento, em rampa de matiz único;
+ *   - Inter no texto, Anton em caixa alta no título da página;
+ *   - cantos de 6/10/14 px e sombra de cartão leve.
+ *
+ * A rampa `--color-accent-*` NÃO inverte no escuro, ao contrário da do Hub: aqui
+ * as telas já contam com os mesmos degraus nos dois temas (`dark:bg-accent-900`,
+ * bloco escuro do globals.css). Inverter trocaria essas combinações de lugar.
  *
  * Especificidade de propósito: `:root:root:root` (0,3,0) vence o
  * `:root:root` da marca injetada (`lib/branding/css.ts`), e a versão escura
@@ -17,52 +21,121 @@
 
 :root:root:root {
   color-scheme: light;
-  --color-bg: oklch(0.94 0.005 80);
-  --color-surface: oklch(0.975 0.004 80);
-  --color-surface-elevated: oklch(0.91 0.005 80);
-  --color-text: oklch(0.27 0.005 80);
-  --color-text-muted: oklch(0.48 0.005 80);
-  --color-text-subtle: oklch(0.58 0.005 80);
-  --color-border: oklch(0.86 0.006 80);
-  --color-border-strong: oklch(0.78 0.006 80);
+
+  /* O body e o `font-sans` leem `--font-atkinson`; trocar aqui vale para todos. */
+  --font-atkinson: var(--font-acelera-sans);
+
+  --color-bg: #f2f2f2;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ededed;
+  --color-overlay: rgba(0, 0, 0, 0.42);
+  --color-text: #2e2e2e;
+  --color-text-muted: #6b6b6b;
+  --color-text-subtle: #767676;
+  --color-border: #dedede;
+  --color-border-strong: #c7c7c7;
 
   --color-brand: #ff7300;
-  --color-accent-50: #fff4eb;
-  --color-accent-100: #ffe3cc;
-  --color-accent-200: #ffc799;
-  --color-accent-300: #ffa559;
-  --color-accent-400: #ff8a26;
+  --color-accent-50: #fff7f0;
+  --color-accent-100: #ffebdb;
+  --color-accent-200: #ffd5b2;
+  --color-accent-300: #ffb67a;
+  --color-accent-400: #ff943d;
   --color-accent-500: #ff7300;
-  --color-accent-600: #e66800;
-  --color-accent-700: #bf5600;
+  --color-accent-600: #e66700;
+  --color-accent-700: #c25700;
   --color-accent-800: #994500;
-  --color-accent-900: #7a3700;
-  --color-accent-950: #4a2100;
+  --color-accent-900: #703200;
+  --color-accent-950: #472000;
   --color-accent: #ff7300;
   --color-accent-fg: #ffffff;
-  --color-accent-hover: #e66800;
-  --color-accent-soft: rgba(255, 115, 0, 0.12);
+  --color-accent-hover: #e66700;
+  --color-accent-soft: #ffeee0;
 
-  --popover: oklch(0.99 0.003 80);
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f2f2f2;
+  --color-neutral-200: #dedede;
+  --color-neutral-300: #c7c7c7;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #808080;
+  --color-neutral-600: #6b6b6b;
+  --color-neutral-700: #474747;
+  --color-neutral-800: #2e2e2e;
+  --color-neutral-900: #1f1f1f;
+  --color-neutral-950: #141414;
+
+  --color-success: #279b51;
+  --color-success-bg: rgba(39, 155, 81, 0.12);
+  --color-success-fg: #1d723c;
+  --color-error: #db2424;
+  --color-error-bg: rgba(219, 36, 36, 0.12);
+  --color-error-fg: #af1d1d;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --popover: #ffffff;
   --ring: #ff7300;
 }
 
 :root:root:root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #1f1f1f;
-  --color-surface: #252526;
-  --color-surface-elevated: #2d2d2d;
-  --color-text: oklch(0.93 0 0);
-  --color-text-muted: #9d9d9d;
-  --color-text-subtle: #7a7a7a;
-  --color-border: #3c3c3c;
-  --color-border-strong: #4a4a4a;
+  --color-bg: #141414;
+  --color-surface: #1f1f1f;
+  --color-surface-elevated: #292929;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-text: #f2f2f2;
+  --color-text-muted: #9e9e9e;
+  --color-text-subtle: #808080;
+  --color-border: #333333;
+  --color-border-strong: #474747;
 
   --color-accent: #ff7300;
   --color-accent-fg: #ffffff;
-  --color-accent-hover: #ff8a26;
-  --color-accent-soft: rgba(255, 115, 0, 0.16);
+  --color-accent-hover: #ff8929;
+  --color-accent-soft: #412610;
 
-  --popover: #2d2d2d;
+  --color-neutral-50: #f2f2f2;
+  --color-neutral-100: #e0e0e0;
+  --color-neutral-200: #bdbdbd;
+  --color-neutral-300: #9e9e9e;
+  --color-neutral-400: #808080;
+  --color-neutral-500: #474747;
+  --color-neutral-600: #333333;
+  --color-neutral-700: #292929;
+  --color-neutral-800: #1f1f1f;
+  --color-neutral-900: #141414;
+  --color-neutral-950: #0d0d0d;
+
+  --color-success: #37be68;
+  --color-success-bg: rgba(55, 190, 104, 0.18);
+  --color-success-fg: #69d390;
+  --color-error: #e14747;
+  --color-error-bg: rgba(225, 71, 71, 0.18);
+  --color-error-fg: #ea7b7b;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  --popover: #1f1f1f;
   --ring: #ff7300;
+}
+
+/* O `ss01` do globals.css é da Atkinson: na Inter ele trocaria o desenho dos números. */
+body {
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
+}
+
+/* Fora de @layer, vence o `font-semibold` e o `tracking-tight` que as telas põem
+ * no h1. Anton só tem um peso, e negrito nela seria falso. */
+h1 {
+  font-family: var(--font-acelera-display), "Bebas Neue", Impact, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
