@@ -124,7 +124,11 @@ do EasyPanel).
 Novos (não conflitam): `ACELERA.md`, `docker-compose.easypanel.yml`, `acelera/marca/*.svg`, `lib/acelera-sso/{pass,config,entrada}.ts`,
 `app/sso/route.ts`, `tests/unit/acelera-sso-{pass,entrada}.test.ts`.
 
+Novos (lead ganho → Novo cliente no OS): `lib/acelera/novo-cliente-url{,.test}.ts`, `app/api/v1/acelera/novo-cliente/route.ts`, `hooks/acelera/useNovoClienteUrl.ts`. Variável de runtime `ACELERA_OS_NOVO_CLIENTE_URL` = `https://<OS>/app/<slug>/empresas/novo`; sem ela o botão "Cadastrar cliente" não aparece.
+
 Alterados (poucas linhas, marcadas com `ACELERA (fork)`):
+- `components/kanban/KanbanCardActions.tsx` e `components/inbox/CRMSidePanel.tsx` — botão "Cadastrar cliente" em lead ganho
+- `app/api/v1/contacts/route.ts` — POST aceita Bearer `dsk_` com `mcp:write` (OS grava lead de formulário); telefone repetido = 409 `contact_exists` com `details.contact_id`
 - `lib/auth/public-paths.ts` — 1 linha: `/^\/sso$/`
 - `proxy.ts` — 1 import + 2 blocos curtos (login próprio desligado)
 
