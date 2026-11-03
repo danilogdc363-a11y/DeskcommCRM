@@ -1386,6 +1386,7 @@ export const DICIONARIO: Traducoes = {
   Atendimento: { es: "Atención" },
   CRM: { es: "CRM" },
   "Agente de IA": { es: "Agente de IA" },
+  Tintim: { es: "Tintim" }, // TINTIM-TEMPORARIO
   Canais: { es: "Canales" },
   Análise: { es: "Análisis" },
   Organização: { es: "Organización" },
