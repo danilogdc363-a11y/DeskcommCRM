@@ -35,7 +35,7 @@ describe("celulaCsv", () => {
 
 describe("csvDeConversoes", () => {
   it("escreve cabeçalho, valor em reais e situação", () => {
-    const [cab, linha] = csvDeConversoes([base]).replace("﻿", "").split("\n");
+    const [cab = "", linha = ""] = csvDeConversoes([base]).replace("﻿", "").split("\n");
     expect(cab.startsWith("tentado_em,ocorrido_em,negocio")).toBe(true);
     expect(linha).toContain(",Maria,meta_ads,Purchase,entregue,,123.45,BRL,fbtrace123,");
   });
