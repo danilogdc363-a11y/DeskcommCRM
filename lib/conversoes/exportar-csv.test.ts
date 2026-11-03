@@ -25,6 +25,9 @@ describe("celulaCsv", () => {
   it("protege aspas, vírgula e quebra de linha", () => {
     expect(celulaCsv('a "b", c\nd')).toBe('"a ""b"", c\nd"');
   });
+  it("põe aspas em ponto e vírgula (Excel pt-BR)", () => {
+    expect(celulaCsv("a;b")).toBe('"a;b"');
+  });
   it("neutraliza fórmula", () => {
     expect(celulaCsv("=SOMA(A1)")).toBe("'=SOMA(A1)");
   });

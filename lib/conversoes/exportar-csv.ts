@@ -26,7 +26,7 @@ export const CABECALHO_DO_CSV_DE_CONVERSOES = [
 export function celulaCsv(valor: unknown): string {
   if (valor === null || valor === undefined) return "";
   const texto = neutralizarFormula(String(valor));
-  return /[",\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+  return /[",;\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
 
 function valorEmReais(centavos: number | null): string {
