@@ -266,6 +266,11 @@ async function enviar(
     leadId: conversao.leadId,
   });
 
+  // (Acelera) O que saiu no fio, no livro-razão: a versão da imagem é fixa, e só
+  // isto separa "código antigo no ar" de "a Meta recusou mesmo assim".
+  const enviado = `[enviado: action_source=${comClique ? "business_messaging" : "system_generated"}, ctwa_clid=${comClique ? "sim" : "nao"}]`;
+  mensagem = `${enviado} ${mensagem}`;
+
   if (resposta.status === 429 || resposta.status >= 500) {
     return { tipo: "transitorio", detalhe: `${resposta.status}: ${mensagem}` };
   }
