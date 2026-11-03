@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Badge — Sage design system.
+ * Badge — identidade Acelera (ver ACELERA.md).
  * Variants: default (accent soft), neutral, success, warning, error, info.
  * Compat aliases: secondary -> neutral, destructive -> error, outline -> neutral.
  */
 const badgeVariants = cva(
   [
-    "inline-flex items-center gap-1 rounded-full border px-3 py-0.5",
+    "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5",
     "text-xs font-medium leading-5",
     "transition-colors duration-fast ease-out",
     "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2",
@@ -19,7 +19,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-accent-soft text-accent",
+          "border-transparent bg-accent-soft text-accent-800 dark:text-accent-300",
         neutral:
           "border-border bg-surface-elevated text-text-muted",
         success:

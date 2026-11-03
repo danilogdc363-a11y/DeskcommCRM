@@ -7,6 +7,8 @@ import { EnvelopeSimple, Phone } from "@/lib/ui/icons";
 
 interface Props {
   lead: Pick<Lead, "contact_phone" | "contact_email" | "contact_links">;
+  /** ACELERA (fork): lead sem nome já tem o telefone como título do card; não repete. */
+  telefoneNoTitulo?: boolean;
 }
 
 /**
@@ -26,9 +28,9 @@ interface Props {
  * estranho por outro caminho (evento em tempo real, cache antigo) não vira
  * `javascript:` clicável.
  */
-export function ContatoNoCard({ lead }: Props) {
+export function ContatoNoCard({ lead, telefoneNoTitulo = false }: Props) {
   const t = useT();
-  const telefone = lead.contact_phone;
+  const telefone = telefoneNoTitulo ? undefined : lead.contact_phone;
   const email = lead.contact_email;
   const links = (lead.contact_links ?? []).filter(({ href }) => /^https?:\/\//i.test(href));
 

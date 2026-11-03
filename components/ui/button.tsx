@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Button — Sage design system.
+ * Button — identidade Acelera (ver ACELERA.md).
  * Variants:
  *   - primary (default): accent fill, branded CTA
  *   - secondary: surface-elevated com border, ação neutra
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 whitespace-nowrap",
-    "rounded-sm font-medium",
+    "rounded-sm font-semibold",
     // `transform` SAIU da lista, e `translate` não entrou no lugar.
     //
     // O recuo do toque é `active:translate-y-px`, lá embaixo. No Tailwind 4 essa
@@ -41,15 +41,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs",
-        default: "bg-accent text-accent-foreground hover:bg-accent-hover shadow-xs",
+        primary: "bg-accent text-accent-foreground hover:bg-accent-hover",
+        default: "bg-accent text-accent-foreground hover:bg-accent-hover",
         secondary:
-          "bg-surface-elevated text-text border border-border hover:border-accent hover:text-accent",
+          "bg-surface text-text border border-border hover:border-border-strong hover:bg-surface-elevated",
         outline:
-          "bg-transparent text-text border border-border hover:border-accent hover:text-accent",
-        ghost: "bg-transparent text-text hover:bg-accent-soft hover:text-accent",
+          "bg-transparent text-text border border-border hover:border-border-strong hover:bg-surface-elevated",
+        ghost: "bg-transparent text-text hover:bg-surface-elevated",
         destructive: "bg-error text-white hover:brightness-95 shadow-xs",
-        link: "bg-transparent text-accent underline underline-offset-4 decoration-1 hover:decoration-2 h-auto p-0",
+        link: "bg-transparent text-accent-700 dark:text-accent-400 underline underline-offset-4 decoration-1 hover:decoration-2 h-auto p-0",
       },
       // Alturas de toque: abaixo de `lg` (mesmo corte que o resto da casca
       // usa pra decidir "é celular/tablet, é mouse") toda variante bate os
