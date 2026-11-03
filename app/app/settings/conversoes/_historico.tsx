@@ -174,6 +174,14 @@ export function HistoricoDeEnvios({
         >
           {t("Baixar CSV")}
         </a>
+        <a
+          href={`/api/v1/conversions/export-leads?periodo=${filtros.periodo}`}
+          download
+          className="rounded-md border px-3 py-1.5 text-sm"
+          data-testid="historico-baixar-leads"
+        >
+          {t("Baixar leads CSV")}
+        </a>
       </div>
 
       {linhas.length === 0 ? (
