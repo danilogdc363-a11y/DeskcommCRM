@@ -347,6 +347,35 @@ describe("o transporte", () => {
     expect(JSON.parse(corpo).data[0].custom_data.value).toBe(250);
   });
 
+  it("a recusa registra a origem que saiu no fio", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: { code: 100, message: "Invalid parameter" } }), {
+        status: 400,
+      }),
+    );
+
+    const r = await transporteMeta.enviar(
+      { datasetId: "1", accessToken: "t", testEventCode: null },
+      {
+        organizationId: ORG,
+        leadId: LEAD,
+        evento: "MetaEtapa:x",
+        eventoNaPlataforma: "Contact",
+        eventoId: "x",
+        ocorridoEm: new Date(),
+        cliqueDeOrigem: "CLIQUE",
+        telefone: "5511988887777",
+        valorCentavos: null,
+        moeda: "BRL",
+      },
+    );
+
+    expect(r).toEqual({
+      tipo: "permanente",
+      detalhe: "[enviado: action_source=system_generated, ctwa_clid=nao] Invalid parameter",
+    });
+  });
+
   it.each(["Contact", "Respondidos", "Schedule"])(
     "%s com clique sai pelo telefone, porque a Meta o recusa como conversa",
     async (nome) => {
