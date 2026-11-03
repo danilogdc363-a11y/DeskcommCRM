@@ -162,9 +162,19 @@ export function HistoricoDeEnvios({
         </button>
       </form>
 
-      <p className="text-sm text-muted-foreground" data-testid="historico-total">
-        {total} {t(total === 1 ? "envio" : "envios")}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground" data-testid="historico-total">
+          {total} {t(total === 1 ? "envio" : "envios")}
+        </p>
+        <a
+          href={`/api/v1/conversions/export${link(1).replace("?aba=historico&", "?")}`}
+          download
+          className="rounded-md border px-3 py-1.5 text-sm"
+          data-testid="historico-baixar-csv"
+        >
+          {t("Baixar CSV")}
+        </a>
+      </div>
 
       {linhas.length === 0 ? (
         <p className="rounded-md border p-4 text-sm text-muted-foreground">
