@@ -3,9 +3,10 @@
 Fork de `melgarafael/DeskcommCRM` (MIT) usado como **CRM comercial** pelo Acelera OS
 (`comercial.aceleradelivery.com`). Tudo que é só nosso está listado aqui.
 
-**Branch canônica: `acelera/1.84.0`** = tag `v1.84.0` do upstream (a versão que roda em
-produção) + os commits do fork. `feat/acelera-sso-aparencia` tem os mesmos commits sobre o
-`main` do fork (base mais nova, ~v1.85+) e serve só para quando decidirmos atualizar.
+**Branch canônica: `acelera/1.100.0`** = tag `v1.100.0` do upstream + os commits do fork
+(feita a partir de `acelera/1.98.9` com merge de `acelera/1.84.0` e da `v1.100.0`).
+A `acelera/1.84.0` (tag `acelera-pre-1.100`) é a produção anterior e serve de rollback de código.
+As migrations `acelera_0001..0004` estão no fim do `supabase/baseline.sql`, depois dos blocos do upstream.
 
 ## 1. Login único com o Acelera OS (multi-organização)
 
@@ -115,7 +116,7 @@ O compose versionado é **`docker-compose.easypanel.yml`** (raiz do repo, branch
 do EasyPanel).
 
 - No EasyPanel: serviço **Compose** → Fonte **Git** → repositório
-  `https://github.com/danilogdc363-a11y/DeskcommCRM`, branch `acelera/1.84.0`, arquivo
+  `https://github.com/danilogdc363-a11y/DeskcommCRM`, branch `acelera/1.84.0` (produção atual; na troca para a nova versão, `acelera/1.100.0`), arquivo
   `docker-compose.easypanel.yml`. Variáveis na aba Ambiente (as mesmas de hoje + `ACELERA_*`/`APP_*`).
   Domínio: serviço `app`, porta `3000`.
 - `NEXT_PUBLIC_*` **não** são args de build (a imagem sai com placeholders e lê o `.env` ao subir).
