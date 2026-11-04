@@ -99,6 +99,8 @@ export interface ConversationsFilters {
    * a coluna `unread_count_for_assignee` já existe.
    */
   unread?: boolean;
+  /** Aguardando 1ª resposta: o cliente escreveu e a equipe nunca respondeu. */
+  sem_resposta?: boolean;
   channel_session_id?: string;
   /**
    * A etiqueta, ou VÁRIAS (#1274).
@@ -179,6 +181,7 @@ export function useConversationsRealtime(
       if (filters.assigned_to) qs.set("assigned_to", filters.assigned_to);
       if (filters.search) qs.set("search", filters.search);
       if (filters.unread) qs.set("unread", "true");
+      if (filters.sem_resposta) qs.set("sem_resposta", "true");
       if (filters.channel_session_id) qs.set("channel_session_id", filters.channel_session_id);
       // `append`, e não `set` (#1274): o filtro aceita várias etiquetas e cada
       // uma viaja como um `tag` repetido — que é o que a rota lê com `getAll`.

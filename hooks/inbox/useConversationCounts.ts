@@ -28,6 +28,7 @@ export interface ConversationCounts {
 /** Os filtros auxiliares ligados na barra, que a contagem tem de aplicar junto. */
 export interface FiltrosDaContagem {
   unread?: boolean;
+  sem_resposta?: boolean;
   /**
    * A etiqueta, ou VÁRIAS (#1274).
    *
@@ -54,6 +55,7 @@ export function useConversationCounts(
 ) {
   const qs = new URLSearchParams();
   if (filtros.unread) qs.set("unread", "true");
+  if (filtros.sem_resposta) qs.set("sem_resposta", "true");
   for (const marcador of marcadoresEscolhidos(
     typeof filtros.tag === "string" ? [filtros.tag] : (filtros.tag ?? []),
   ))

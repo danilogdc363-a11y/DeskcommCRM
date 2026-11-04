@@ -80,6 +80,8 @@ export interface InboxFiltersValue {
   tab: InboxTab;
   search: string;
   onlyUnread: boolean;
+  /** "Sem resposta": só quem escreveu e a equipe nunca respondeu. */
+  onlySemResposta?: boolean;
   channel_session_id?: string;
   /**
    * A etiqueta escolhida, ou VÁRIAS (#1274).
@@ -216,6 +218,7 @@ export function InboxFilters({ value, onChange }: Props) {
   const { data: counts } = useConversationCounts(activeOrg?.orgId ?? null, {
     assigned_to: value.assigned_to,
     unread: value.onlyUnread,
+    sem_resposta: value.onlySemResposta,
     tag: etiquetas,
     tagMode: value.tagMode,
     channel_session_id: value.channel_session_id,
@@ -432,6 +435,21 @@ export function InboxFilters({ value, onChange }: Props) {
             )}
           >
             {t("Não lidos")}
+          </button>
+          {/* Mesmo padrão: "Sem resposta" mostra só quem escreveu e nunca foi respondido. */}
+          <button
+            type="button"
+            aria-pressed={value.onlySemResposta ?? false}
+            onClick={() => onChange({ ...value, onlySemResposta: !value.onlySemResposta })}
+            className={cn(
+              "h-9 shrink-0 rounded-full border px-3 text-xs font-medium transition-colors",
+              "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              value.onlySemResposta
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-transparent text-text-muted hover:bg-surface-elevated",
+            )}
+          >
+            {t("Sem resposta")}
           </button>
           {/* MESMO PADRÃO do botão acima: filtro auxiliar pressionável, na
               mesma linha. "Grupos" manda `is_group=true` na listagem — sem ele

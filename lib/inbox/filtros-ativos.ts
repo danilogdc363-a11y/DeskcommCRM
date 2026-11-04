@@ -21,6 +21,7 @@ import type { ConversationsFilters } from "@/hooks/inbox/useConversationsRealtim
 export function filtrosAuxiliaresAtivos(filters: ConversationsFilters): string[] {
   const ativos: string[] = [];
   if (filters.unread) ativos.push("Não lidos");
+  if (filters.sem_resposta) ativos.push("Sem resposta");
   if (filters.search) ativos.push("Busca");
   if (filters.tag) ativos.push("Etiqueta");
   if (filters.channel_session_id) ativos.push("Canal");
