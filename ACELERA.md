@@ -95,11 +95,15 @@ O CRM já tem white-label nativo (`docs/white-label.md`). **Nenhuma tela foi edi
 - Logo e ícone: a tela aceita **PNG ou JPG até 512 KB** (SVG é recusado). Originais vetoriais em
   `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`logo-claro.png`,
   `logo-escuro.png`, `icone.png`).
-- **Design igual ao do PXD Hub:** `app/acelera-tema.css` traz cores, cantos, sombra de cartão e a
-  tipografia do painel iFood (Inter no texto, Anton em caixa alta no `h1`). As fontes estão em
-  `app/fonts/` e são ligadas em `app/layout.tsx`. O Inbox segue com o tema próprio de WhatsApp
-  (`app/acelera-whatsapp.css`). Três testes de navegador do upstream ainda procuram "Atkinson" no
-  botão (`aviso-de-caso-no-whatsapp`, `conversa-do-caso`, `passagem-com-contexto`): falham por isso.
+- **Identidade Acelera:** `app/acelera-tema.css` traz a paleta do guia de marca (laranja #FF7300 e
+  cinzas neutros), cantos de 5 a 10 px, Inter no texto e Anton em caixa alta no `h1`, com o risco à
+  mão em laranja sob o título. Ele também vence a cor de `/admin/marca` e de **Configurações → Marca**
+  (as duas telas derivam o laranja por contraste e dão marrom), então a cor salva nelas não muda nada.
+- **Logo:** cadastre o par em **Configurações → Marca** (`logo-claro.png` e `logo-escuro.png`). Sem o logo
+  escuro, o produto desenha uma caixa branca em volta da arte no tema escuro. O Inbox segue a mesma
+  paleta, sem verde (`app/acelera-whatsapp.css`).
+- **Testes de navegador do upstream que não valem mais aqui:** os três que procuram "Atkinson" no botão
+  (`aviso-de-caso-no-whatsapp`, `conversa-do-caso`, `passagem-com-contexto`).
 - E-mails de acesso (GoTrue) leem o `.env`: depois de mudar `APP_ACCENT_HEX`, rodar
   `bash hostgator-setup-kit/marca-emails.sh` (ou ajustar os templates no Supabase do CRM).
 

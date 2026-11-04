@@ -392,8 +392,10 @@ export function InboxFilters({ value, onChange }: Props) {
   return (
     <div className="border-b border-border bg-background">
       <div className="space-y-2 px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ACELERA (fork): `basis-full` porque, ao lado dos botões, a coluna de 272px
+              só deixava "Buscar por" visível. */}
+          <div className="relative min-w-0 flex-1 basis-full">
             <MagnifyingGlass
               size={15}
               weight="regular"
