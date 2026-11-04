@@ -150,8 +150,9 @@ describe("card compacto × confortável (#3461, item 2)", () => {
     // Valor e dono continuam no card.
     expect(within(cartao).getByText(/2\.500/)).toBeInTheDocument();
     expect(within(cartao).getByText(/Marcos/)).toBeInTheDocument();
-    // E o tempo na etapa também.
-    expect(within(cartao).getByText(/Negociação/)).toBeInTheDocument();
+    // E o tempo na etapa também. (Acelera) Só o tempo, sem o nome da etapa:
+    // a coluna do quadro já diz a etapa.
+    expect(within(cartao).getByText(/5d/)).toBeInTheDocument();
   });
 
   it("o compacto tira do card a conversa e o contato — e é isto que o PR declara", () => {
