@@ -5,8 +5,9 @@
 # Sem o segredo MEMORY_TOKEN o passo sai sem erro e não registra nada.
 name: Memoria
 on:
+  workflow_dispatch:
   push:
-    branches: [acelera/1.84.0]
+    branches: [acelera/1.84.0, acelera/memoria-registro-automatico]
 permissions: {}
 jobs:
   registrar:
