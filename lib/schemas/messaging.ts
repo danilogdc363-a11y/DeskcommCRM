@@ -436,6 +436,12 @@ export const listConversationsQuerySchema = z.object({
    */
   unread: z.coerce.boolean().optional(),
   /**
+   * Só quem mandou mensagem e NUNCA recebeu resposta da equipe ("aguardando 1ª
+   * resposta"). Vai ao banco: `last_outbound_at IS NULL AND last_inbound_at IS NOT
+   * NULL`, fora de grupo. Não usa `awaiting_since`, que é recalculado a cada resposta.
+   */
+  sem_resposta: z.coerce.boolean().optional(),
+  /**
    * O termo de busca. A régua inteira vive em `lib/inbox/termo-de-busca.ts`, e a
    * tela lê a MESMA — repetir aqui faria os dois divergirem, e a divergência
    * apareceria como erro na cara de quem digita (a rota recusa e o hook mostra).
