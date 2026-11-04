@@ -6203,6 +6203,7 @@ export const DICIONARIO: Traducoes = {
     es: "La plataforma no informa la ubicación de cada clic en un anuncio.",
   },
   "Etapa de destino": { es: "Etapa de destino" },
+  "Etapa atual do negócio": { es: "Etapa actual del negocio" },
   // #2065 — nós de ação do follow-up (mover lead no funil / editar tag)
   "Mover lead no funil": { es: "Mover lead en el embudo" },
   "Mover card de etapa": { es: "Mover tarjeta de etapa" },
