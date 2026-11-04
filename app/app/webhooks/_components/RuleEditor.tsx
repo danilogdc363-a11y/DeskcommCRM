@@ -131,6 +131,14 @@ const MESSAGE_FIELDS: CuratedField[] = [
   { value: "event.body_preview", label: "Texto da mensagem", op: "contains" },
   { value: "contact.tags", label: "Tags do contato", op: "contains", lista: true },
 ];
+// Acelera: só a fala da equipe traz o negócio no contexto (ver `buildContext`).
+// Com ela, "primeira mensagem → Em atendimento" é: etapa atual = Pedido novo.
+const ETAPA_ATUAL_FIELD: CuratedField = {
+  value: "lead.stage_id",
+  label: "Etapa atual do negócio",
+  op: "eq",
+  kind: "stage",
+};
 const CONTACT_FIELDS: CuratedField[] = [
   { value: "contact.tags", label: "Tags do contato", op: "contains", lista: true },
   { value: "contact.name", label: "Nome do contato", op: "contains" },
@@ -168,7 +176,7 @@ export const CURATED_FIELDS: Record<TriggerEvent, CuratedField[]> = {
   "lead.assigned": LEAD_FIELDS,
   "message.received": MESSAGE_FIELDS,
   // Acelera: o filtro que importa é a frase-código no texto do vendedor.
-  "message.team_sent": MESSAGE_FIELDS,
+  "message.team_sent": [...MESSAGE_FIELDS, ETAPA_ATUAL_FIELD],
   // O que a regra quer filtrar numa falha é o MOTIVO (só o 131047, só o
   // timeout) e de QUEM é o contato — `event.erro.codigo` é o mesmo valor que a
   // coluna `messages.error_code` grava, então quem compara com o webhook da

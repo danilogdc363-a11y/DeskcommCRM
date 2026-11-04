@@ -1693,6 +1693,7 @@ export const DICIONARIO: Traducoes = {
   Atendimento: { es: "Atención" },
   CRM: { es: "CRM" },
   "Agente de IA": { es: "Agente de IA" },
+  Tintim: { es: "Tintim" }, // TINTIM-TEMPORARIO
   Canais: { es: "Canales" },
   Análise: { es: "Análisis" },
   Organização: { es: "Organización" },
@@ -7097,6 +7098,7 @@ export const DICIONARIO: Traducoes = {
     es: "La plataforma no informa la ubicación de cada clic en un anuncio.",
   },
   "Etapa de destino": { es: "Etapa de destino" },
+  "Etapa atual do negócio": { es: "Etapa actual del negocio" },
   // #2065 — nós de ação do follow-up (mover lead no funil / editar tag)
   "Mover lead no funil": { es: "Mover lead en el embudo" },
   "Mover card de etapa": { es: "Mover tarjeta de etapa" },
@@ -10369,6 +10371,8 @@ export const DICIONARIO: Traducoes = {
   },
   "Baixar PDF": { es: "Descargar PDF" },
   "Baixar arquivo de dados (data.json)": { es: "Descargar archivo de datos (data.json)" },
+  "Baixar CSV": { es: "Descargar CSV" },
+  "Baixar leads CSV": { es: "Descargar leads CSV" },
   "Linha do tempo SLA": { es: "Línea de tiempo SLA" },
   "SLA não definido.": { es: "SLA no definido." },
   "ID completo": { es: "ID completo" },

@@ -18,7 +18,15 @@ import type { CapacidadeDaOrganizacao } from "@/lib/organizacao/capacidades";
  * Doutrina: docs/doctrine/sistema-vivo.md — "por qual porta se chega até mim?"
  */
 
-export type NavGroupId = "principal" | "atendimento" | "crm" | "ia" | "canais" | "analise" | "organizacao";
+export type NavGroupId =
+  | "principal"
+  | "atendimento"
+  | "crm"
+  | "ia"
+  | "canais"
+  | "analise"
+  | "tintim" // TINTIM-TEMPORARIO
+  | "organizacao";
 
 export interface NavGroup {
   id: NavGroupId;
@@ -95,6 +103,9 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: "ia", label: "Agente de IA", hub: { href: "/app/ai", label: "Ver tudo em IA" } },
   { id: "canais", label: "Canais" },
   { id: "analise", label: "Análise", hub: { href: "/app/analise", label: "Ver tudo em Análise" } },
+  // TINTIM-TEMPORARIO: reúne as telas que substituem o Tintim até ele ser cancelado.
+  // Para desfazer: apague este grupo e devolva `group` das três portas marcadas abaixo.
+  { id: "tintim", label: "Tintim" },
   {
     id: "organizacao",
     label: "Organização",
@@ -914,7 +925,7 @@ export const NAV_CATALOG = [
     label: "Meta Ads",
     description: "Quanto custou cada resultado das campanhas que trazem gente para cá.",
     icon: "Megaphone",
-    group: "analise",
+    group: "tintim", // TINTIM-TEMPORARIO (era "analise")
     section: "Os números do período",
     // `manager`, e não o `viewer` de Desempenho: aqui não há recorte por
     // pessoa — orçamento e criativo são da empresa inteira. Mesmo grau dos
@@ -1020,9 +1031,10 @@ export const NAV_CATALOG = [
     label: "Automações",
     description: "O freio único do passo em que a IA escolhe entre as opções de uma regra, para a empresa inteira.",
     icon: "FlowArrow",
-    group: "organizacao",
+    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
     section: "Sua empresa",
     minRole: "manager",
+    sidebar: true,
   },
   {
     // A porta que faltava para o vocabulário de etiquetas (issue #852). Até
@@ -1079,12 +1091,13 @@ export const NAV_CATALOG = [
     description:
       "Devolver ao anúncio as vendas que ele trouxe, e marcar a origem de quem chega pelo site.",
     icon: "ChartLineUp",
-    group: "organizacao",
+    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
     section: "Sua empresa",
     // `admin` pelo mesmo critério das vizinhas: o token grava na conta de
     // anúncios da empresa, e quem o troca decide para onde vai o dinheiro de
     // mídia. Um `manager` ficaria acima de billing na mesma prancheta.
     minRole: "admin",
+    sidebar: true,
   },
   {
     // Vizinha de Conversões, e SEPARADA dela de propósito. As duas conectam "a

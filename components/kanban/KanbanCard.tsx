@@ -80,13 +80,12 @@ function formatValor(cents: number | null, currency: string | null): string | nu
 }
 
 /**
- * O card do Kanban — orçamento FIXO: 5 elementos, 3 faixas, altura constante.
+ * O card do Kanban.
  *
- * As alturas são reservadas em vez de derivadas do conteúdo: título sempre
- * ocupa 2 linhas, valor sempre ocupa a sua linha (com "—" quando não há valor),
- * e a faixa do agente existe mesmo vazia. É isso que faz o board continuar
- * legível quando score, próxima ação e alerta chegarem — o card não cresce com
- * dados, ele TROCA de estado.
+ * ACELERA (fork): sem altura reservada. O card só mostra o que existe; valor e
+ * faixa do agente somem quando vazios, e a caixa de seleção flutua no canto em vez
+ * de empurrar o título. Quadro com dezenas de leads sem valor ficava cheio de "—"
+ * e de buraco branco, e cabiam poucos cards por tela.
  *
  * Cor só aparece na borda esquerda, e só quando o estado pede (Lei C).
  */
@@ -218,11 +217,9 @@ export function KanbanCard({
           {/* ① identidade — altura FIXA de 2 linhas, com ou sem texto longo. */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-1.5">
-              {/* A largura é SEMPRE reservada (`h-4 w-4` num wrapper que não
-                  some), só a tinta é condicional: o card tem orçamento fixo de
-                  altura e largura, e uma caixa que aparece no hover EMPURRANDO
-                  o título faria o quadro inteiro tremer com o mouse. Some por
-                  opacidade, nunca por `hidden`. `focus:opacity-100` no próprio
+              {/* Flutua no canto, ao lado do menu: uma caixa que aparece no
+                  hover EMPURRANDO o título faria o quadro tremer com o mouse. Some
+                  por opacidade, nunca por `hidden`. `focus:opacity-100` no próprio
                   input: uma caixa invisível e tabulável seria armadilha de
                   teclado. */}
               {/* No funil arquivado a caixa some de vez: seleção só existe
@@ -242,7 +239,7 @@ export function KanbanCard({
                     /* estado vem de `isSelected`; quem decide é o onClick acima */
                   }}
                   className={cn(
-                    "mt-1 h-4 w-4 shrink-0 cursor-pointer accent-accent transition-opacity",
+                    "absolute top-3 right-9 z-10 h-4 w-4 cursor-pointer accent-accent transition-opacity",
                     "focus:opacity-100 focus-visible:outline-2 focus-visible:outline-accent",
                     isSelected || isSelecting
                       ? "opacity-100"
@@ -272,8 +269,8 @@ export function KanbanCard({
                 // dossiê). O dado não some — some a segunda linha.
                 title={denso ? card.title : undefined}
                 className={cn(
-                  "text-sm font-medium leading-5 text-text",
-                  denso ? "line-clamp-1 h-5" : "line-clamp-2 h-10",
+                  "pr-5 text-sm font-semibold leading-5 text-text",
+                  denso ? "line-clamp-1" : "line-clamp-2",
                 )}
               >
                 <button
@@ -306,6 +303,7 @@ export function KanbanCard({
               `card-valor` é o observável do teste: o MESMO elemento carrega o
               valor único e a mensalidade, para nenhuma tela de teste achar que
               "os dois aparecem" olhando dois lugares diferentes. */}
+          {(value || recorrente) && (
           <p
             data-testid="card-valor"
             className={cn(
@@ -324,10 +322,11 @@ export function KanbanCard({
                 {recorrente}
               </span>
             )}
-            {!value && !recorrente && "—"}
           </p>
+          )}
 
           {/* ③ a linha do agente — um slot, três estados, nunca três blocos. */}
+          {state.slot.type !== "idle" && (
           <div
             className={cn(
               "flex items-center gap-2 text-xs",
@@ -370,6 +369,7 @@ export function KanbanCard({
               />
             )}
           </div>
+          )}
 
           {/* A última mensagem, com atalho para o inbox. Fica ANTES do rodapé
               de dono/tempo porque é conteúdo do negócio, não metadado do card —
@@ -394,7 +394,7 @@ export function KanbanCard({
 
               {/* Telefone, e-mail e links do contato — some por inteiro quando o
                   negócio não tem nada disso, como a conversa acima. */}
-              <ContatoNoCard lead={lead} />
+              <ContatoNoCard lead={lead} telefoneNoTitulo={card.title === lead.contact_phone} />
             </>
           )}
 
@@ -420,9 +420,8 @@ export function KanbanCard({
               <TarefasNoCard tarefas={lead.tarefas} />
             </div>
             <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-text-muted">
-              {state.showStageAge && age
-                ? `${age} ${t("em")} ${card.stageName}`
-                : `${t("em")} ${card.stageName}`}
+              {/* ACELERA (fork): só o tempo. A coluna já diz a etapa. */}
+              {state.showStageAge ? age : null}
             </span>
           </div>
         </div>

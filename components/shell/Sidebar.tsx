@@ -471,16 +471,16 @@ export function SidebarContent({
 }
 
 /**
- * ACELERA (fork): o item do menu no desenho do PXD Hub — o aceso ganha fundo
- * laranja bem claro (`accent-soft`), ícone laranja e texto forte; os outros
- * ficam cinza e só escurecem no hover. Antes era o laranja chapado do acento.
+ * ACELERA (fork): o item aceso vira um cartão claro sobre o menu tingido, com a
+ * barra e o ícone em laranja e o texto em cinza escuro (o guia de marca não usa
+ * laranja em texto pequeno). Os outros ficam cinza e só escurecem no hover.
  */
 function classeDoItem(ativo: boolean, collapsed: boolean): string {
   return cn(
-    "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors",
+    "relative flex items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors",
     ativo
-      ? "bg-accent-soft font-semibold text-foreground"
-      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      ? "bg-surface font-semibold text-foreground shadow-sm before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-sm before:bg-accent"
+      : "text-muted-foreground hover:bg-surface/60 hover:text-foreground",
     collapsed && "justify-center px-2",
   );
 }
@@ -575,7 +575,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         // `duration-base` em vez do `duration-200` literal: 200ms é o mesmo
         // número, mas vindo de `--duration-base`. A Lei de movimento fecha a
         // tabela de durações, e número solto é o que a faz apodrecer.
-        "sticky top-[var(--faixas-de-cima,0px)] z-30 flex h-[calc(100dvh-var(--faixas-de-cima,0px))] shrink-0 flex-col border-r bg-card transition-[width] duration-base",
+        "sticky top-[var(--faixas-de-cima,0px)] z-30 flex h-[calc(100dvh-var(--faixas-de-cima,0px))] shrink-0 flex-col border-r bg-[var(--acelera-menu)] transition-[width] duration-base",
         collapsed ? "w-16" : "w-60",
       )}
     >

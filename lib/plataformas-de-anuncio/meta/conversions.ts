@@ -103,6 +103,9 @@ function classifica4xx(codigo: number | null, mensagem: string): ResultadoDeEnvi
   return { tipo: "permanente", detalhe: mensagem };
 }
 
+/** (Acelera) Nomes do Tintim que `business_messaging` não aceita (invalid event name). */
+const EVENTOS_FORA_DA_CONVERSA = new Set(["Contact", "Respondidos", "Schedule"]);
+
 async function enviar(
   credencial: CredencialDeConversao,
   conversao: ConversaoOffline,
@@ -134,7 +137,10 @@ async function enviar(
   // navegador que o CRM não tem — `system_generated` é a origem declarada para
   // venda registrada em sistema, casada pelo `fbc`/`fbp` e/ou pelo telefone em
   // hash.
-  const comClique = conversao.cliqueDeOrigem.trim() !== "";
+  // (Acelera) Estes nomes a Meta recusa como evento de conversa: saem casados
+  // pelo telefone, mesmo quando o lead tem clique.
+  const comClique =
+    conversao.cliqueDeOrigem.trim() !== "" && !EVENTOS_FORA_DA_CONVERSA.has(nomeNoFio ?? "");
   // ─── A RÉGUA DA IDENTIDADE MUDOU (issue #3149) ────────────────────────────
   //
   // Até aqui valia o que o cabeçalho deste arquivo ainda registrava: no ramo SEM
@@ -307,6 +313,11 @@ async function enviar(
     codigo,
     leadId: conversao.leadId,
   });
+
+  // (Acelera) O que saiu no fio, no livro-razão: a versão da imagem é fixa, e só
+  // isto separa "código antigo no ar" de "a Meta recusou mesmo assim".
+  const enviado = `[enviado: action_source=${comClique ? "business_messaging" : "system_generated"}, ctwa_clid=${comClique ? "sim" : "nao"}]`;
+  mensagem = `${enviado} ${mensagem}`;
 
   if (resposta.status === 429 || resposta.status >= 500) {
     return { tipo: "transitorio", detalhe: `${resposta.status}: ${mensagem}` };

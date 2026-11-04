@@ -346,6 +346,69 @@ describe("o transporte", () => {
     expect(JSON.parse(corpo).data[0].event_time).toBeLessThan(1e11);
     expect(JSON.parse(corpo).data[0].custom_data.value).toBe(250);
   });
+
+  it("a recusa registra a origem que saiu no fio", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: { code: 100, message: "Invalid parameter" } }), {
+        status: 400,
+      }),
+    );
+
+    const r = await transporteMeta.enviar(
+      { datasetId: "1", accessToken: "t", testEventCode: null },
+      {
+        organizationId: ORG,
+        leadId: LEAD,
+        evento: "MetaEtapa:x",
+        eventoNaPlataforma: "Contact",
+        eventoId: "x",
+        ocorridoEm: new Date(),
+        cliqueDeOrigem: "CLIQUE",
+        telefone: "5511988887777",
+        valorCentavos: null,
+        moeda: "BRL",
+      },
+    );
+
+    expect(r).toEqual({
+      tipo: "permanente",
+      detalhe: "[enviado: action_source=system_generated, ctwa_clid=nao] Invalid parameter",
+    });
+  });
+
+  it.each(["Contact", "Respondidos", "Schedule"])(
+    "%s com clique sai pelo telefone, porque a Meta o recusa como conversa",
+    async (nome) => {
+      let corpo = "";
+      vi.spyOn(globalThis, "fetch").mockImplementation(async (_u, init) => {
+        corpo = String((init as RequestInit).body);
+        return new Response('{"events_received":1}', { status: 200 });
+      });
+
+      await transporteMeta.enviar(
+        { datasetId: "1", accessToken: "t", testEventCode: null },
+        {
+          organizationId: ORG,
+          leadId: LEAD,
+          evento: "MetaEtapa:x",
+          eventoNaPlataforma: nome,
+          eventoId: "x",
+          ocorridoEm: new Date(),
+          cliqueDeOrigem: "CLIQUE",
+          telefone: "5511988887777",
+          valorCentavos: null,
+          moeda: "BRL",
+        },
+      );
+
+      const [ev] = JSON.parse(corpo).data;
+      expect(ev.event_name).toBe(nome);
+      expect(ev.action_source).toBe("system_generated");
+      expect(ev.messaging_channel).toBeUndefined();
+      expect(ev.user_data.ctwa_clid).toBeUndefined();
+      expect(ev.user_data.ph[0]).toBe(INTERNOS.hash("5511988887777"));
+    },
+  );
 });
 
 describe("a matriz de plataformas é exaustiva", () => {
