@@ -109,6 +109,7 @@ export async function lerHistorico(
   organizationId: string,
   filtros: FiltrosDoHistorico,
   agora: Date = new Date(),
+  tamanho: number = TAMANHO_DA_PAGINA,
 ): Promise<{ linhas: LinhaDoHistorico[]; total: number }> {
   let q = admin
     .from("ad_conversion_dispatches")
@@ -140,10 +141,10 @@ export async function lerHistorico(
       break;
   }
 
-  const de = (filtros.pagina - 1) * TAMANHO_DA_PAGINA;
+  const de = (filtros.pagina - 1) * tamanho;
   const { data, count, error } = await q
     .order("attempted_at", { ascending: false })
-    .range(de, de + TAMANHO_DA_PAGINA - 1);
+    .range(de, de + tamanho - 1);
   if (error) throw new Error("Não foi possível ler o histórico de envios.");
 
   const linhas = ((data ?? []) as unknown[]).map((bruto) => {

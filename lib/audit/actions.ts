@@ -55,6 +55,8 @@ export const AUDIT_ACTIONS = [
   // N `lead.created`: "quem despejou 300 negócios neste funil, e quando" é a
   // pergunta que se faz depois, e ela não se responde contando linhas soltas.
   "lead.imported",
+  // Baixar o histórico de envios de conversão (CSV com nome de negócio).
+  "conversion.exported",
   "contact.created",
   "contact.updated",
   "contacts.imported",
