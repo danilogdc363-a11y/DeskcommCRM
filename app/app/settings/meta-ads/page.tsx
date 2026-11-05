@@ -29,7 +29,9 @@ import { redirect } from "next/navigation";
 
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { ROLE_RANK } from "@/lib/auth/types";
+import { tagDeIdioma } from "@/lib/i18n/datas";
 import { traduzir } from "@/lib/i18n/dicionario";
+import { appDeLoginDaMeta } from "@/lib/plataformas-de-anuncio/meta/login/app";
 import { existeConexaoDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais-de-leitura";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -38,7 +40,12 @@ import { FormularioDeMetaAds } from "./_form";
 export const metadata = { title: "Meta Ads" };
 export const dynamic = "force-dynamic";
 
-export default async function MetaAdsSettingsPage() {
+export default async function MetaAdsSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const parametros = await searchParams;
   const user = await requireAuth();
   const activeOrg = await resolveActiveOrg(user);
   if (!activeOrg) redirect("/app");
@@ -50,6 +57,9 @@ export default async function MetaAdsSettingsPage() {
 
   const admin = createAdminClient();
   const conexao = await existeConexaoDeLeitura(admin, activeOrg.orgId, "meta_ads");
+  // O botão do Facebook só aparece quando a instalação tem o app da Meta (ID +
+  // segredo). Sem ele a tela mostra o aviso e o token colado segue valendo.
+  const loginDisponivel = Boolean(await appDeLoginDaMeta(admin));
 
   const idioma = user.idioma;
   const t = (texto: string) => traduzir(texto, idioma);
@@ -81,6 +91,16 @@ export default async function MetaAdsSettingsPage() {
         conectada={conexao.conectada}
         contaPadrao={conexao.contaPadrao}
         idioma={idioma}
+        loginDisponivel={loginDisponivel}
+        expiraEm={
+          conexao.expiraEm
+            ? new Date(conexao.expiraEm).toLocaleDateString(tagDeIdioma(idioma), {
+                timeZone: "America/Sao_Paulo",
+              })
+            : null
+        }
+        expiraEmMs={conexao.expiraEm ? new Date(conexao.expiraEm).getTime() : null}
+        retorno={{ ok: parametros.ok === "1", erro: parametros.erro ?? null }}
       />
 
       {conexao.conectada && (

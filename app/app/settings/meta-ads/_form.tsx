@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -32,21 +32,68 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   erro_ao_gravar: "Não consegui gravar agora. Tente de novo em instantes.",
 };
 
+/**
+ * O que a Meta/nós devolvemos na volta do "Conectar com o Facebook"
+ * (`?erro=<código>` / `?ok=1`). Frases curtas, sem jargão, que dizem o que fazer.
+ */
+const ERRO_DO_FACEBOOK: Record<string, string> = {
+  cancelado: "Você cancelou a conexão no Facebook. Quando quiser, é só clicar no botão de novo.",
+  meta_recusou:
+    "O Facebook não deixou conectar. Isso costuma acontecer porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios: sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador). Peça a quem cuida do aplicativo para te adicionar, ou cole um token abaixo.",
+  troca_falhou: "Não consegui terminar a conexão com o Facebook. Tente de novo em instantes.",
+  estado_invalido: "O pedido de conexão venceu ou não é mais válido. Clique no botão e tente de novo.",
+  sem_codigo: "O Facebook não devolveu a autorização. Clique no botão e tente de novo.",
+  app_nao_configurado:
+    "O aplicativo do Facebook ainda não foi configurado nesta instalação. Peça a quem administra o sistema.",
+  cifra_indisponivel:
+    "Esta instalação está sem a chave mestra de criptografia, e a conexão não foi gravada. Quem instalou o sistema precisa configurá-la.",
+  erro_ao_gravar: "Não consegui gravar agora. Tente de novo em instantes.",
+};
+
 export function FormularioDeMetaAds({
   conectada,
   contaPadrao,
   idioma,
+  loginDisponivel,
+  expiraEm,
+  expiraEmMs,
+  retorno,
 }: {
   conectada: boolean;
   contaPadrao: string | null;
   idioma: Idioma;
+  /** A instalação tem App ID + segredo do app da Meta. */
+  loginDisponivel: boolean;
+  /** Data (já formatada) em que o token do login vence; nulo = token colado à mão. */
+  expiraEm: string | null;
+  /** Vencimento em ms (para decidir "venceu" no navegador); nulo = sem vencimento conhecido. */
+  expiraEmMs: number | null;
+  retorno: { ok: boolean; erro: string | null };
 }) {
   const t = (texto: string) => traduzir(texto, idioma);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Lazy: `Date.now()` no corpo do render seria impuro.
+  const [agoraMs] = useState(() => Date.now());
+  const vencida = expiraEmMs !== null && expiraEmMs < agoraMs;
   const [token, setToken] = useState("");
   const [conta, setConta] = useState(contaPadrao ?? "");
+
+  // Avisa uma vez o desfecho da volta do Facebook e limpa a URL, para um
+  // recarregar não repetir o aviso.
+  useEffect(() => {
+    if (!retorno.ok && !retorno.erro) return;
+    if (retorno.ok) {
+      toast.success(t("Conta do Facebook conectada."));
+    } else if (retorno.erro) {
+      toast.error(t(ERRO_DO_FACEBOOK[retorno.erro] ?? "Não consegui conectar com o Facebook."), {
+        duration: 15000,
+      });
+    }
+    router.replace("/app/settings/meta-ads");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Na primeira conexão o token é obrigatório — a coluna é NOT NULL (0214) e a
   // Server Action recusa. Barrar aqui explica antes de o clique acontecer, em
@@ -89,8 +136,50 @@ export function FormularioDeMetaAds({
   }
 
   return (
+    <div className="flex flex-col gap-6">
+      <Card className="flex flex-col gap-3 p-6" data-testid="meta-ads-login">
+        <h2 className="font-medium">{t("Conectar com o Facebook")}</h2>
+        <p className="text-sm text-muted-foreground">
+          {t(
+            "Entre com a sua conta do Facebook e autorize só a leitura dos anúncios. Não precisa gerar nem colar token: a conexão dura cerca de 60 dias e o sistema renova sozinho enquanto você usar a tela de Meta Ads.",
+          )}
+        </p>
+        {loginDisponivel ? (
+          <div className="flex items-center gap-3">
+            <Button asChild>
+              {/* Navegação completa de propósito: o fluxo sai para o Facebook e volta. */}
+              <a href="/api/v1/meta-ads/oauth/connect" data-testid="meta-ads-conectar-facebook">
+                {conectada ? t("Reconectar com o Facebook") : t("Conectar com o Facebook")}
+              </a>
+            </Button>
+            {conectada && expiraEm && (
+              <span className="text-xs text-muted-foreground">
+                {vencida
+                  ? `${t("A conexão venceu em")} ${expiraEm}. ${t("Reconecte.")}`
+                  : `${t("Conectado até")} ${expiraEm}.`}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p
+            className="rounded-md border border-warning/40 bg-warning-bg p-3 text-xs leading-4"
+            data-testid="meta-ads-login-indisponivel"
+          >
+            {t(
+              "O aplicativo do Facebook ainda não foi configurado nesta instalação, então o botão fica escondido. Quem administra o sistema cadastra o número e a chave do aplicativo em Admin › Meta. Enquanto isso, você pode colar um token logo abaixo.",
+            )}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {t(
+            "Se o Facebook disser que o recurso está indisponível, é porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios. Sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador).",
+          )}
+        </p>
+      </Card>
+
     <Card className="p-6">
       <form onSubmit={salvar} className="flex flex-col gap-5">
+        <h2 className="font-medium">{t("Ou cole um token à mão")}</h2>
         <div className="flex flex-col gap-2">
           <Label htmlFor="access_token">{t("Token de acesso")}</Label>
           <Input
@@ -163,5 +252,6 @@ export function FormularioDeMetaAds({
         )}
       </form>
     </Card>
+    </div>
   );
 }

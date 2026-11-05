@@ -21,7 +21,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { logger } from "@/lib/logger";
-import { decryptWebhookSecret } from "@/lib/webhooks/secrets";
+import { encryptWebhookSecret, decryptWebhookSecret } from "@/lib/webhooks/secrets";
+import { appDeLoginDaMeta } from "./meta/login/app";
+import { RENOVAR_QUANDO_FALTAR_MS, trocarPorTokenDeLongaDuracao } from "./meta/login/oauth";
 import type { CredencialDeLeitura, PlataformaDeAnuncio } from "./types";
 
 /**
@@ -45,7 +47,7 @@ export async function lerCredencialDeLeitura(
 ): Promise<LeituraDeCredencialDeLeitura> {
   const { data, error } = await admin
     .from("ad_insights_connections")
-    .select("access_token_encrypted, default_account_id")
+    .select("access_token_encrypted, default_account_id, token_expires_at")
     .eq("organization_id", organizationId)
     .eq("platform", plataforma)
     .maybeSingle();
@@ -64,6 +66,7 @@ export async function lerCredencialDeLeitura(
   const linha = data as {
     access_token_encrypted: string | null;
     default_account_id: string | null;
+    token_expires_at: string | null;
   };
 
   // A coluna é NOT NULL no schema, então isto não deveria acontecer. A guarda
@@ -77,10 +80,64 @@ export async function lerCredencialDeLeitura(
   // falharia igual, porque o problema é da INSTALAÇÃO e não do cadastro.
   if (!token) return { ok: false, motivo: "cifra_indisponivel" };
 
+  const tokenEmVigor = await renovarSeFaltarPouco(admin, organizationId, plataforma, token, linha.token_expires_at);
+
   return {
     ok: true,
-    credencial: { accessToken: token, contaPadrao: linha.default_account_id },
+    credencial: { accessToken: tokenEmVigor, contaPadrao: linha.default_account_id },
   };
+}
+
+/**
+ * Renovação SOB DEMANDA do token de longa duração obtido pelo login com o
+ * Facebook: sem cron novo. Quando falta menos de 7 dias para vencer, a própria
+ * leitura troca o token por um novo (mais ~60 dias) e grava.
+ *
+ * Nunca derruba a leitura: qualquer falha (app sem ID/segredo, Meta fora do ar,
+ * token já vencido) devolve o token que já existe, e quem lê recebe o erro
+ * normal da Meta. Token colado à mão não tem vencimento conhecido
+ * (`token_expires_at` nulo) e nunca é renovado.
+ */
+async function renovarSeFaltarPouco(
+  admin: SupabaseClient,
+  organizationId: string,
+  plataforma: PlataformaDeAnuncio,
+  token: string,
+  expiraEmIso: string | null,
+): Promise<string> {
+  if (plataforma !== "meta_ads" || !expiraEmIso) return token;
+  const agora = new Date();
+  const faltaMs = new Date(expiraEmIso).getTime() - agora.getTime();
+  if (!Number.isFinite(faltaMs) || faltaMs > RENOVAR_QUANDO_FALTAR_MS || faltaMs <= 0) return token;
+
+  try {
+    const app = await appDeLoginDaMeta(admin);
+    if (!app) return token;
+    const novo = await trocarPorTokenDeLongaDuracao(app, token, { agora });
+    if (!novo.ok) {
+      logger.warn("[ads.credencial-de-leitura] renovação do token falhou", { organizationId, motivo: novo.motivo });
+      return token;
+    }
+    const cifrado = await encryptWebhookSecret(admin, novo.accessToken);
+    if (!cifrado) return token;
+    const { error } = await admin
+      .from("ad_insights_connections")
+      .update({ access_token_encrypted: cifrado, token_expires_at: novo.expiraEm.toISOString() })
+      .eq("organization_id", organizationId)
+      .eq("platform", plataforma);
+    if (error) {
+      // Não gravou: o token novo seria perdido, e o antigo segue valendo até vencer.
+      logger.warn("[ads.credencial-de-leitura] token renovado mas não gravado", { organizationId });
+      return token;
+    }
+    return novo.accessToken;
+  } catch (erro) {
+    logger.warn("[ads.credencial-de-leitura] renovação do token lançou", {
+      organizationId,
+      erro: erro instanceof Error ? erro.message : String(erro),
+    });
+    return token;
+  }
 }
 
 /**
@@ -95,10 +152,10 @@ export async function existeConexaoDeLeitura(
   admin: SupabaseClient,
   organizationId: string,
   plataforma: PlataformaDeAnuncio,
-): Promise<{ conectada: boolean; contaPadrao: string | null }> {
+): Promise<{ conectada: boolean; contaPadrao: string | null; expiraEm: string | null }> {
   const { data, error } = await admin
     .from("ad_insights_connections")
-    .select("default_account_id")
+    .select("default_account_id, token_expires_at")
     .eq("organization_id", organizationId)
     .eq("platform", plataforma)
     .maybeSingle();
@@ -109,9 +166,13 @@ export async function existeConexaoDeLeitura(
       plataforma,
       error: error.message,
     });
-    return { conectada: false, contaPadrao: null };
+    return { conectada: false, contaPadrao: null, expiraEm: null };
   }
 
-  const linha = data as { default_account_id: string | null } | null;
-  return { conectada: Boolean(linha), contaPadrao: linha?.default_account_id ?? null };
+  const linha = data as { default_account_id: string | null; token_expires_at: string | null } | null;
+  return {
+    conectada: Boolean(linha),
+    contaPadrao: linha?.default_account_id ?? null,
+    expiraEm: linha?.token_expires_at ?? null,
+  };
 }

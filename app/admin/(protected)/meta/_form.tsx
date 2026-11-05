@@ -29,6 +29,10 @@ import { MENSAGEM_DA_RECUSA_DE_ESCRITA, ehRecusaDeEscrita } from "@/lib/auth/rec
 import { copyToClipboard } from "@/lib/clipboard";
 
 interface Props {
+  /** O App ID gravado (público, pode voltar à tela). Vazio = nunca cadastrado. */
+  readonly appId?: string;
+  /** `META_APP_ID` existe no `.env` (piso de rollback do botão do Facebook). */
+  readonly appIdNoAmbiente?: boolean;
   /**
    * SE existe chave gravada — nunca QUAL, nem cifrada. Mesma disciplina de
    * `temSegredoSalvo` em `/admin/google` e de `hasToken` no canal oficial.
@@ -47,6 +51,8 @@ interface Props {
 const TAMANHO_MINIMO_DA_CHAVE = 16;
 
 export function FormularioDaMeta({
+  appId: appIdGravado = "",
+  appIdNoAmbiente = false,
   temSegredoSalvo,
   temTokenSalvo,
   tokenGeradoEm,
@@ -57,6 +63,7 @@ export function FormularioDaMeta({
   const t = useT();
   const router = useRouter();
   const [chave, setChave] = useState("");
+  const [appId, setAppId] = useState(appIdGravado);
   /**
    * O token recém-gerado vive SÓ aqui, na memória desta aba. Recarregar a página
    * o perde — e isso é o desenho, não um defeito: a tela diz para copiar agora e
@@ -66,7 +73,11 @@ export function FormularioDaMeta({
   const [confirmandoTroca, setConfirmandoTroca] = useState(false);
   const [ocupado, iniciar] = useTransition();
 
-  const podeSalvar = chave.trim().length >= TAMANHO_MINIMO_DA_CHAVE;
+  const appIdMudou = appId.trim() !== appIdGravado && /^\d{5,25}$/.test(appId.trim());
+  const chaveValida = chave.trim().length >= TAMANHO_MINIMO_DA_CHAVE;
+  // Salvar só o App ID exige que a chave já exista (ou venha junto): o login
+  // precisa dos dois, e o servidor recusa o ID sem chave.
+  const podeSalvar = chaveValida ? true : appIdMudou && temSegredoSalvo;
 
   function motivoDaRecusa(r: Extract<UpdateMetaAppResult, { ok: false }>): string {
     if (ehRecusaDeEscrita(r.error)) return t(MENSAGEM_DA_RECUSA_DE_ESCRITA[r.error]);
@@ -98,9 +109,12 @@ export function FormularioDaMeta({
 
   function salvar() {
     iniciar(async () => {
-      const r = await updateMetaApp({ app_secret: chave.trim() });
+      const r = await updateMetaApp({
+        ...(chaveValida ? { app_secret: chave.trim() } : {}),
+        ...(appIdMudou ? { app_id: appId.trim() } : {}),
+      });
       if (r.ok) setChave("");
-      aoGravar(r, t("Chave secreta salva."));
+      aoGravar(r, t("Salvo."));
     });
   }
 
@@ -135,6 +149,25 @@ export function FormularioDaMeta({
       ) : null}
 
       <Card className="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="meta-app-id">{t("Número do aplicativo (App ID)")}</Label>
+          <Input
+            id="meta-app-id"
+            data-testid="meta-app-id"
+            inputMode="numeric"
+            autoComplete="off"
+            value={appId}
+            onChange={(e) => setAppId(e.target.value)}
+            placeholder={t("Só números")}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("Fica no painel da Meta, em Configurações do app › Básico. Usado pelo botão “Conectar com o Facebook” da tela Meta Ads de cada empresa.")}
+            {appIdNoAmbiente && !appIdGravado
+              ? ` ${t("Esta instalação já tem o número no arquivo de configuração do servidor; o que você salvar aqui passa a valer no lugar dele.")}`
+              : ""}
+          </p>
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="meta-app-secret">{t("Chave secreta do aplicativo")}</Label>
           <Input

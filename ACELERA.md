@@ -149,6 +149,25 @@ Dependências do core usadas (se mudarem no upstream, revisar): `respostaDePonte
 Para atualizar: criar `acelera/<nova versão>` a partir da tag nova e `git cherry-pick` os commits
 do fork; conflito só pode aparecer nos dois arquivos alterados.
 
+## Botão "Conectar com o Facebook" (Configurações → Meta Ads)
+
+Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Escopo só `ads_read`.
+
+- **App por instalação:** App ID em `platform_meta_app.app_id` (migration `acelera_0005`), preenchido em
+  **Admin → Meta** (campo "Número do aplicativo"); o App Secret é o mesmo já cadastrado ali. Piso: variáveis
+  `META_APP_ID` + `META_APP_SECRET` no `.env`. Banco primeiro; o par nunca mistura origens.
+- **URL de retorno a cadastrar no app da Meta** (Login do Facebook → URIs de redirecionamento válidos):
+  `https://comercial.aceleradelivery.com/api/v1/meta-ads/oauth/callback`
+- **Fluxo:** `GET /api/v1/meta-ads/oauth/connect` (admin) → Facebook → `GET /api/v1/meta-ads/oauth/callback`
+  (público no proxy; a identidade vem do `state` assinado + cookie de vínculo + nonce de uso único) → troca o
+  `code` pelo token curto e este pelo de longa duração (~60 dias) → grava em `ad_insights_connections`
+  (cifrado, `token_expires_at`).
+- **Renovação:** sob demanda, em `lerCredencialDeLeitura`: faltando menos de 7 dias, troca por um novo e grava.
+  Sem cron. Token colado à mão (sem vencimento) nunca é renovado.
+- Sem acesso avançado a `ads_read` no app, só entra quem tem função no app (admin/dev/testador).
+- Arquivos: `lib/plataformas-de-anuncio/meta/login/*`, `app/api/v1/meta-ads/oauth/*`, e edições em
+  `credenciais-de-leitura.ts`, `updateMetaApp.ts`, `/admin/meta`, `/app/settings/meta-ads`, `public-paths.ts` (1 linha).
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
