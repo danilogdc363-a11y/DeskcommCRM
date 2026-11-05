@@ -167,7 +167,20 @@ describe("sidebarGroups", () => {
       "/app/ai/agents",
       "/app/ai/followups",
       "/app/ai/cases",
+      // ACELERA: Automações veio do grupo Tintim (extinto) para cá.
+      "/app/settings/automacoes",
     ]);
+  });
+
+  it("ACELERA: Meta Ads e Conversões moram em Canais; o grupo Tintim não existe mais", () => {
+    expect(NAV_GROUPS.map((g) => g.id)).not.toContain("tintim");
+    const canais = sidebarGroups(true, null).find((g) => g.group.id === "canais");
+    expect(canais?.items.map((i) => i.href)).toEqual(
+      expect.arrayContaining(["/app/ads/meta", "/app/settings/conversoes"]),
+    );
+    // Conectar a conta de anúncios continua em Organização, de propósito.
+    const meta = NAV_DESTINATIONS.find((d) => d.href === "/app/settings/meta-ads");
+    expect(meta?.group).toBe("organizacao");
   });
 });
 

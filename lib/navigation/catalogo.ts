@@ -25,7 +25,6 @@ export type NavGroupId =
   | "ia"
   | "canais"
   | "analise"
-  | "tintim" // TINTIM-TEMPORARIO
   | "organizacao";
 
 export interface NavGroup {
@@ -103,9 +102,6 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: "ia", label: "Agente de IA", hub: { href: "/app/ai", label: "Ver tudo em IA" } },
   { id: "canais", label: "Canais" },
   { id: "analise", label: "Análise", hub: { href: "/app/analise", label: "Ver tudo em Análise" } },
-  // TINTIM-TEMPORARIO: reúne as telas que substituem o Tintim até ele ser cancelado.
-  // Para desfazer: apague este grupo e devolva `group` das três portas marcadas abaixo.
-  { id: "tintim", label: "Tintim" },
   {
     id: "organizacao",
     label: "Organização",
@@ -939,8 +935,8 @@ export const NAV_CATALOG = [
     label: "Meta Ads",
     description: "Quanto custou cada resultado das campanhas que trazem gente para cá.",
     icon: "Megaphone",
-    group: "tintim", // TINTIM-TEMPORARIO (era "analise")
-    section: "Os números do período",
+    // ACELERA: desempenho dos anúncios mora em Canais, junto de Conversões.
+    group: "canais",
     // `manager`, e não o `viewer` de Desempenho: aqui não há recorte por
     // pessoa — orçamento e criativo são da empresa inteira. Mesmo grau dos
     // outros dois vizinhos do grupo.
@@ -1045,8 +1041,9 @@ export const NAV_CATALOG = [
     label: "Automações",
     description: "O freio único do passo em que a IA escolhe entre as opções de uma regra, para a empresa inteira.",
     icon: "FlowArrow",
-    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
-    section: "Sua empresa",
+    // ACELERA: Automações fica junto dos agentes (grupo Agente de IA).
+    group: "ia",
+    section: "Montar o agente",
     minRole: "manager",
     sidebar: true,
   },
@@ -1105,8 +1102,8 @@ export const NAV_CATALOG = [
     description:
       "Devolver ao anúncio as vendas que ele trouxe, e marcar a origem de quem chega pelo site.",
     icon: "ChartLineUp",
-    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
-    section: "Sua empresa",
+    // ACELERA: Conversões é rastreamento de anúncio; mora em Canais.
+    group: "canais",
     // `admin` pelo mesmo critério das vizinhas: o token grava na conta de
     // anúncios da empresa, e quem o troca decide para onde vai o dinheiro de
     // mídia. Um `manager` ficaria acima de billing na mesma prancheta.
