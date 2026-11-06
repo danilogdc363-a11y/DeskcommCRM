@@ -38,6 +38,7 @@ import {
   type PatchDeMarcacao,
   type UpdateDeMarcacao,
 } from "@/lib/leads/stage-editing";
+import { hexValido } from "@/lib/kanban/cores-de-etapa";
 import { autoriaDaMudanca } from "@/lib/operacao/autoria";
 
 type SB = SupabaseClient;
@@ -337,6 +338,8 @@ export interface PedidoDeEdicao {
    * banco, porque a coluna é `numeric` sem CHECK.
    */
   expected_duration_hours?: number | null;
+  /** Cor `#RRGGBB` da etapa; `null` volta à cor padrão da posição. */
+  color?: string | null;
 }
 
 export async function atualizarEtapa(
@@ -417,7 +420,20 @@ export async function atualizarEtapa(
     win_probability?: number | null;
     avisar_na_central?: boolean;
     expected_duration_hours?: number | null;
+    color?: string | null;
   } = {};
+  if (pedido.color !== undefined) {
+    if (pedido.color !== null && !hexValido(pedido.color)) {
+      throw new ApiError(
+        422,
+        "unprocessable_entity",
+        undefined,
+        deps.requestId,
+        "Use uma cor no formato #RRGGBB.",
+      );
+    }
+    patchDoAlvo.color = pedido.color === null ? null : pedido.color.toUpperCase();
+  }
   if (pedido.name !== undefined) patchDoAlvo.name = pedido.name.trim();
   // `undefined` não viaja; `null` limpa a calibração de propósito.
   if (pedido.win_probability !== undefined) patchDoAlvo.win_probability = pedido.win_probability;

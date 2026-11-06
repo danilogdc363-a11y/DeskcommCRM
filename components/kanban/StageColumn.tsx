@@ -9,6 +9,8 @@ import { buildCardInput } from "@/lib/kanban/card-state";
 import { intervaloDaColuna } from "@/lib/kanban/selecao";
 import { formatSomaPorMoeda, formatValorDoNegocio, MOEDA_PADRAO, somaPorMoeda } from "@/lib/money";
 import { KanbanCard, type GestoDeSelecao } from "./KanbanCard";
+import { SeletorDeCorDaEtapa } from "./SeletorDeCorDaEtapa";
+import { corDaEtapa } from "@/lib/kanban/cores-de-etapa";
 
 interface StageColumnProps {
   stage: Stage;
@@ -39,6 +41,10 @@ interface StageColumnProps {
   onMoverPara?: (lead: Lead, stageId: string) => void;
   /** `manager`+ — mesmo corte de papel da rota que renomeia a etapa. */
   podeRenomear?: boolean;
+  /** Posição da etapa no quadro (0 = primeira): decide a cor padrão quando não há cor. */
+  posicao?: number;
+  /** Quem pode renomear pode trocar a cor; sem isso a bolinha é só visual. */
+  onMudarCor?: (cor: string | null) => void;
   onRenomear?: (nome: string) => void;
   /** Densidade dos cards (issue #3461, item 2) — atravessa como `pulses`. */
   denso?: boolean;
@@ -65,6 +71,8 @@ export function StageColumn({
   etapas,
   onMoverPara,
   podeRenomear = false,
+  posicao = 0,
+  onMudarCor,
   onRenomear,
   denso = false,
   somenteLeitura = false,
@@ -144,9 +152,11 @@ export function StageColumn({
     ancora.current = null;
     onSelectMany?.(idsVisiveis, !todosSelecionados);
   };
-  const accentStyle: CSSProperties | undefined = stage.color
-    ? { backgroundColor: stage.color }
-    : undefined;
+  const cor = corDaEtapa(stage, posicao);
+  // A borda da coluna puxa 40% da cor da etapa; o resto é a borda do tema, para
+  // a cor aparecer sem virar moldura pesada.
+  const bordaColorida = `color-mix(in srgb, ${cor} 40%, var(--border))`;
+  const estiloDaColuna: CSSProperties = { borderColor: bordaColorida };
 
   return (
     <div
@@ -166,7 +176,9 @@ export function StageColumn({
         sempre, onde a graça é justamente ver várias etapas ao mesmo tempo.
       */
       className="bg-surface-elevated/40 flex min-h-full w-[85vw] max-w-80 shrink-0 snap-center flex-col rounded-lg border border-border md:w-80"
+      style={estiloDaColuna}
       data-etapa-do-quadro={stage.id}
+      data-cor-da-etapa={cor}
     >
       {/* Cabeçalho e total PRESOS no alto do quadro enquanto os cards rolam: com
           uma etapa comprida, é o que diz em que etapa se está olhando. O fundo
@@ -181,8 +193,15 @@ export function StageColumn({
           junto com o cabeçalho preso. */}
       <div
         className="sticky top-0 z-10 -mx-px -mt-px rounded-t-lg border-x border-t border-border bg-background"
+        style={{ borderColor: bordaColorida }}
         data-cabecalho-da-etapa
       >
+        {/* Filete de 3px no topo: a cor da etapa de relance, sem depender só da bolinha. */}
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[3px] rounded-t-lg"
+          style={{ backgroundColor: cor }}
+        />
         <div className="bg-surface-elevated/40 rounded-t-lg">
           <div className="group/etapa flex items-center gap-2 border-b border-border px-3 py-2.5">
             {/* "Selecionar a etapa inteira" é o gesto que faz a ação em lote valer a
@@ -220,11 +239,20 @@ export function StageColumn({
                 )}
               />
             )}
-            <span
-              className={cn("h-2 w-2 rounded-full", !stage.color && "bg-text-muted/40")}
-              style={accentStyle}
-              aria-hidden
-            />
+            {podeRenomear && onMudarCor ? (
+              <SeletorDeCorDaEtapa
+                cor={cor}
+                ehPadrao={!stage.color}
+                nomeDaEtapa={stage.name}
+                onEscolher={onMudarCor}
+              />
+            ) : (
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: cor }}
+                aria-hidden
+              />
+            )}
             {podeRenomear && onRenomear ? (
               // `key` pelo nome: remonta (e descarta o rascunho) quando o nome
               // GRAVADO muda — mesmo contrato de `NomeDaEtapa` em Configurações,
@@ -238,7 +266,10 @@ export function StageColumn({
             ) : (
               <h2 className="flex-1 truncate text-sm font-semibold text-text">{stage.name}</h2>
             )}
-            <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-text-muted tabular-nums">
+            <span
+              className="rounded-full px-2 py-0.5 text-[11px] font-medium text-text tabular-nums"
+              style={{ backgroundColor: `color-mix(in srgb, ${cor} 16%, var(--surface))` }}
+            >
               {selecionadosAqui > 0 ? `${selecionadosAqui}/${leads.length}` : leads.length}
             </span>
           </div>
@@ -263,7 +294,7 @@ export function StageColumn({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              "flex flex-1 flex-col gap-2 p-2 transition-colors",
+              "flex flex-1 flex-col gap-2.5 p-2.5 transition-colors",
               snapshot.isDraggingOver && "bg-accent/5",
             )}
           >
@@ -289,6 +320,7 @@ export function StageColumn({
                 onMoverPara={onMoverPara}
                 denso={denso}
                 somenteLeitura={somenteLeitura}
+                corDaEtapa={cor}
               />
             ))}
             {provided.placeholder}
