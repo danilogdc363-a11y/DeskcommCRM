@@ -114,7 +114,11 @@ describe("CommandPalette", () => {
 
   it("sem texto, oferece o trabalho do dia em vez de tela vazia", () => {
     abrir();
-    expect(screen.getByRole("option", { name: /Inbox/ })).toBeTruthy();
+    // ACELERA (commit 4a6da5d9dc): a Inbox se chama "WhatsApp" no fork.
+    // Mais de uma tela cita "WhatsApp" no nome ou na descrição (ex.: Conexões),
+    // então a prova é pelo destino: a tela da Inbox está na oferta inicial.
+    const destinos = screen.getAllByRole("option").map((o) => o.getAttribute("data-href"));
+    expect(destinos).toContain("/app/inbox");
   });
 
   it("diz quando não achou, em vez de sumir sem explicação", async () => {
@@ -131,8 +135,12 @@ describe("CommandPalette", () => {
     const btnAtendimento = screen.getByRole("button", { name: /Atendimento/i });
     expect(btnAtendimento).toBeTruthy();
     await user.click(btnAtendimento);
-    // Ao filtrar por Atendimento, itens de CRM ou Funcionários não devem aparecer
-    expect(screen.getByRole("option", { name: /Inbox/ })).toBeTruthy();
+    // Ao filtrar por Atendimento, itens de CRM ou Funcionários não devem aparecer.
+    // ACELERA (commit 4a6da5d9dc): WhatsApp (ex-Inbox) mudou para o grupo "Menu
+    // Principal", então o que prova o filtro aqui é a Agenda, que continua em
+    // Atendimento, e a ausência do WhatsApp, que agora é de outro grupo.
+    expect(screen.getByRole("option", { name: /Agenda/ })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /WhatsApp/ })).toBeNull();
     expect(screen.queryByRole("option", { name: /Contatos/ })).toBeNull();
   });
 
