@@ -138,9 +138,24 @@ describe("as rotas de importação decodificam pelos BYTES", () => {
 
     // Booleano em vez do texto inteiro: o diff de um `toContain` sobre um
     // arquivo de 200 linhas enterra o motivo da falha.
-    expect(codigo.includes("decodificarCsv(")).toBe(true);
+    // A rota de contatos passou a ler CSV/XLSX por `lerLinhasDoArquivo` (que
+    // decodifica pelos bytes, provado no teste abaixo) e o vCard por
+    // `decodificarBytesDeTexto` — a MESMA regra de charset, só sob outro nome.
+    const decodificaPelosBytes =
+      codigo.includes("decodificarCsv(") ||
+      codigo.includes("lerLinhasDoArquivo(") ||
+      codigo.includes("decodificarBytesDeTexto(");
+    expect(decodificaPelosBytes).toBe(true);
     // `req.text()` de webhook é outra coisa; o que não pode é o ARQUIVO.
     expect(/\b(arquivo|file)\.text\(\)/.test(codigo)).toBe(false);
+  });
+
+  it("lerLinhasDoArquivo (usado por leads e contatos) decodifica o CSV pelos bytes", () => {
+    const codigo = semComentarios(
+      readFileSync(join(process.cwd(), "lib/planilha/linhas-do-arquivo.ts"), "utf8"),
+    );
+    expect(codigo.includes("decodificarCsv(")).toBe(true);
+    expect(/(arquivo|file)\.text\(\)/.test(codigo)).toBe(false);
   });
 
   it("o guarda enxerga a chamada quando ela existe (controle positivo)", () => {
