@@ -62,6 +62,7 @@ const COLUNAS: Record<string, readonly string[]> = {
   valor: ["valor", "preco", "preço", "ticket", "value", "precio", "importe", "monto"],
   origem: ["origem", "fonte", "canal", "source", "origen", "fuente"],
   etiquetas: ["tags", "etiquetas", "marcadores"],
+  etapa: ["etapa", "estagio", "estágio", "fase", "stage", "etapa do funil", "etapa del embudo"],
 };
 
 function normalizarCabecalho(texto: string): string {
@@ -93,6 +94,8 @@ export interface LinhaDeLead {
   email: string | null;
   tags: string[];
   source: string;
+  /** O nome da etapa como veio na célula, ou nulo (vale a primeira etapa aberta). */
+  etapa: string | null;
 }
 
 export interface ErroDaLinha {
@@ -111,11 +114,13 @@ export interface ResultadoDaLeitura {
 export const ORIGEM_DA_PLANILHA = "importacao_planilha";
 
 export function lerPlanilhaDeLeads(
-  conteudo: string,
+  /** O texto do CSV, ou as linhas já lidas (XLSX): cabeçalho + dados. */
+  conteudo: string | string[][],
   t?: (text: string) => string,
 ): ResultadoDaLeitura | { erro: string } {
   const _t = t || ((x) => x);
-  const linhas = parseCsv(conteudo).filter((l) => l.some((c) => c.trim() !== ""));
+  const matriz = typeof conteudo === "string" ? parseCsv(conteudo) : conteudo;
+  const linhas = matriz.filter((l) => l.some((c) => c.trim() !== ""));
   if (linhas.length === 0) return { erro: _t("A planilha está vazia.") };
 
   const cabecalho = linhas[0]!;
@@ -204,8 +209,64 @@ export function lerPlanilhaDeLeads(
         .filter(Boolean)
         .slice(0, 20),
       source: valor("origem") || ORIGEM_DA_PLANILHA,
+      etapa: valor("etapa").replace(/\s+/g, " ") || null,
     });
   }
 
   return { leads, erros, colunasIgnoradas };
+}
+
+/** Compara nomes de etapa sem acento, caixa nem espaço sobrando. */
+export function chaveDeEtapa(nome: string): string {
+  return normalizarCabecalho(nome);
+}
+
+export interface EtapaDoFunil {
+  id: string;
+  name: string;
+  is_won: boolean;
+  is_lost: boolean;
+}
+
+/**
+ * Resolve a coluna "etapa" de cada linha contra as etapas do funil escolhido.
+ *
+ * - célula vazia → `etapaPadrao` (a primeira etapa aberta, como sempre foi);
+ * - nome que bate com uma etapa ABERTA → o id dela;
+ * - nome que não existe, ou etapa de ganho/perda → a linha é IGNORADA e entra no
+ *   relatório com o motivo (negócio não nasce fechado: ganho/perda exigem o
+ *   fluxo próprio, e chutar outra etapa colocaria o card no lugar errado).
+ */
+export function resolverEtapas(
+  leads: LinhaDeLead[],
+  etapas: EtapaDoFunil[],
+  etapaPadrao: string,
+  t?: (text: string) => string,
+): { leads: Array<LinhaDeLead & { stage_id: string }>; ignoradas: ErroDaLinha[] } {
+  const _t = t || ((x) => x);
+  const porNome = new Map(etapas.map((e) => [chaveDeEtapa(e.name), e]));
+  const resolvidos: Array<LinhaDeLead & { stage_id: string }> = [];
+  const ignoradas: ErroDaLinha[] = [];
+  for (const lead of leads) {
+    if (!lead.etapa) {
+      resolvidos.push({ ...lead, stage_id: etapaPadrao });
+      continue;
+    }
+    const etapa = porNome.get(chaveDeEtapa(lead.etapa));
+    if (!etapa) {
+      ignoradas.push({
+        linha: lead.linha,
+        motivo: _t("etapa não encontrada neste funil (") + `"${lead.etapa}"` + _t(") — linha ignorada"),
+      });
+    } else if (etapa.is_won || etapa.is_lost) {
+      ignoradas.push({
+        linha: lead.linha,
+        motivo:
+          _t("etapa de ganho ou perda não é aceita na importação (") + `"${lead.etapa}"` + _t(") — linha ignorada"),
+      });
+    } else {
+      resolvidos.push({ ...lead, stage_id: etapa.id });
+    }
+  }
+  return { leads: resolvidos, ignoradas };
 }
