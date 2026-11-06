@@ -340,7 +340,7 @@ describe("o clique do anúncio do formulário chega à venda — pela rota e pel
     expect(linha?.status).toBe("error");
     expect(linha?.reason).toBe("recusado_pela_plataforma");
     expect(String(linha?.detail)).toBe(
-      "Sem o clique do anúncio e sem telefone no contato, a Meta não tem como reconhecer o cliente.",
+      "Sem o clique do anúncio e sem telefone ou e-mail no contato, a Meta não tem como reconhecer o cliente.",
     );
     expect(spy).not.toHaveBeenCalled();
     expect(r.status).toBe("skipped");

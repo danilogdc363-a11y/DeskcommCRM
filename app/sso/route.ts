@@ -25,6 +25,7 @@ import { INTEGRACAO_ACELERA_OS, planejarEntrada } from "@/lib/acelera-sso/entrad
 import { conferirPasse, NoncesUsados } from "@/lib/acelera-sso/pass";
 import { audit } from "@/lib/audit";
 import { pontaDeCarregamento } from "@/lib/acelera-sso/ponte";
+import { invalidarUsuario } from "@/lib/auth/cache-curto";
 import { slugDoProvisionamento } from "@/lib/auth/provision";
 import { marcaDaSaida } from "@/lib/branding/saida";
 import { env } from "@/lib/env";
@@ -170,6 +171,9 @@ export async function GET(request: NextRequest) {
         .eq("id", vinculo.id)
         .eq("organization_id", org.id);
     }
+    // Vínculo novo ou papel trocado: o cache curto de acesso (30 s) não pode
+    // segurar o papel antigo.
+    if (plano.vinculo !== "manter") invalidarUsuario(usuarioId);
 
     // Sessão: o cookie é gravado pelo client SSR desta requisição.
     const supabase = await createClient();

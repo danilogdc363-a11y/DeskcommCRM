@@ -12,7 +12,7 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { lerDossieDoLead } from "@/lib/acelera/dossie-do-lead";
-import { resolveAuthDual } from "@/lib/api/auth-dual";
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
 import { fail, ok } from "@/lib/api/wrappers";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +29,9 @@ export async function GET(
     scope: "mcp:read",
   });
   if (!authz.ok) return authz.response;
+  // Rota em PUBLIC_PATHS: nada a montante conta o Bearer, então o teto é aqui.
+  const teto = await tetoDeEscritaDoToken(authz, "dossie", requestId);
+  if (teto) return teto;
 
   const { id: leadId } = await ctx.params;
   if (!z.uuid().safeParse(leadId).success) {
