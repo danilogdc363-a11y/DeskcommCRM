@@ -13361,6 +13361,38 @@ export const DICIONARIO: Traducoes = {
     { es: "Al desconectar, se borra el token guardado. La pantalla de Meta Ads volverá a pedir una conexión. No se pierde ningún dato histórico, porque aquí no se almacena nada." },
   "Não consegui desconectar agora.": { es: "No pude desconectar ahora." },
 
+  // ─── Configurações → Meta Ads: botão "Conectar com o Facebook" (acelera_0005) ───
+  "Conectar com o Facebook": { es: "Conectar con Facebook" },
+  "Reconectar com o Facebook": { es: "Reconectar con Facebook" },
+  "Conta do Facebook conectada.": { es: "Cuenta de Facebook conectada." },
+  "Ou cole um token à mão": { es: "O pega un token a mano" },
+  "Reconecte.": { es: "Vuelve a conectar." },
+  "Conectado até": { es: "Conectado hasta" },
+  "A conexão venceu em": { es: "La conexión venció el" },
+  "Não consegui conectar com o Facebook.": { es: "No pude conectar con Facebook." },
+  "Entre com a sua conta do Facebook e autorize só a leitura dos anúncios. Não precisa gerar nem colar token: a conexão dura cerca de 60 dias e o sistema renova sozinho enquanto você usar a tela de Meta Ads.":
+    { es: "Entra con tu cuenta de Facebook y autoriza solo la lectura de los anuncios. No hace falta generar ni pegar un token: la conexión dura unos 60 días y el sistema la renueva solo mientras uses la pantalla de Meta Ads." },
+  "O botão do Facebook está desligado porque faltam estas configurações no servidor:":
+    { es: "El botón de Facebook está apagado porque faltan estas configuraciones en el servidor:" },
+  "Quem administra o sistema cadastra e reimplanta. Enquanto isso, você pode colar um token logo abaixo.":
+    { es: "Quien administra el sistema las registra y vuelve a desplegar. Mientras tanto, puedes pegar un token justo debajo." },
+  "Se o Facebook disser que o recurso está indisponível, é porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios. Sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador).":
+    { es: "Si Facebook dice que el recurso no está disponible, es porque la aplicación todavía no tiene el acceso avanzado para leer anuncios. Sin él, solo entra quien tiene un rol en la aplicación (administrador, desarrollador o probador)." },
+  "Você cancelou a conexão no Facebook. Quando quiser, é só clicar no botão de novo.":
+    { es: "Cancelaste la conexión en Facebook. Cuando quieras, solo haz clic en el botón otra vez." },
+  "O Facebook não deixou conectar. Isso costuma acontecer porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios: sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador). Peça a quem cuida do aplicativo para te adicionar, ou cole um token abaixo.":
+    { es: "Facebook no permitió conectar. Suele pasar porque la aplicación todavía no tiene el acceso avanzado para leer anuncios: sin él, solo entra quien tiene un rol en la aplicación (administrador, desarrollador o probador). Pide a quien administra la aplicación que te agregue, o pega un token abajo." },
+  "Não consegui terminar a conexão com o Facebook. Tente de novo em instantes.":
+    { es: "No pude terminar la conexión con Facebook. Inténtalo de nuevo en unos instantes." },
+  "O pedido de conexão venceu ou não é mais válido. Clique no botão e tente de novo.":
+    { es: "La solicitud de conexión venció o ya no es válida. Haz clic en el botón e inténtalo de nuevo." },
+  "O Facebook não devolveu a autorização. Clique no botão e tente de novo.":
+    { es: "Facebook no devolvió la autorización. Haz clic en el botón e inténtalo de nuevo." },
+  "O botão do Facebook ainda não foi configurado no servidor (faltam META_APP_ID e META_APP_SECRET). Peça a quem administra o sistema.":
+    { es: "El botón de Facebook todavía no fue configurado en el servidor (faltan META_APP_ID y META_APP_SECRET). Pídeselo a quien administra el sistema." },
+  "Esta instalação está sem a chave mestra de criptografia, e a conexão não foi gravada. Quem instalou o sistema precisa configurá-la.":
+    { es: "Esta instalación no tiene la clave maestra de cifrado y la conexión no se guardó. Quien instaló el sistema debe configurarla." },
+
   // ─── ERRO_EM_PORTUGUES compartida por meta-ads/_form.tsx e conversoes/_form.tsx ───
   "Você não está em nenhuma organização ativa.": {
     es: "No estás en ninguna organización activa.",
