@@ -227,7 +227,7 @@ describe("o envio sem clique", () => {
     );
     expect(r).toEqual({
       tipo: "permanente",
-      detalhe: "Sem o clique do anúncio e sem telefone no contato, a Meta não tem como reconhecer o cliente.",
+      detalhe: "Sem o clique do anúncio e sem telefone ou e-mail no contato, a Meta não tem como reconhecer o cliente.",
     });
     expect(spy).not.toHaveBeenCalled();
   });

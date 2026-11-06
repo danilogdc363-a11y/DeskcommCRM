@@ -20,7 +20,10 @@ import { describe, expect, it } from "vitest";
 
 const RAIZ = resolve(process.cwd());
 const MIGRACOES = join(RAIZ, "supabase", "migrations");
-const PREFIXO_NUMERO = /_(\d{4,5})_[a-z0-9_]+\.sql$/;
+// A numeração `acelera_000N` do fork é uma sequência PRÓPRIA (o upstream não usa
+// o prefixo `acelera_`), então `acelera_0001` não colide com o `0001` do upstream.
+// Dentro de cada sequência o número continua tendo de ser único.
+const PREFIXO_NUMERO = /_((?:acelera_)?\d{4,5})_[a-z0-9_]+\.sql$/;
 
 function arquivoDa0580(): { nome: string; conteudo: string } | null {
   const nome = readdirSync(MIGRACOES).find(

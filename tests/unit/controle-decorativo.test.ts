@@ -160,7 +160,15 @@ const LIGADAS = propsLigadasNoProduto();
  * ENCOLHE — e entrada nova precisa dizer POR QUE a tela do produto legitimamente
  * não liga aquele botão.
  */
-const JUSTIFICADOS: Record<string, string> = {};
+const JUSTIFICADOS: Record<string, string> = {
+  // O fio existe e está no produto, só que um nível abaixo de `app/app/**`:
+  // `app/app/inbox/page.tsx` monta `InboxLayout`, e é `InboxLayout`
+  // (components/inbox/InboxLayout.tsx) quem passa `onAlternarFicha` ao
+  // `ConversationHeader`, ao lado do estado do painel do contato que só ele
+  // tem. A varredura só olha `app/app`, então não enxerga esse fio.
+  onAlternarFicha:
+    "ligado por components/inbox/InboxLayout.tsx, montado por app/app/inbox/page.tsx",
+};
 
 describe("nenhum botão fica cinza por falta de fiação", () => {
   it("a varredura enxerga os dois lados (senão ela mede o vazio)", () => {
