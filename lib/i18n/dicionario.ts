@@ -19676,6 +19676,17 @@ export const DICIONARIO: Traducoes = {
   "A Meta não concluiu a conexão. Tente de novo.": { es: "Meta no completó la conexión. Inténtalo de nuevo." },
   "Chave da conta da instalação no provedor parceiro": { es: "Clave de la cuenta de la instalación en el proveedor asociado" },
   "Com ela, cada empresa conecta o número oficial do WhatsApp com um clique, sem ter conta no provedor. Os números ficam na conta da instalação e entram na fatura dela.": { es: "Con ella, cada empresa conecta el número oficial de WhatsApp con un clic, sin tener cuenta en el proveedor. Los números quedan en la cuenta de la instalación y entran en su factura." },
+  "Reportar também leads sem origem de anúncio": { es: "Reportar también leads sin origen de anuncio" },
+  "Envia à Meta quem chegou por formulário ou WhatsApp direto, casado por telefone e e-mail. A Meta só credita o anúncio se a pessoa viu ou clicou em um.": { es: "Envía a Meta a quien llegó por formulario o WhatsApp directo, cruzado por teléfono y correo. Meta solo acredita el anuncio si la persona vio uno o hizo clic en él." },
+  "Criar lead": { es: "Crear lead" },
+  "Dados do contato": { es: "Datos del contacto" },
+  "Fechar dados do contato": { es: "Cerrar datos del contacto" },
+  "Ver dados do contato": { es: "Ver datos del contacto" },
+  "Mais opções": { es: "Más opciones" },
+  "Cadastrar cliente": { es: "Registrar cliente" },
+  "Cria um lead no funil para este contato.": { es: "Crea un lead en el embudo para este contacto." },
+  "Move o card do lead para uma etapa; a regra da etapa envia o evento à Meta.": { es: "Mueve la tarjeta del lead a una etapa; la regla de la etapa envía el evento a Meta." },
+  "Agenda uma mensagem para ser enviada nesta conversa mais tarde.": { es: "Programa un mensaje para enviarlo más tarde en esta conversación." },
 };
 
 /**

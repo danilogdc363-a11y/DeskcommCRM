@@ -60,6 +60,13 @@ vi.mock("@/components/inbox/JanelaSelo", () => ({ JanelaSelo: () => null }));
 vi.mock("@/components/inbox/ParticipantesDaConversa", () => ({
   ParticipantesDaConversa: () => null,
 }));
+// ACELERA: os botões do comercial (#9) moram em AcoesComerciaisDaConversa, que
+// lê react-query (lista de agendados, funil). Estes testes medem a barra de
+// ações, não esse componente: sem o mock, o `useQueryClient` exigiria provider.
+vi.mock("@/components/inbox/AcoesComerciaisDaConversa", () => ({
+  DialogosComerciais: () => null,
+  MensagensAgendadasDaConversa: () => null,
+}));
 vi.mock("@/components/inbox/ChannelLogo", () => ({ ChannelLogo: () => null }));
 vi.mock("@/hooks/voice/useVoiceSessionStatus", () => ({
   useVoiceSessionStatus: () => ({ data: { configured: true, paired: true } }),
@@ -299,7 +306,9 @@ describe("ConversationHeader — fechar conversa de contato com a equipe (#3313)
     const user = userEvent.setup();
     render(<ConversationHeader conversation={comTrava(true)} />);
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    // ACELERA: "Fechar" mora no menu "⋮" (layout WhatsApp Web), não na barra.
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo = await screen.findByRole("alertdialog");
 
     expect(within(dialogo).getByTestId("escolha-ao-fechar")).toBeTruthy();
@@ -319,7 +328,9 @@ describe("ConversationHeader — fechar conversa de contato com a equipe (#3313)
     const user = userEvent.setup();
     render(<ConversationHeader conversation={comTrava(true)} />);
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    // ACELERA: "Fechar" mora no menu "⋮" (layout WhatsApp Web), não na barra.
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo = await screen.findByRole("alertdialog");
 
     await user.click(within(dialogo).getByTestId("fechar-manter-com-a-equipe"));
@@ -339,13 +350,17 @@ describe("ConversationHeader — fechar conversa de contato com a equipe (#3313)
     const user = userEvent.setup();
     render(<ConversationHeader conversation={comTrava(true)} />);
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    // ACELERA: "Fechar" mora no menu "⋮" (layout WhatsApp Web), não na barra.
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo = await screen.findByRole("alertdialog");
     await user.click(within(dialogo).getByTestId("fechar-manter-com-a-equipe"));
     await user.click(within(dialogo).getByRole("button", { name: "Cancelar" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    // ACELERA: "Fechar" mora no menu "⋮" (layout WhatsApp Web), não na barra.
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo2 = await screen.findByRole("alertdialog");
     expect(within(dialogo2).getByTestId("fechar-devolver-ao-automatico")).toBeChecked();
     expect(closeMutate).not.toHaveBeenCalled();
@@ -355,7 +370,9 @@ describe("ConversationHeader — fechar conversa de contato com a equipe (#3313)
     const user = userEvent.setup();
     render(<ConversationHeader conversation={comTrava(false)} />);
 
-    await user.click(screen.getByRole("button", { name: "Fechar" }));
+    // ACELERA: "Fechar" mora no menu "⋮" (layout WhatsApp Web), não na barra.
+    await user.click(screen.getByRole("button", { name: "Mais opções" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fechar" }));
     const dialogo = await screen.findByRole("alertdialog");
 
     expect(within(dialogo).queryByTestId("escolha-ao-fechar")).toBeNull();

@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBulkAction } from "@/hooks/kanban/useBulkAction";
 import { useT } from "@/hooks/i18n/useT";
+import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 import { useDefaultPipeline, type DefaultPipelineData } from "@/hooks/pipelines/useDefaultPipeline";
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
@@ -301,16 +302,16 @@ interface Agendamento {
   motivo_falha: string | null;
 }
 
-const formatoDoHorario = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: FUSO,
-  day: "2-digit",
-  month: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
 export function MensagensAgendadasDaConversa({ conversationId }: { conversationId: string }) {
   const t = useT();
+  const tag = useTagDeIdioma();
+  const formatoDoHorario = new Intl.DateTimeFormat(tag, {
+    timeZone: FUSO,
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const qc = useQueryClient();
   const agendados = useQuery({
     queryKey: chaveDosAgendados(conversationId),
