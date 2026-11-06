@@ -155,7 +155,7 @@ describe("as rotas de importação decodificam pelos BYTES", () => {
       readFileSync(join(process.cwd(), "lib/planilha/linhas-do-arquivo.ts"), "utf8"),
     );
     expect(codigo.includes("decodificarCsv(")).toBe(true);
-    expect(/b(arquivo|file)\.text\(\)/.test(codigo)).toBe(false);
+    expect(/\b(arquivo|file)\.text\(\)/.test(codigo)).toBe(false);
   });
 
   it("o guarda enxerga a chamada quando ela existe (controle positivo)", () => {
