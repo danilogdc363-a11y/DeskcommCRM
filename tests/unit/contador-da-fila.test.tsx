@@ -39,7 +39,9 @@ describe("contador da fila no menu", () => {
   });
 
   it("Inbox está no menu com o contador da fila declarado", () => {
-    const atendimento = sidebarGroups(true, null).find((g) => g.group.id === "atendimento");
-    expect(atendimento?.items.find((i) => i.href === "/app/inbox")?.contador).toBe("fila");
+    // ACELERA (commit 4a6da5d9dc): a Inbox virou "WhatsApp" e mora no grupo
+    // "Menu Principal", não mais em "atendimento". O contador segue declarado.
+    const principal = sidebarGroups(true, null).find((g) => g.group.id === "principal");
+    expect(principal?.items.find((i) => i.href === "/app/inbox")?.contador).toBe("fila");
   });
 });
