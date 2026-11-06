@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { ConversationHeader } from "@/components/inbox/ConversationHeader";
@@ -55,6 +56,13 @@ vi.mock("@/hooks/inbox/useReleaseConversation", () => ({
 vi.mock("@/hooks/inbox/useResumeAiAttendance", () => ({
   useResumeAiAttendance: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+// ACELERA: os botões do comercial (#9) moram em AcoesComerciaisDaConversa, que
+// lê react-query (agendados, funil). Aqui só a largura importa: sem o mock o
+// componente exigiria um provider que este arquivo não precisa para nada.
+vi.mock("@/components/inbox/AcoesComerciaisDaConversa", () => ({
+  DialogosComerciais: () => null,
+  MensagensAgendadasDaConversa: () => null,
+}));
 // O header monta o discador (`DialButton`), que exige o `VoiceCallProvider` do
 // shell autenticado. Aqui só a largura importa: o discador fica fora da conta.
 vi.mock("@/components/voice/DialButton", () => ({ DialButton: () => null }));
@@ -86,10 +94,21 @@ function renderHeader(conv = conversation) {
 
 // A barra é quem segura os botões, não um índice fixo: desde o #1625 o
 // `children[1]` do header é a coluna que empilha a barra e o selo do automático.
+// ACELERA (layout WhatsApp Web): Transferir/Fechar/Arquivar saíram da barra para
+// o menu "⋮". A âncora passou a ser o próprio "⋮" ("Mais opções"), que mora
+// SEMPRE na barra — não um botão que depende do estado da conversa.
 function barraDeAcoes() {
-  const barra = screen.getByText("Transferir").closest("button")?.parentElement;
+  const barra = screen.getByRole("button", { name: "Mais opções" }).parentElement;
   expect(barra, "a barra de ações não renderizou").toBeTruthy();
   return barra as HTMLElement;
+}
+
+// As ações que moram no menu só existem no DOM com o menu aberto (portal do
+// Radix). Abre e devolve o menu, para provar que cada ação continua ao alcance.
+async function abrirMenuDaConversa() {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Mais opções" }));
+  return await screen.findByRole("menu");
 }
 
 describe("header do inbox — não trava a largura da tela", () => {
@@ -123,19 +142,28 @@ describe("header do inbox — não trava a largura da tela", () => {
     expect(acoes.className).toContain("min-w-0");
   });
 
-  it("as ações continuam TODAS no header — reorganizar não é esconder", () => {
+  it("as ações continuam TODAS ao alcance — reorganizar não é esconder", async () => {
     renderHeader();
-    // Se um dia alguém "resolver" o aperto colapsando ações num menu, este caso
-    // reprova. Esconder ação de quem atende é pior que uma segunda linha.
-    for (const rotulo of ["Assumir", "Transferir", "Fechar"]) {
-      expect(screen.getByText(rotulo), `a ação "${rotulo}" sumiu do header`).toBeTruthy();
+    // Assumir fica à vista; Transferir e Fechar moram no menu "⋮" por decisão
+    // deliberada da Acelera (layout WhatsApp Web). O que este caso protege não
+    // mudou: nenhuma ação de quem atende pode SUMIR do header. Se uma delas
+    // deixar de estar na barra OU no menu, reprova.
+    expect(screen.getByText("Assumir"), 'a ação "Assumir" sumiu do header').toBeTruthy();
+    const menu = await abrirMenuDaConversa();
+    for (const rotulo of ["Transferir", "Fechar"]) {
+      expect(
+        within(menu).getByRole("menuitem", { name: rotulo }),
+        `a ação "${rotulo}" sumiu do header (nem na barra, nem no menu)`,
+      ).toBeTruthy();
     }
   });
 
-  it("com o selo do automático, nenhuma ação some e o selo não divide linha com nome nem ações (#1625)", () => {
+  it("com o selo do automático, nenhuma ação some e o selo não divide linha com nome nem ações (#1625)", async () => {
     // O defeito do #1625: o selo morava na linha do nome, alargava a identidade
-    // e jogava a barra inteira para baixo. O conserto recusado escondia ações
-    // num menu "Mais ações"; o aceito tira o selo das duas linhas.
+    // e jogava a barra inteira para baixo. O conserto aceito tira o selo das duas
+    // linhas e NÃO esconde ação de quem atende. (A Acelera tem o menu "⋮" por
+    // decisão própria — layout WhatsApp Web —; por isso cada ação abaixo precisa
+    // estar na barra OU no menu, e as que o #1625 manteve à vista seguem à vista.)
     renderHeader({
       ...conversation,
       assigned_to_user_id: "u-1",
@@ -152,9 +180,18 @@ describe("header do inbox — não trava a largura da tela", () => {
     const linhaDoNome = screen.getByRole("heading", { name: "Fulana" }).parentElement as HTMLElement;
     expect(linhaDoNome.contains(selo), "o selo voltou para a linha do nome").toBe(false);
 
-    for (const rotulo of ["Liberar", "Devolver ao automático", "Transferir", "Lembrar", "Fechar", "Arquivar"]) {
+    // À vista na barra (não foram para o menu).
+    for (const rotulo of ["Devolver ao automático", "Lembrar"]) {
       const botao = screen.getByRole("button", { name: rotulo });
       expect(barra.contains(botao), `a ação "${rotulo}" saiu da barra`).toBe(true);
+    }
+    // No menu "⋮": continuam ao alcance, só não ocupam a fileira.
+    const menu = await abrirMenuDaConversa();
+    for (const rotulo of ["Liberar", "Transferir", "Fechar", "Arquivar"]) {
+      expect(
+        within(menu).getByRole("menuitem", { name: rotulo }),
+        `a ação "${rotulo}" sumiu do header (nem na barra, nem no menu)`,
+      ).toBeTruthy();
     }
     expect(screen.queryByRole("button", { name: "Mais ações" }), "ação de quem atende escondida num menu").toBeNull();
   });
@@ -193,18 +230,21 @@ describe("header do inbox — não trava a largura da tela", () => {
     expect(telefone.className.split(/\s+/)).toContain("max-md:hidden");
   });
 
-  it('"Ver contato" existe no DOM e só se cala onde há outra porta', () => {
+  it('"Ver contato" continua ao alcance e leva à ficha do contato', async () => {
     renderHeader();
-    // Ele NÃO sai do markup: some por CSS a partir de `xl`, exatamente a largura
-    // em que o painel lateral entra na tela com um "Ver contato" próprio. A
-    // distinção importa — remover do DOM tiraria a ação de quem usa 1024px, que
-    // é onde o painel não existe e esta é a única porta para o contato.
-    const link = screen.getByText("Ver contato").closest("a, button") as HTMLElement;
-    expect(link, "o link para o contato sumiu do markup").toBeTruthy();
-    const classes = `${link.className} ${link.parentElement?.className ?? ""}`;
-    expect(
-      classes,
-      "sem `xl:hidden`, a duplicata volta e o header ganha uma segunda linha em 1280px",
-    ).toContain("xl:hidden");
+    // ACELERA: "Ver contato" mudou de lugar. Antes era um link na barra que só se
+    // calava em `xl:` (onde o painel lateral tem o dele). Agora mora no menu "⋮",
+    // que não ocupa fileira nenhuma — a duplicata na barra que o `xl:hidden`
+    // evitava deixou de existir. O que não pode acontecer é a ação sumir: quem
+    // usa 1024px não tem o painel e esta é a única porta para a ficha completa.
+    // A barra se acha ANTES de abrir o menu: aberto, o Radix esconde o resto da
+    // página (aria-hidden) e o botão "⋮" deixa de ser achado por papel.
+    const barra = barraDeAcoes();
+    const menu = await abrirMenuDaConversa();
+    const item = within(menu).getByRole("menuitem", { name: /Ver contato/ });
+    const link = (item.closest("a") ?? item.querySelector("a")) as HTMLAnchorElement | null;
+    expect(link, "o link para o contato sumiu do menu").toBeTruthy();
+    expect(link?.getAttribute("href")).toBe("/app/contacts/ct-1");
+    expect(barra.textContent ?? "", "a duplicata voltou para a barra").not.toContain("Ver contato");
   });
 });
