@@ -213,18 +213,6 @@ const KNOWN_DEBT: { reason: string; files: string[] }[] = [
       "a cópia de tela na fonte deixar de nomear o provider.",
     files: ["lib/i18n/dicionario.ts"],
   },
-  {
-    reason:
-      "Importador de histórico de conversa da Acelera (acelera_0003), escrito " +
-      "falando direto com o cliente do transporte legado e não pelo adapter. " +
-      "Nenhuma tela o chama; só a rota e o teste dele. Está marcado para sair " +
-      "(a 2ª entrega da 1.100 apaga o importador antigo), e aí esta entrada " +
-      "sai junto: a catraca reprova se a lista não encolher.",
-    files: [
-      "app/api/v1/channel-sessions/[id]/importar-historico/route.ts",
-      "lib/acelera/importar-historico.ts",
-    ],
-  },
 ];
 
 const DEBT = new Set(KNOWN_DEBT.flatMap((g) => g.files));
