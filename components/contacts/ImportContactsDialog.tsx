@@ -68,7 +68,7 @@ export function ImportContactsDialog({ open, onOpenChange }: Props) {
           <DialogTitle>{t("Importar contatos de planilha")}</DialogTitle>
           <DialogDescription>
             {t(
-              "Envie um arquivo .csv com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags. Excel: use “Salvar como” → “CSV UTF-8”. Máximo de 500 linhas por arquivo.",
+              "Envie um arquivo .csv ou .xlsx com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags — ou um .vcf exportado da agenda do celular. Máximo de 500 linhas por arquivo.",
             )}
           </DialogDescription>
         </DialogHeader>
@@ -77,12 +77,12 @@ export function ImportContactsDialog({ open, onOpenChange }: Props) {
           {!resumo && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="csv-file">{t("Arquivo CSV")}</Label>
+                <Label htmlFor="csv-file">{t("Arquivo (CSV, Excel ou vCard)")}</Label>
                 <Input
                   id="csv-file"
                   ref={inputRef}
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,.xlsx,.vcf,text/csv,text/vcard,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
                 {file && (

@@ -1,11 +1,14 @@
 import { requireSupportWrite } from "@/lib/impersonate/support";
 /**
- * POST /api/v1/contacts/import — importa contatos de planilha CSV.
+ * POST /api/v1/contacts/import — importa contatos de planilha CSV, XLSX ou vCard.
  *
- * Formato aceito: CSV RFC 4180 com linha de cabeçalho (delimitador detectado
+ * Formatos aceitos: CSV RFC 4180 com linha de cabeçalho (delimitador detectado
  * automaticamente entre vírgula, ponto-e-vírgula e tabulação — Excel pt-BR
- * exporta ";"). Colunas reconhecidas e apelidos em `lib/contacts/csv.ts`.
- * XLSX é recusado na borda com instrução de exportar como CSV.
+ * exporta ";"); XLSX (primeira aba, lida por `lib/planilha/ler-arquivo.ts`); e
+ * vCard `.vcf` (a agenda exportada do celular: nome, telefone e e-mail, em
+ * `lib/contacts/vcard.ts`). Colunas reconhecidas e apelidos em `lib/contacts/csv.ts`.
+ * Os três caminhos viram a mesma matriz (cabeçalho + linhas) e seguem o MESMO
+ * desfecho por linha abaixo.
  *
  * Desfecho POR LINHA, nunca do lote inteiro:
  *   - linha inválida é pulada com motivo nominal (vem no response);
@@ -30,11 +33,12 @@ import { traduzir } from "@/lib/i18n/dicionario";
 import {
   CSV_MAX_BYTES,
   CSV_MAX_DATA_ROWS,
-  decodificarCsv,
+  decodificarBytesDeTexto,
   mapHeader,
   mapLinha,
-  parseCsv,
 } from "@/lib/contacts/csv";
+import { vcardParaLinhas } from "@/lib/contacts/vcard";
+import { lerLinhasDoArquivo } from "@/lib/planilha/linhas-do-arquivo";
 import { contactCreateSchemaDoPais } from "@/lib/schemas";
 import { perfilDaOrganizacao } from "@/lib/legal/perfil-do-pais";
 import { contatosDonosDosExtras } from "@/lib/channels/contato-por-telefone";
@@ -93,14 +97,19 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const nome = file.name ?? "";
+  const minusculo = nome.toLowerCase();
+  const ehVcard = minusculo.endsWith(".vcf") || file.type === "text/vcard" || file.type === "text/x-vcard";
+  const ehXlsx = minusculo.endsWith(".xlsx");
   const tipoOk =
-    nome.toLowerCase().endsWith(".csv") ||
+    ehVcard ||
+    ehXlsx ||
+    minusculo.endsWith(".csv") ||
     file.type === "text/csv" ||
     file.type === "application/vnd.ms-excel";
   if (!tipoOk) {
     return fail(
       "validation_failed",
-      t("Formato não suportado — envie um arquivo .csv. No Excel use 'Salvar como' → 'CSV UTF-8'."),
+      t("Formato não suportado — envie um arquivo .csv, .xlsx ou .vcf."),
       422,
       { requestId },
     );
@@ -116,13 +125,43 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // ─── Parse + validação de linhas (puro; nada tocou no banco ainda) ───────
   // Os BYTES, não `file.text()` — ver `decodificarCsv` (#483).
-  const decodificado = decodificarCsv(await file.arrayBuffer());
-  if ("erro" in decodificado) {
-    return fail("validation_failed", t(decodificado.erro), 422, { requestId });
+  const bytes = await file.arrayBuffer();
+  let rows: string[][];
+  // Só no vCard: o número do cartão de cada linha de dados, e os avisos do que
+  // ficou de fora (cartão sem dado, telefones além do primeiro).
+  let posicoesDoVcard: number[] | null = null;
+  let totalDeCartoes: number | null = null;
+  const avisosDoVcard: LinhaErro[] = [];
+  if (ehVcard) {
+    const texto = decodificarBytesDeTexto(bytes);
+    if ("binario" in texto) {
+      return fail("validation_failed", t("Este arquivo não parece ser um vCard de texto."), 422, { requestId });
+    }
+    const vcard = vcardParaLinhas(texto.texto);
+    if (vcard.total === 0) {
+      return fail("validation_failed", t("Não encontrei nenhum contato neste arquivo .vcf."), 422, { requestId });
+    }
+    rows = vcard.linhas;
+    posicoesDoVcard = vcard.posicoes;
+    totalDeCartoes = vcard.total;
+    for (const c of vcard.semDados) {
+      avisosDoVcard.push({ linha: c.posicao, motivo: t("cartão sem telefone legível nem e-mail — ignorado") });
+    }
+    for (const c of vcard.extras) {
+      avisosDoVcard.push({
+        linha: c.posicao,
+        motivo: t("só o primeiro telefone foi importado; não entraram: ") + c.telefones.join(", "),
+      });
+    }
+  } else {
+    const lido = await lerLinhasDoArquivo(bytes, nome);
+    if ("erro" in lido) {
+      return fail("validation_failed", t(lido.erro), 422, { requestId });
+    }
+    rows = lido.linhas;
   }
-  const text = decodificado.texto;
-  const rows = parseCsv(text);
-  if (rows.length < 2) {
+  // No vCard, cartão sem dado já virou aviso: o resumo diz isso em vez de "vazio".
+  if (rows.length < 2 && !ehVcard) {
     return fail("validation_failed", t("CSV vazio ou sem linhas de dados."), 422, { requestId });
   }
   const header = rows[0]!;
@@ -146,10 +185,12 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const candidatos: Array<{ linha: number; contato: Record<string, unknown> }> = [];
-  const errors: LinhaErro[] = [];
+  const errors: LinhaErro[] = [...avisosDoVcard];
 
   for (let i = 0; i < dataRows.length; i++) {
-    const linha = i + 2; // 1-based contando o cabeçalho — bate com o editor de planilhas.
+    // 1-based contando o cabeçalho — bate com o editor de planilhas. No vCard é o
+    // número do cartão no arquivo.
+    const linha = posicoesDoVcard ? posicoesDoVcard[i]! : i + 2;
     const { contato, motivo } = mapLinha(dataRows[i]!, indices, t, doc, perfil.telefoneExemplo);
     if (motivo !== null) {
       errors.push({ linha, motivo });
@@ -174,7 +215,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   if (candidatos.length === 0) {
     const resumo: ImportSummary = {
-      total_linhas: dataRows.length,
+      total_linhas: totalDeCartoes ?? dataRows.length,
       imported: 0,
       skipped_duplicates: 0,
       errors,
@@ -342,7 +383,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     requestId,
     metadata: {
       actor_type: "user",
-      total_linhas: dataRows.length,
+      total_linhas: totalDeCartoes ?? dataRows.length,
       imported,
       skipped_duplicates: skippedDuplicates,
       erros: errors.length,
@@ -350,7 +391,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   });
 
   const resumo: ImportSummary = {
-    total_linhas: dataRows.length,
+    total_linhas: totalDeCartoes ?? dataRows.length,
     imported,
     skipped_duplicates: skippedDuplicates,
     errors,

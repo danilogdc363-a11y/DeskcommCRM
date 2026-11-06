@@ -150,6 +150,7 @@ describe("lerPlanilhaDeLeads — planilha em espanhol", () => {
         email: "ana@ejemplo.com",
         tags: ["vip", "nuevo"],
         source: "Feria",
+        etapa: null,
       },
     ]);
   });

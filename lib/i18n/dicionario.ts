@@ -10292,13 +10292,15 @@ export const DICIONARIO: Traducoes = {
   "linha(s) com problema": { es: "fila(s) con problema" },
   "Não foi possível importar o arquivo.": { es: "No se pudo importar el archivo." },
   "Importar contatos de planilha": { es: "Importar contactos de una hoja de cálculo" },
-  "Envie um arquivo .csv com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags. Excel: use “Salvar como” → “CSV UTF-8”. Máximo de 500 linhas por arquivo.": {
-    es: "Envía un archivo .csv con encabezado — columnas reconocidas: nombre, teléfono, email, cpf, nacimiento, tags. Excel: usa “Guardar como” → “CSV UTF-8”. Máximo 500 líneas por archivo.",
+  "Envie um arquivo .csv ou .xlsx com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags — ou um .vcf exportado da agenda do celular. Máximo de 500 linhas por arquivo.": {
+    es: "Envía un archivo .csv o .xlsx con encabezado — columnas reconocidas: nombre, teléfono, email, cpf, nacimiento, tags — o un .vcf exportado de la agenda del celular. Máximo 500 líneas por archivo.",
   },
   "Este arquivo não parece ser um CSV de texto. No Excel use “Salvar como” → “CSV UTF-8 (delimitado por vírgulas)”.": {
     es: "Este archivo no parece ser un CSV de texto. En Excel usa “Guardar como” → “CSV UTF-8 (delimitado por comas)”.",
   },
-  "Arquivo CSV": { es: "Archivo CSV" },
+  "Arquivo (CSV, Excel ou vCard)": {
+    es: "Archivo (CSV, Excel o vCard)",
+  },
   "Importando…": { es: "Importando…" },
   "Importar": { es: "Importar" },
   "linha(s) lidas": { es: "fila(s) leída(s)" },
@@ -13649,10 +13651,24 @@ export const DICIONARIO: Traducoes = {
   },
   "Não consegui salvar a marca agora.": { es: "No pude guardar la marca ahora." },
 
+  // ─── Importação: coluna "etapa", Excel e vCard ───
+  "etapa não encontrada neste funil (": { es: "etapa no encontrada en este embudo (" },
+  ") — linha ignorada": { es: ") — línea ignorada" },
+  "etapa de ganho ou perda não é aceita na importação (": {
+    es: "la etapa de ganado o perdido no se acepta en la importación (",
+  },
+  "Este arquivo não parece ser um vCard de texto.": { es: "Este archivo no parece ser un vCard de texto." },
+  "Não encontrei nenhum contato neste arquivo .vcf.": { es: "No encontré ningún contacto en este archivo .vcf." },
+  "cartão sem telefone legível nem e-mail — ignorado": {
+    es: "tarjeta sin teléfono legible ni correo — ignorada",
+  },
+  "só o primeiro telefone foi importado; não entraram: ": {
+    es: "solo se importó el primer teléfono; no entraron: ",
+  },
   // ─── Importar leads de planilha (extraído do PR #418) ───
   "Importar leads de uma planilha": { es: "Importar leads desde una hoja de cálculo" },
-  "Um arquivo CSV com uma linha por lead. Os leads entram na primeira etapa aberta do funil escolhido.": {
-    es: "Un archivo CSV con una fila por lead. Los leads entran en la primera etapa abierta del embudo elegido.",
+  "Um arquivo CSV ou Excel (.xlsx) com uma linha por lead. Sem a coluna “etapa”, os leads entram na primeira etapa aberta do funil escolhido; com ela, vão para a etapa de mesmo nome.": {
+    es: "Un archivo CSV o Excel (.xlsx) con una fila por lead. Sin la columna “etapa”, los leads entran en la primera etapa abierta del embudo elegido; con ella, van a la etapa del mismo nombre.",
   },
   "Funil de destino": { es: "Embudo de destino" },
   // As duas mensagens de recusa da ROTA de importação. Nasceram no #597, que
@@ -13660,7 +13676,9 @@ export const DICIONARIO: Traducoes = {
   // ("…o funil e a etapa de destino") deixou de ser emitida por qualquer caminho.
   "Escolha o funil de destino.": { es: "Elige el embudo de destino." },
   "Este funil não tem etapas abertas.": { es: "Este embudo no tiene etapas abiertas." },
-  "Escolher o arquivo CSV": { es: "Elegir el archivo CSV" },
+  "Escolher o arquivo (CSV ou Excel)": {
+    es: "Elegir el archivo (CSV o Excel)",
+  },
   "leads criados": { es: "leads creados" },
   "contatos novos": { es: "contactos nuevos" },
   "Colunas que não reconheci:": { es: "Columnas que no reconocí:" },
@@ -13687,8 +13705,8 @@ export const DICIONARIO: Traducoes = {
   },
   "linha recusada pelo banco": { es: "fila rechazada por la base de datos" },
   // Mensagens de erro de app/api/v1/products/import/route.ts
-  "Formato não suportado — envie um arquivo .csv. No Excel use 'Salvar como' → 'CSV UTF-8'.": {
-    es: "Formato no compatible — envía un archivo .csv. En Excel usa 'Guardar como' → 'CSV UTF-8'.",
+  "Formato não suportado — envie um arquivo .csv, .xlsx ou .vcf.": {
+    es: "Formato no admitido — envía un archivo .csv, .xlsx o .vcf.",
   },
   "produtos por importação — divida a planilha.": {
     es: "productos por importación — divide la hoja de cálculo.",

@@ -111,7 +111,7 @@ export function ImportarLeads({
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               {t(
-                "Um arquivo CSV com uma linha por lead. Os leads entram na primeira etapa aberta do funil escolhido.",
+                "Um arquivo CSV ou Excel (.xlsx) com uma linha por lead. Sem a coluna “etapa”, os leads entram na primeira etapa aberta do funil escolhido; com ela, vão para a etapa de mesmo nome.",
               )}
             </p>
 
@@ -134,7 +134,7 @@ export function ImportarLeads({
             <input
               ref={arquivoRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               data-testid="arquivo-de-leads"
               onChange={(e) => {
@@ -149,7 +149,7 @@ export function ImportarLeads({
               data-testid="escolher-planilha"
             >
               <UploadSimple size={16} aria-hidden />
-              {enviando ? t("Importando…") : t("Escolher o arquivo CSV")}
+              {enviando ? t("Importando…") : t("Escolher o arquivo (CSV ou Excel)")}
             </Button>
 
             {/* Rota de API que devolve o arquivo com `content-disposition:
