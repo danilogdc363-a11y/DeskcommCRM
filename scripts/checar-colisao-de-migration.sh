@@ -104,6 +104,13 @@
 # conserto. Gate que volta verde sem ter comparado nada é a falha-em-verde que a própria
 # triagem chama de mais cara num produto self-host (complemento-do-ci.md, §7).
 #
+# ## (Acelera) A sequência PRÓPRIA do fork: <14 dígitos>_acelera_<NNNN>_<slug>.sql
+#
+# O fork numera as próprias migrations `acelera_0001..`, fora da numeração do upstream (sem colisão
+# possível com ele). Esse nome NÃO recebe a regra numérica acima: reprova só se o `acelera_NNNN` ou
+# o timestamp já existir na base, ou se repetir entre os arquivos do PR. Medir contra a base DO PR
+# (`origin/<base_ref>`), não contra a main do upstream, evita contar as já mescladas.
+#
 # Exit: 0 medido e livre · 1 colisão · 2 não medido.
 #
 # Uso: bash scripts/checar-colisao-de-migration.sh [base]      (padrão: origin/main)
@@ -368,6 +375,25 @@ falhou=0
 while IFS= read -r nome; do
   [ -z "$nome" ] && continue
   caminho="supabase/migrations/$nome"
+  # (Acelera) sequência própria `acelera_NNNN`: régua à parte, sem a regra numérica do upstream.
+  if grep -qE '^[0-9]{14}_acelera_[0-9]{4}_.+\.sql$' <<<"$nome"; then
+    ts="${nome:0:14}"; an="$(sed -E 's/^[0-9]{14}_(acelera_[0-9]{4})_.*$/\1/' <<<"$nome")"
+    dup_n="$(grep -E "^[0-9]{14}_${an}_.+\.sql$" <<<"$base_arvore" || true)"
+    dup_t="$(grep -E "^${ts}_.+\.sql$" <<<"$base_arvore" || true)"
+    gem_n="$(grep -cE "^[0-9]{14}_${an}_.+\.sql$" <<<"$adicionadas_nomes" || true)"
+    gem_t="$(grep -cE "^${ts}_.+\.sql$" <<<"$adicionadas_nomes" || true)"
+    if [ -n "$dup_n" ] || [ "${gem_n:-0}" -gt 1 ]; then
+      echo "::error file=$caminho::$an já existe em '$BASE' ou repete neste PR"
+      echo "CI REPROVADO: $an de '$nome' já está tomado (base: ${dup_n:-nenhum}; repetido no PR: ${gem_n:-0} arquivo(s))."
+      falhou=1
+    fi
+    if [ -n "$dup_t" ] || [ "${gem_t:-0}" -gt 1 ]; then
+      echo "::error file=$caminho::timestamp $ts já existe em '$BASE' ou repete neste PR"
+      echo "CI REPROVADO: timestamp $ts de '$nome' já está tomado (base: ${dup_t:-nenhum}; repetido no PR: ${gem_t:-0} arquivo(s))."
+      falhou=1
+    fi
+    continue
+  fi
   ts="$(sed -nE 's/^([0-9]{14})_[0-9]{4}_.+\.sql$/\1/p' <<<"$nome")"
   nnnn="$(sed -nE 's/^[0-9]{14}_([0-9]{4})_.+\.sql$/\1/p' <<<"$nome")"
 
