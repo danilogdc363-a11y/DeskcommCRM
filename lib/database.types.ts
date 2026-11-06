@@ -12312,7 +12312,6 @@ export type Database = {
       };
       platform_meta_app: {
         Row: {
-          app_id: string | null;
           app_secret_encrypted: string | null;
           id: number;
           updated_at: string;
@@ -12322,7 +12321,6 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          app_id?: string | null;
           app_secret_encrypted?: string | null;
           id?: number;
           updated_at?: string;
@@ -12331,7 +12329,6 @@ export type Database = {
           verify_token_encrypted?: string | null;
         };
         Update: {
-          app_id?: string | null;
           app_secret_encrypted?: string | null;
           id?: number;
           updated_at?: string;

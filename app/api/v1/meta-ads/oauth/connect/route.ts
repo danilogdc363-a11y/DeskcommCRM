@@ -27,7 +27,6 @@ import {
   montarUrlDeLogin,
   urlDeRetorno,
 } from "@/lib/plataformas-de-anuncio/meta/login/oauth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { cookieSecure } from "@/lib/supabase/cookie-secure";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +45,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!autorizado.ok) return autorizado.response;
   const { user, org } = autorizado;
 
-  const app = await appDeLoginDaMeta(createAdminClient());
+  const app = appDeLoginDaMeta();
   if (!app) return voltarComErro("app_nao_configurado");
 
   // O nonce é usado duas vezes: dentro do `state` e na assinatura do cookie de

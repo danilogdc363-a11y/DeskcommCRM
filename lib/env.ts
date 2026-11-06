@@ -623,6 +623,14 @@ const schema = z.object({
    */
   META_WEBHOOK_BASE_URL: z.string().optional().default(""),
   /**
+   * App da Meta do botão "Conectar com o Facebook" (Configurações › Meta Ads).
+   * Opcionais: vazio = botão desligado e a tela diz qual variável falta. O
+   * segredo é o mesmo `META_APP_SECRET` do webhook (é o mesmo app); o login lê
+   * só do ambiente, nunca do banco. Lidos por `lib/plataformas-de-anuncio/meta/login/app.ts`.
+   */
+  META_APP_ID: z.string().optional().default(""),
+  META_APP_SECRET: z.string().optional().default(""),
+  /**
    * Base (host) da Graph API do canal oficial, e a do eixo de anúncio (#817).
    *
    * `optional().default("")` e NÃO validada como URL aqui, por dois motivos

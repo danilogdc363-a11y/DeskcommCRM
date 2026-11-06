@@ -44,7 +44,7 @@ const ERRO_DO_FACEBOOK: Record<string, string> = {
   estado_invalido: "O pedido de conexão venceu ou não é mais válido. Clique no botão e tente de novo.",
   sem_codigo: "O Facebook não devolveu a autorização. Clique no botão e tente de novo.",
   app_nao_configurado:
-    "O aplicativo do Facebook ainda não foi configurado nesta instalação. Peça a quem administra o sistema.",
+    "O botão do Facebook ainda não foi configurado no servidor (faltam META_APP_ID e META_APP_SECRET). Peça a quem administra o sistema.",
   cifra_indisponivel:
     "Esta instalação está sem a chave mestra de criptografia, e a conexão não foi gravada. Quem instalou o sistema precisa configurá-la.",
   erro_ao_gravar: "Não consegui gravar agora. Tente de novo em instantes.",
@@ -55,6 +55,7 @@ export function FormularioDeMetaAds({
   contaPadrao,
   idioma,
   loginDisponivel,
+  variaveisQueFaltam,
   expiraEm,
   expiraEmMs,
   retorno,
@@ -64,6 +65,8 @@ export function FormularioDeMetaAds({
   idioma: Idioma;
   /** A instalação tem App ID + segredo do app da Meta. */
   loginDisponivel: boolean;
+  /** Nomes das variáveis de ambiente que faltam para ligar o botão. */
+  variaveisQueFaltam: string[];
   /** Data (já formatada) em que o token do login vence; nulo = token colado à mão. */
   expiraEm: string | null;
   /** Vencimento em ms (para decidir "venceu" no navegador); nulo = sem vencimento conhecido. */
@@ -166,8 +169,10 @@ export function FormularioDeMetaAds({
             data-testid="meta-ads-login-indisponivel"
           >
             {t(
-              "O aplicativo do Facebook ainda não foi configurado nesta instalação, então o botão fica escondido. Quem administra o sistema cadastra o número e a chave do aplicativo em Admin › Meta. Enquanto isso, você pode colar um token logo abaixo.",
-            )}
+              "O botão do Facebook está desligado porque faltam estas configurações no servidor:",
+            )}{" "}
+            <strong>{variaveisQueFaltam.join(", ")}</strong>.{" "}
+            {t("Quem administra o sistema cadastra e reimplanta. Enquanto isso, você pode colar um token logo abaixo.")}
           </p>
         )}
         <p className="text-xs text-muted-foreground">

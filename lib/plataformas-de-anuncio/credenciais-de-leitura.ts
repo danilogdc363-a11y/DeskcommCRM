@@ -111,7 +111,7 @@ async function renovarSeFaltarPouco(
   if (!Number.isFinite(faltaMs) || faltaMs > RENOVAR_QUANDO_FALTAR_MS || faltaMs <= 0) return token;
 
   try {
-    const app = await appDeLoginDaMeta(admin);
+    const app = appDeLoginDaMeta();
     if (!app) return token;
     const novo = await trocarPorTokenDeLongaDuracao(app, token, { agora });
     if (!novo.ok) {

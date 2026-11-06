@@ -78,16 +78,6 @@ const entradaSchema = z.object({
    * folga para quem colou de um gerenciador de segredos sem espaços sobrando.
    */
   app_secret: z.string().trim().min(16).max(300).optional(),
-  /**
-   * O App ID do mesmo app (acelera_0005), usado pelo botão "Conectar com o
-   * Facebook" de Configurações › Meta Ads. É identificador público — vai na URL
-   * do login —, então é gravado em claro. Só dígitos.
-   */
-  app_id: z
-    .string()
-    .trim()
-    .regex(/^\d{5,25}$/)
-    .optional(),
 });
 
 export type MetaAppInput = z.infer<typeof entradaSchema>;
@@ -223,11 +213,10 @@ export async function updateMetaApp(input: MetaAppInput): Promise<UpdateMetaAppR
   if (!gravado.ok) return gravado.recusa;
   const { temSegredo, temToken: jaTemToken } = gravado;
   const segredoNovo = parsed.data.app_secret;
-  const appIdNovo = parsed.data.app_id;
 
   if (!segredoNovo && !temSegredo) return SEM_SEGREDO;
 
-  if (!segredoNovo && !appIdNovo && jaTemToken) {
+  if (!segredoNovo && jaTemToken) {
     // Nada a fazer, e dizer isso é melhor que gravar uma trilha de "atualizou"
     // que não atualizou nada.
     return { ok: false, error: "nada_para_salvar" };
@@ -249,11 +238,6 @@ export async function updateMetaApp(input: MetaAppInput): Promise<UpdateMetaAppR
     campos.push("app_secret_encrypted");
   }
 
-  if (appIdNovo) {
-    valores.app_id = appIdNovo;
-    campos.push("app_id");
-  }
-
   let verifyToken: string | undefined;
   if (!jaTemToken) {
     verifyToken = gerarVerifyToken();
@@ -273,7 +257,6 @@ export async function updateMetaApp(input: MetaAppInput): Promise<UpdateMetaAppR
   const r = await gravar(authUser, valores, "platform_meta_app.updated", {
     campos,
     segredo_trocado: Boolean(segredoNovo),
-    app_id_trocado: Boolean(appIdNovo),
     verify_token_gerado: Boolean(verifyToken),
   });
   if (!r.ok) return r;

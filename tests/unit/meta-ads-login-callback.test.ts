@@ -3,7 +3,7 @@
  * Tudo simulado: banco, Meta, cifra. Nenhuma chamada real.
  */
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const SEGREDO = "segredo-interno-de-teste-bem-comprido";
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -26,10 +26,7 @@ vi.mock("@/lib/supabase/admin", () => ({
     from: (tabela: string) => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: async () => ({
-            data: tabela === "platform_meta_app" ? { app_id: "123456789", app_secret_encrypted: "enc:segredo-do-app" } : null,
-            error: null,
-          }),
+          maybeSingle: async () => ({ data: null, error: null }),
         }),
       }),
       insert: async () => (nonceJaUsado ? { error: { code: "23505" } } : { error: null }),
@@ -63,10 +60,14 @@ function destino(r: Response) {
 }
 
 describe("callback do login com o Facebook", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   beforeEach(() => {
     upserts.length = 0;
     nonceJaUsado = false;
     vi.unstubAllGlobals();
+    vi.stubEnv("META_APP_ID", "123456789");
+    vi.stubEnv("META_APP_SECRET", "segredo-do-app");
   });
 
   it("cancelar no Facebook volta com erro=cancelado, sem tocar no banco", async () => {
@@ -79,6 +80,16 @@ describe("callback do login com o Facebook", () => {
   it("outra recusa da Meta vira meta_recusou", async () => {
     const r = await chamar({ error: "invalid_scope" });
     expect(destino(r).searchParams.get("erro")).toBe("meta_recusou");
+  });
+
+  it("sem META_APP_ID/META_APP_SECRET no ambiente: volta com app_nao_configurado e não gasta o code", async () => {
+    vi.stubEnv("META_APP_ID", "");
+    const fetchSimulado = vi.fn();
+    vi.stubGlobal("fetch", fetchSimulado);
+    const r = await chamar({ code: "c", state: stateValido() });
+    expect(destino(r).searchParams.get("erro")).toBe("app_nao_configurado");
+    expect(fetchSimulado).not.toHaveBeenCalled();
+    expect(upserts).toHaveLength(0);
   });
 
   it("state inválido é recusado", async () => {

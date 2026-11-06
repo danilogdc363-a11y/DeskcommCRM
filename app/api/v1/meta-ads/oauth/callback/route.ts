@@ -97,7 +97,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const admin = createAdminClient();
-  const app = await appDeLoginDaMeta(admin);
+  const app = appDeLoginDaMeta();
   if (!app) return voltar(base, { erro: "app_nao_configurado" });
 
   // O retorno vale UMA vez. A tabela de nonces é a mesma do Google (a chave é o

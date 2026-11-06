@@ -49,13 +49,12 @@ export default async function Page() {
   // anon/authenticated): o admin client é o único caminho.
   const { data, error } = await createAdminClient()
     .from("platform_meta_app")
-    .select("app_id, app_secret_encrypted, verify_token_encrypted, verify_token_created_at, updated_at")
+    .select("app_secret_encrypted, verify_token_encrypted, verify_token_created_at, updated_at")
     .eq("id", 1)
     .maybeSingle();
 
   const linha = data as
     | {
-        app_id: string | null;
         app_secret_encrypted: string | null;
         verify_token_encrypted: string | null;
         verify_token_created_at: string | null;
@@ -70,8 +69,6 @@ export default async function Page() {
 
   return (
     <FormularioDaMeta
-      appId={linha?.app_id ?? ""}
-      appIdNoAmbiente={Boolean(process.env.META_APP_ID?.trim())}
       temSegredoSalvo={Boolean(linha?.app_secret_encrypted)}
       temTokenSalvo={Boolean(linha?.verify_token_encrypted)}
       tokenGeradoEm={formatar(linha?.verify_token_created_at ?? null, usuario.idioma)}

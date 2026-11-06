@@ -31,7 +31,7 @@ import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { ROLE_RANK } from "@/lib/auth/types";
 import { tagDeIdioma } from "@/lib/i18n/datas";
 import { traduzir } from "@/lib/i18n/dicionario";
-import { appDeLoginDaMeta } from "@/lib/plataformas-de-anuncio/meta/login/app";
+import { appDeLoginDaMeta, variaveisDoLoginQueFaltam } from "@/lib/plataformas-de-anuncio/meta/login/app";
 import { existeConexaoDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais-de-leitura";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -57,9 +57,11 @@ export default async function MetaAdsSettingsPage({
 
   const admin = createAdminClient();
   const conexao = await existeConexaoDeLeitura(admin, activeOrg.orgId, "meta_ads");
-  // O botão do Facebook só aparece quando a instalação tem o app da Meta (ID +
-  // segredo). Sem ele a tela mostra o aviso e o token colado segue valendo.
-  const loginDisponivel = Boolean(await appDeLoginDaMeta(admin));
+  // O botão do Facebook só aparece quando o ambiente do servidor tem o app da
+  // Meta (ID + segredo). Sem ele a tela diz qual variável falta e o token
+  // colado segue valendo.
+  const loginDisponivel = appDeLoginDaMeta() !== null;
+  const variaveisQueFaltam = variaveisDoLoginQueFaltam();
 
   const idioma = user.idioma;
   const t = (texto: string) => traduzir(texto, idioma);
@@ -92,6 +94,7 @@ export default async function MetaAdsSettingsPage({
         contaPadrao={conexao.contaPadrao}
         idioma={idioma}
         loginDisponivel={loginDisponivel}
+        variaveisQueFaltam={variaveisQueFaltam}
         expiraEm={
           conexao.expiraEm
             ? new Date(conexao.expiraEm).toLocaleDateString(tagDeIdioma(idioma), {

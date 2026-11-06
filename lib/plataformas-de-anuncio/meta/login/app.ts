@@ -1,24 +1,16 @@
 /**
- * O app da Meta que faz o LOGIN com o Facebook — App ID e App Secret da
- * INSTALAÇÃO.
+ * O app da Meta que faz o LOGIN com o Facebook — App ID e App Secret, lidos SÓ
+ * DO AMBIENTE do servidor (`META_APP_ID` e `META_APP_SECRET`).
  *
- * É o mesmo app que o WhatsApp oficial já usa (`lib/channels/meta/app.ts`): o
- * App Secret é a mesma coluna (`platform_meta_app.app_secret_encrypted`) e o
- * App ID entrou na migration acelera_0005.
+ * É o mesmo app do WhatsApp oficial, mas decisão do dono do produto: o login
+ * NÃO lê o banco nem `/admin/sistema`. Por isso, se alguém trocar o segredo do
+ * webhook pela tela (que tem precedência sobre o `.env` em
+ * `lib/channels/meta/app.ts`), o login continua com o `META_APP_SECRET` do
+ * ambiente — e os dois só divergem se alguém cadastrar valores diferentes. Sendo
+ * o mesmo app, deveriam ser iguais.
  *
- * BANCO PRIMEIRO, `.env` COMO PISO (`META_APP_ID` + `META_APP_SECRET`), pela
- * mesma razão do irmão: o rollback de imagem do kit não desfaz o schema. O par
- * é servido INTEIRO e da MESMA origem — ID de um app com segredo de outro é um
- * login que a Meta recusa sem dizer por quê.
- *
- * Nunca lança: a tela precisa abrir mesmo com o banco ruim, e o desfecho de
- * "não configurado" já é tratado por quem chama.
+ * Mudou o ambiente? É preciso reimplantar para valer.
  */
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-import { logger } from "@/lib/logger";
-import { decryptWebhookSecret } from "@/lib/webhooks/secrets";
-
 export interface AppDeLoginDaMeta {
   readonly appId: string;
   readonly appSecret: string;
@@ -28,42 +20,18 @@ function texto(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-/** O par do `.env`. Puro e síncrono. */
-export function appDeLoginDoAmbiente(
-  source: Record<string, string | undefined> = process.env,
+/** O par completo, ou `null` (vazio é ausente: o template do `.env` gera `CHAVE=`). */
+export function appDeLoginDaMeta(
+  ambiente: Record<string, string | undefined> = process.env,
 ): AppDeLoginDaMeta | null {
-  const appId = texto(source.META_APP_ID);
-  const appSecret = texto(source.META_APP_SECRET);
+  const appId = texto(ambiente.META_APP_ID);
+  const appSecret = texto(ambiente.META_APP_SECRET);
   return appId && appSecret ? { appId, appSecret } : null;
 }
 
-export async function appDeLoginDaMeta(
-  admin: SupabaseClient,
+/** Os nomes das variáveis que faltam, para a tela dizer exatamente o que cadastrar. */
+export function variaveisDoLoginQueFaltam(
   ambiente: Record<string, string | undefined> = process.env,
-): Promise<AppDeLoginDaMeta | null> {
-  try {
-    const { data, error } = await admin
-      .from("platform_meta_app")
-      .select("app_id, app_secret_encrypted")
-      .eq("id", 1)
-      .maybeSingle();
-    if (error) {
-      // Clone sem a migration (42703/42P01): o `.env` assume.
-      logger.info("[meta.login.app] sem app no banco; vale o .env", { codigo: error.code });
-    } else if (data) {
-      const linha = data as { app_id: string | null; app_secret_encrypted: string | null };
-      const appId = texto(linha.app_id);
-      const cifrado = texto(linha.app_secret_encrypted);
-      if (appId && cifrado) {
-        const appSecret = texto(await decryptWebhookSecret(admin, cifrado));
-        if (appSecret) return { appId, appSecret };
-        logger.warn("[meta.login.app] segredo do banco não decifrou; vale o .env inteiro");
-      }
-    }
-  } catch (err) {
-    logger.warn("[meta.login.app] leitura do banco falhou; vale o .env", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-  return appDeLoginDoAmbiente(ambiente);
+): string[] {
+  return (["META_APP_ID", "META_APP_SECRET"] as const).filter((nome) => !texto(ambiente[nome]));
 }

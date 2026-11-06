@@ -10,7 +10,7 @@ vi.mock("@/lib/webhooks/secrets", () => ({
 }));
 
 import { lerCredencialDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais-de-leitura";
-import { appDeLoginDaMeta, appDeLoginDoAmbiente } from "@/lib/plataformas-de-anuncio/meta/login/app";
+import { appDeLoginDaMeta, variaveisDoLoginQueFaltam } from "@/lib/plataformas-de-anuncio/meta/login/app";
 
 type Linha = Record<string, unknown> | null;
 
@@ -32,32 +32,23 @@ function bancoSimulado(tabelas: Record<string, Linha>, atualizacoes: Array<{ tab
   } as never;
 }
 
-describe("app do login com o Facebook", () => {
-  it("o .env só vale com ID e segredo juntos", () => {
-    expect(appDeLoginDoAmbiente({ META_APP_ID: "1", META_APP_SECRET: "" })).toBeNull();
-    expect(appDeLoginDoAmbiente({ META_APP_ID: "  ", META_APP_SECRET: "s" })).toBeNull();
-    expect(appDeLoginDoAmbiente({ META_APP_ID: "123", META_APP_SECRET: "s" })).toEqual({ appId: "123", appSecret: "s" });
+describe("app do login com o Facebook (só do ambiente)", () => {
+  it("só vale com ID e segredo juntos; vazio e espaço são ausência", () => {
+    expect(appDeLoginDaMeta({ META_APP_ID: "1", META_APP_SECRET: "" })).toBeNull();
+    expect(appDeLoginDaMeta({ META_APP_ID: "  ", META_APP_SECRET: "s" })).toBeNull();
+    expect(appDeLoginDaMeta({})).toBeNull();
+    expect(appDeLoginDaMeta({ META_APP_ID: " 123 ", META_APP_SECRET: "s" })).toEqual({ appId: "123", appSecret: "s" });
   });
 
-  it("banco primeiro: o par do banco vence o do .env", async () => {
-    const admin = bancoSimulado({ platform_meta_app: { app_id: "999", app_secret_encrypted: "enc:do-banco" } });
-    expect(await appDeLoginDaMeta(admin, { META_APP_ID: "1", META_APP_SECRET: "do-env" })).toEqual({
-      appId: "999",
-      appSecret: "do-banco",
-    });
+  it("diz exatamente qual variável falta", () => {
+    expect(variaveisDoLoginQueFaltam({})).toEqual(["META_APP_ID", "META_APP_SECRET"]);
+    expect(variaveisDoLoginQueFaltam({ META_APP_ID: "1" })).toEqual(["META_APP_SECRET"]);
+    expect(variaveisDoLoginQueFaltam({ META_APP_ID: "1", META_APP_SECRET: "s" })).toEqual([]);
   });
 
-  it("não mistura as origens: ID do banco sem segredo cai inteiro para o .env", async () => {
-    const admin = bancoSimulado({ platform_meta_app: { app_id: "999", app_secret_encrypted: null } });
-    expect(await appDeLoginDaMeta(admin, { META_APP_ID: "1", META_APP_SECRET: "do-env" })).toEqual({
-      appId: "1",
-      appSecret: "do-env",
-    });
-  });
-
-  it("sem nada em lugar nenhum devolve null (e não lança)", async () => {
-    const admin = bancoSimulado({ platform_meta_app: null });
-    expect(await appDeLoginDaMeta(admin, {})).toBeNull();
+  it("não lê o banco: ignora a tabela do app do webhook", () => {
+    // O resolvedor é síncrono e sem cliente: não há como consultar banco.
+    expect(appDeLoginDaMeta.length).toBeLessThanOrEqual(1);
   });
 });
 
