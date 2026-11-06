@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { chaveDoQuadro, useBoard } from "@/hooks/kanban/useBoard";
 import { useMoveCard, type MoveArgs, type RecusaDeCampos, type RetomadaPendente } from "@/hooks/kanban/useMoveCard";
 import { useRenameStage } from "@/hooks/kanban/useRenameStage";
+import { useStageColor } from "@/hooks/kanban/useStageColor";
 import { CamposObrigatoriosDialog } from "./CamposObrigatoriosDialog";
 import { LoseLeadDialog } from "./LoseLeadDialog";
 import { useAssignableMembers } from "@/hooks/inbox/useAssignableMembers";
@@ -117,6 +118,7 @@ export function KanbanBoard({
   // — preenchido pela página sem filtro — que o `after` do arrasto é lido.
   const qc = useQueryClient();
   const renameStage = useRenameStage(pipelineId);
+  const stageColor = useStageColor(pipelineId);
   // A RECUSA DE CAMPOS ABRE DIÁLOGO, não toast (issue #1536): o 422 traz em
   // `details.faltando` o que falta, o diálogo coleta, e o reenvio leva os
   // valores NA MESMA escrita que muda a etapa. O hook é o MESMO de antes —
@@ -386,7 +388,7 @@ export function KanbanBoard({
           className="flex min-h-full w-max items-stretch gap-3"
           data-faixa-das-etapas
         >
-          {data.stages.map((stage) => (
+          {data.stages.map((stage, posicao) => (
             <StageColumn
               key={stage.id}
               stage={stage}
@@ -404,6 +406,8 @@ export function KanbanBoard({
               onMoverPara={aoMoverPelaLista}
               podeRenomear={podeRenomearEtapa}
               onRenomear={(nome) => renameStage.mutate({ stageId: stage.id, name: nome })}
+              posicao={posicao}
+              onMudarCor={(cor) => stageColor.mutate({ stageId: stage.id, color: cor })}
               denso={denso}
               somenteLeitura={somenteLeitura}
             />

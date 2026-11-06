@@ -69,6 +69,8 @@ interface KanbanCardProps {
    * de escrita próprias).
    */
   somenteLeitura?: boolean;
+  /** Cor da etapa onde o card está: vira um fundo e uma borda de leve, nada mais. */
+  corDaEtapa?: string;
 }
 
 function formatValor(cents: number | null, currency: string | null): string | null {
@@ -103,6 +105,7 @@ export function KanbanCard({
   onMoverPara,
   denso = false,
   somenteLeitura = false,
+  corDaEtapa,
 }: KanbanCardProps) {
   const t = useT();
   const value = formatValor(card.valueCents, card.currency);
@@ -180,6 +183,15 @@ export function KanbanCard({
           // `data-densidade` é o observável da densidade: o teste de tela mede
           // o card, não o estado do React.
           data-densidade={denso ? "compacta" : "confortavel"}
+          style={
+            corDaEtapa
+              ? {
+                  ...provided.draggableProps.style,
+                  backgroundColor: `color-mix(in srgb, ${corDaEtapa} 5%, var(--surface))`,
+                  borderColor: `color-mix(in srgb, ${corDaEtapa} 22%, var(--border))`,
+                }
+              : provided.draggableProps.style
+          }
           className={cn(
             "group relative overflow-hidden rounded-md border border-border bg-surface",
             denso ? "py-1.5 pl-2.5 pr-2" : "py-2.5 pl-3 pr-3",

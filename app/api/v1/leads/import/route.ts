@@ -32,9 +32,10 @@ import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { contatosDonosDosExtras } from "@/lib/channels/contato-por-telefone";
 import { canonicalPhoneBR, phoneLookupVariants } from "@/lib/channels/phone-variants";
-import { CSV_MAX_BYTES, CSV_MAX_DATA_ROWS, decodificarCsv } from "@/lib/contacts/csv";
+import { CSV_MAX_BYTES, CSV_MAX_DATA_ROWS } from "@/lib/contacts/csv";
+import { lerLinhasDoArquivo } from "@/lib/planilha/linhas-do-arquivo";
 import { traduzir } from "@/lib/i18n/dicionario";
-import { lerPlanilhaDeLeads, type ErroDaLinha } from "@/lib/leads/planilha";
+import { lerPlanilhaDeLeads, resolverEtapas, type EtapaDoFunil, type ErroDaLinha } from "@/lib/leads/planilha";
 import { createLeadHandler } from "@/app/api/v1/leads/_handler";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
@@ -124,12 +125,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  const decodificado = decodificarCsv(await enviado.arrayBuffer());
-  if ("erro" in decodificado) {
-    return fail("validation_failed", t(decodificado.erro), 422, { requestId });
+  // CSV ou XLSX: as duas portas devolvem a mesma matriz (cabeçalho + dados).
+  const lidoDoArquivo = await lerLinhasDoArquivo(await enviado.arrayBuffer(), String(enviado.name ?? ""));
+  if ("erro" in lidoDoArquivo) {
+    return fail("validation_failed", t(lidoDoArquivo.erro), 422, { requestId });
   }
 
-  const lido = lerPlanilhaDeLeads(decodificado.texto, t);
+  const lido = lerPlanilhaDeLeads(lidoDoArquivo.linhas, t);
   if ("erro" in lido) {
     return fail("validation_failed", lido.erro, 422, { requestId });
   }
@@ -144,45 +146,46 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const supabase = await createClient();
 
-  if (!stageId) {
-    // Primeira etapa ABERTA do funil, por posição, dentro da organização ativa —
-    // nunca confia em `pipeline_id` sozinho (poderia ser de outro tenant).
-    //
-    // ⚠️ `is_won`/`is_lost` fora, espelhando `funilDeEntrada` em
-    // `lib/leads/nascimento-do-lead.ts` — que é a irmã canônica desta consulta e
-    // carrega o racional: um lead não nasce fechado, e um funil mal ordenado não
-    // pode fazer alguém entrar como "Perdido". Sem os dois filtros, um funil em
-    // que "Pago" foi arrastado para a primeira coluna faz a planilha inteira
-    // nascer como negócio JÁ GANHO (o trigger `fn_crm_lead_close_on_stage`
-    // sobrescreve o `status: "open"` que o handler grava), e no caso simétrico de
-    // perda o segundo trigger aborta cada linha com `lost_reason_required` — 200
-    // na tela, zero leads criados.
-    const { data: primeiraEtapa, error: erroEtapa } = await supabase
-      .from("crm_stages")
-      .select("id")
-      .eq("pipeline_id", pipelineId)
-      .eq("organization_id", orgId)
-      .eq("is_archived", false)
-      .eq("is_won", false)
-      .eq("is_lost", false)
-      .order("position", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+  // As etapas do funil, sempre da organização ativa — nunca confia em
+  // `pipeline_id` sozinho (poderia ser de outro tenant). Servem a dois fins:
+  // achar a primeira etapa aberta (quando o form não manda `stage_id`) e
+  // resolver a coluna "etapa" da planilha pelo NOME.
+  //
+  // ⚠️ A primeira etapa aberta ignora `is_won`/`is_lost`, espelhando
+  // `funilDeEntrada` em `lib/leads/nascimento-do-lead.ts`, que carrega o racional:
+  // um lead não nasce fechado, e um funil mal ordenado não pode fazer alguém
+  // entrar como "Perdido" (o trigger `fn_crm_lead_close_on_stage` sobrescreve o
+  // `status: "open"`, e no caso de perda aborta cada linha com
+  // `lost_reason_required` — 200 na tela, zero leads criados).
+  const { data: etapasDoFunil, error: erroEtapa } = await supabase
+    .from("crm_stages")
+    .select("id, name, is_won, is_lost")
+    .eq("pipeline_id", pipelineId)
+    .eq("organization_id", orgId)
+    .eq("is_archived", false)
+    .order("position", { ascending: true });
+  if (erroEtapa) {
+    return fail("internal_error", erroEtapa.message, 500, { requestId });
+  }
+  const etapas = (etapasDoFunil ?? []) as EtapaDoFunil[];
 
-    if (erroEtapa) {
-      return fail("internal_error", erroEtapa.message, 500, { requestId });
-    }
+  if (!stageId) {
+    const primeiraEtapa = etapas.find((e) => !e.is_won && !e.is_lost);
     if (!primeiraEtapa) {
       return fail("validation_failed", t("Este funil não tem etapas abertas."), 422, { requestId });
     }
-    stageId = (primeiraEtapa as { id: string }).id;
+    stageId = primeiraEtapa.id;
   }
+
+  // Linha com etapa desconhecida (ou de ganho/perda) é IGNORADA com o motivo;
+  // as demais seguem — o mesmo desfecho por linha do resto da rota.
+  const comEtapa = resolverEtapas(lido.leads, etapas, stageId, t);
 
   const resumo: ResumoDaImportacao = {
     total_linhas: lido.leads.length + lido.erros.length,
     criados: 0,
     contatos_criados: 0,
-    erros: [...lido.erros],
+    erros: [...lido.erros, ...comEtapa.ignoradas],
     colunas_ignoradas: lido.colunasIgnoradas,
   };
 
@@ -197,7 +200,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // apagá-los seria destruir dado de quem veio antes de nós.
   const contatosCriados: string[] = [];
 
-  for (const linha of lido.leads) {
+  for (const linha of comEtapa.leads) {
     try {
       let contactId: string | null = null;
       if (linha.telefone) {
@@ -258,7 +261,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         { organization_id: orgId, actor: { type: "user", id: authz.user.id }, requestId },
         {
           pipeline_id: pipelineId,
-          stage_id: stageId,
+          stage_id: linha.stage_id,
           title: linha.title,
           description: linha.description,
           contact_id: contactId,
@@ -303,6 +306,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       total_linhas: resumo.total_linhas,
       criados: resumo.criados,
       recusadas: resumo.erros.length,
+      etapas_ignoradas: comEtapa.ignoradas.length,
     },
   });
 
@@ -376,9 +380,9 @@ export async function GET(): Promise<Response> {
   // que a gente entrega seria lido errado pelo importador que a gente escreveu —
   // e a primeira coisa que a pessoa faz é mandar o modelo de volta.
   const modelo = [
-    "nome,nome do contato,telefone,email,valor,origem,tags,observacao",
-    'Reforma do apartamento 402,Ana Souza,11988887777,ana@exemplo.com,"12.500,00",indicacao,"quente;retorno",Pediu orcamento para junho',
-    'Plano anual,Bruno Lima,(21) 97777-6666,,"1.200,00",site,,Veio pelo formulario',
+    "nome,nome do contato,telefone,email,valor,origem,tags,observacao,etapa",
+    'Reforma do apartamento 402,Ana Souza,11988887777,ana@exemplo.com,"12.500,00",indicacao,"quente;retorno",Pediu orcamento para junho,',
+    'Plano anual,Bruno Lima,(21) 97777-6666,,"1.200,00",site,,Veio pelo formulario,',
   ].join("\n");
 
   return new Response(`﻿${modelo}\n`, {

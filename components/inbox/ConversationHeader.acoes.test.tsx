@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ConversationHeader } from "./ConversationHeader";
@@ -78,6 +79,13 @@ vi.mock("@/components/kanban/OwnerBadge", () => ({ OwnerBadge: () => null }));
 vi.mock("@/components/inbox/FaixaDaCarteira", () => ({ FaixaDaCarteira: () => null }));
 vi.mock("@/components/inbox/ReassignDialog", () => ({ ReassignDialog: () => null }));
 vi.mock("@/components/inbox/JanelaSelo", () => ({ JanelaSelo: () => null }));
+// ACELERA: os botões do comercial (#9) moram em AcoesComerciaisDaConversa, que
+// lê react-query (lista de agendados, funil). Estes testes medem a barra de
+// ações, não esse componente: sem o mock, o `useQueryClient` exigiria provider.
+vi.mock("@/components/inbox/AcoesComerciaisDaConversa", () => ({
+  DialogosComerciais: () => null,
+  MensagensAgendadasDaConversa: () => null,
+}));
 vi.mock("@/components/inbox/ChannelLogo", () => ({ ChannelLogo: () => null }));
 vi.mock("@/components/voice/DialButton", () => ({ DialButton: () => null }));
 vi.mock("@/components/inbox/VideoCallButton", () => ({ VideoCallButton: () => null }));
@@ -158,7 +166,7 @@ const CENARIO_MAIS_COMPLETO: Cenario = {
     assignee_kind: "user",
     bot_silenced_until: new Date(Date.now() + 10 * 60_000).toISOString(),
   },
-  ancora: "Liberar",
+  ancora: "Assumir",
   esperadas: [
     "Assumir",
     "Liberar",
@@ -207,20 +215,20 @@ const CENARIOS: Cenario[] = [
   {
     nome: "encerrada — o par Fechar/Reabrir vira Reabrir",
     conversa: { status: "closed" },
-    ancora: "Reabrir",
+    ancora: "Assumir",
     esperadas: ["Assumir", "Reabrir", "Arquivar", "Marcar como pessoal", "Ver contato"],
   },
   {
     nome: "arquivada — arquivar de novo não é gesto que exista",
     conversa: { status: "archived" },
-    ancora: "Reabrir",
+    ancora: "Assumir",
     esperadas: ["Assumir", "Reabrir", "Marcar como pessoal", "Ver contato"],
   },
   {
     nome: "contato marcado como pessoal — o par inverte",
     contato: { is_personal: true },
     auth: { user: { id: "u1", support: null, is_platform_admin: true } },
-    ancora: "Desmarcar pessoal",
+    ancora: "Assumir",
     esperadas: [
       "Assumir",
       "Transferir",
@@ -280,13 +288,38 @@ function naBarra(barra: HTMLElement, rotulo: string): boolean {
   );
 }
 
+/**
+ * ACELERA (layout WhatsApp Web, d90737ef1): Liberar, Transferir, Fechar, Reabrir,
+ * Arquivar, pessoal e Ver contato saíram da barra para o menu "⋮" da conversa. A
+ * regra do #3003 (nenhuma ação some, toda ação tem guia) continua valendo — só
+ * que "alcançável" agora é: na barra OU num item do menu aberto. Decisão
+ * deliberada da Acelera (a mesma que tornou o "Mais ações" do mantenedor um
+ * "Mais opções"); o teste acompanha, sem afrouxar a régua.
+ */
+async function abrirMenu(): Promise<HTMLElement> {
+  await userEvent.setup().click(screen.getByRole("button", { name: "Mais opções" }));
+  return await screen.findByRole("menu");
+}
+
+/** Ações alcançáveis: as da barra (lidas ANTES de abrir o menu) + os itens do menu. */
+async function acoesAlcancaveis(barra: HTMLElement): Promise<string[]> {
+  const naBarraAntes = INVENTARIO.filter((rotulo) => naBarra(barra, rotulo));
+  const menu = await abrirMenu();
+  const noMenu = INVENTARIO.filter(
+    (rotulo) =>
+      within(menu).queryByRole("menuitem", { name: rotulo }) !== null ||
+      within(menu).queryByText(rotulo) !== null,
+  );
+  return Array.from(new Set<string>([...naBarraAntes, ...noMenu]));
+}
+
 describe("#3003 — paridade: nenhuma ação da barra desaparece", () => {
   for (const cenario of CENARIOS) {
-    it(`${cenario.nome}: continua oferecendo exatamente ${cenario.esperadas.length} ações`, () => {
+    it(`${cenario.nome}: continua oferecendo exatamente ${cenario.esperadas.length} ações`, async () => {
       montar(cenario);
       const barra = barraDeAcoes(cenario.ancora);
 
-      const presentes = INVENTARIO.filter((rotulo) => naBarra(barra, rotulo));
+      const presentes = await acoesAlcancaveis(barra);
       expect(
         [...presentes].sort(),
         `o conjunto de ações do cenário "${cenario.nome}" mudou — ação a menos (ou a mais) quebra a paridade do #3003`,
@@ -294,12 +327,12 @@ describe("#3003 — paridade: nenhuma ação da barra desaparece", () => {
     });
   }
 
-  it("a união dos cenários cobre TODA ação do inventário — é aqui que a ação removida do componente reprova", () => {
+  it("a união dos cenários cobre TODA ação do inventário — é aqui que a ação removida do componente reprova", async () => {
     const vistas = new Set<string>();
     for (const cenario of CENARIOS) {
       const { unmount } = montar(cenario);
       const barra = barraDeAcoes(cenario.ancora);
-      for (const rotulo of INVENTARIO) if (naBarra(barra, rotulo)) vistas.add(rotulo);
+      for (const rotulo of await acoesAlcancaveis(barra)) vistas.add(rotulo);
       unmount();
     }
 
@@ -314,7 +347,7 @@ describe("#3003 — paridade: nenhuma ação da barra desaparece", () => {
 
 describe("#3003 — guia curta: todo botão da barra diz o que faz", () => {
   for (const cenario of CENARIOS) {
-    it(`${cenario.nome}: nome acessível e guia, em cada botão`, () => {
+    it(`${cenario.nome}: nome acessível e guia, em cada botão`, async () => {
       montar(cenario);
       const barra = barraDeAcoes(cenario.ancora);
 
@@ -336,15 +369,31 @@ describe("#3003 — guia curta: todo botão da barra diz o que faz", () => {
           `"${nome}" não tem guia curta (#3003): quem está começando não sabe o que ele faz`,
         ).not.toBe("");
       }
+
+      // Os itens do menu "⋮" que são ações do inventário também dizem o que fazem.
+      const menu = await abrirMenu();
+      for (const item of within(menu).getAllByRole("menuitem")) {
+        const nome = (item.textContent ?? "").trim();
+        if (!(INVENTARIO as readonly string[]).includes(nome)) continue;
+        expect(
+          (item.getAttribute("title") ?? "").trim() || (item.querySelector("[title]")?.getAttribute("title") ?? "").trim(),
+          `"${nome}" (item do menu) não tem guia curta (#3003)`,
+        ).not.toBe("");
+      }
     });
   }
 
-  it("a guia não renomeou nenhum botão — o nome acessível continua sendo o rótulo visível", () => {
+  it("a guia não renomeou nenhum botão — o nome acessível continua sendo o rótulo visível", async () => {
     montar(CENARIO_MAIS_COMPLETO);
-    const barra = barraDeAcoes("Liberar");
-    for (const rotulo of ["Assumir", "Liberar", "Devolver ao automático", "Transferir", "Fechar"]) {
+    const barra = barraDeAcoes("Assumir");
+    for (const rotulo of ["Assumir", "Devolver ao automático"]) {
       const botao = within(barra).getByRole("button", { name: rotulo });
       expect(botao.textContent?.trim()).toBe(rotulo);
+    }
+    const menu = await abrirMenu();
+    for (const rotulo of ["Liberar", "Transferir", "Fechar"]) {
+      const item = within(menu).getByRole("menuitem", { name: rotulo });
+      expect(item.textContent?.trim()).toBe(rotulo);
     }
   });
 });
@@ -378,9 +427,10 @@ describe("#3003 — a guia de Liberar não promete o automático quando ele não
   ];
 
   for (const caso of casos) {
-    it(caso.nome, () => {
-      montar({ nome: caso.nome, ancora: "Liberar", esperadas: [], ...caso.cenario });
-      expect(screen.getByRole("button", { name: "Liberar" }).getAttribute("title")).toBe(caso.guia);
+    it(caso.nome, async () => {
+      montar({ nome: caso.nome, ancora: "Assumir", esperadas: [], ...caso.cenario });
+      const menu = await abrirMenu();
+      expect(within(menu).getByRole("menuitem", { name: "Liberar" }).getAttribute("title")).toBe(caso.guia);
     });
   }
 });

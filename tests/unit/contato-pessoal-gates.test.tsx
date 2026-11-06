@@ -140,34 +140,52 @@ beforeEach(() => {
   desmarcarMutate.mockReset();
 });
 
+/**
+ * ACELERA (layout WhatsApp Web, d90737ef1): marcar/desmarcar pessoal moram nos
+ * itens do menu "⋮" da conversa, não mais na barra. O gate é o mesmo — só que
+ * agora ele só aparece com o menu aberto. Abrir o menu também mantém os casos
+ * "não vê" honestos: com o menu fechado eles passariam de qualquer jeito.
+ */
+async function abrirMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("menu-da-conversa"));
+}
+
 describe("gate do botão pessoal no cabeçalho", () => {
-  it("atendente não vê nem marcar nem desmarcar", () => {
+  it("atendente não vê nem marcar nem desmarcar", async () => {
     papel.atual = "agent";
+    const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(false)} />);
+    await abrirMenu(user);
     expect(screen.queryByTestId("marcar-pessoal")).toBeNull();
     expect(screen.queryByTestId("desmarcar-pessoal")).toBeNull();
     unmount();
   });
 
-  it("gerente vê marcar no contato normal", () => {
+  it("gerente vê marcar no contato normal", async () => {
     papel.atual = "manager";
+    const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(false)} />);
+    await abrirMenu(user);
     expect(screen.getByTestId("marcar-pessoal")).toBeTruthy();
     expect(screen.queryByTestId("desmarcar-pessoal")).toBeNull();
     unmount();
   });
 
-  it("gerente vê desmarcar (e não marcar) no contato pessoal", () => {
+  it("gerente vê desmarcar (e não marcar) no contato pessoal", async () => {
     papel.atual = "manager";
+    const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(true)} />);
+    await abrirMenu(user);
     expect(screen.getByTestId("desmarcar-pessoal")).toBeTruthy();
     expect(screen.queryByTestId("marcar-pessoal")).toBeNull();
     unmount();
   });
 
-  it("sem contato, sem botão para ninguém", () => {
+  it("sem contato, sem botão para ninguém", async () => {
     papel.atual = "manager";
+    const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(null)} />);
+    await abrirMenu(user);
     expect(screen.queryByTestId("marcar-pessoal")).toBeNull();
     expect(screen.queryByTestId("desmarcar-pessoal")).toBeNull();
     unmount();
@@ -177,6 +195,7 @@ describe("gate do botão pessoal no cabeçalho", () => {
     papel.atual = "manager";
     const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(false)} />);
+    await abrirMenu(user);
     await user.click(screen.getByTestId("marcar-pessoal"));
     expect(marcarMutate).not.toHaveBeenCalled();
     expect(await screen.findByText("Marcar este contato como pessoal?")).toBeTruthy();
@@ -187,6 +206,7 @@ describe("gate do botão pessoal no cabeçalho", () => {
     papel.atual = "manager";
     const user = userEvent.setup();
     const { unmount } = render(<ConversationHeader conversation={conversa(true)} />);
+    await abrirMenu(user);
     await user.click(screen.getByTestId("desmarcar-pessoal"));
     expect(desmarcarMutate).toHaveBeenCalledTimes(1);
     unmount();

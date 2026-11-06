@@ -6,7 +6,7 @@ Fork de `melgarafael/DeskcommCRM` (MIT) usado como **CRM comercial** pelo Aceler
 **Branch canônica: `acelera/1.100.0`** = tag `v1.100.0` do upstream + os commits do fork
 (feita a partir de `acelera/1.98.9` com merge de `acelera/1.84.0` e da `v1.100.0`).
 A `acelera/1.84.0` (tag `acelera-pre-1.100`) é a produção anterior e serve de rollback de código.
-As migrations `acelera_0001..0004` estão no fim do `supabase/baseline.sql`, depois dos blocos do upstream.
+As migrations `acelera_0001..0004` estão no fim do `supabase/baseline.sql`, depois dos blocos do upstream (a 0001 cria função e por isso fica ANTES da varredura de anon).
 
 ## 1. Login único com o Acelera OS (multi-organização)
 
@@ -94,13 +94,13 @@ O CRM já tem white-label nativo (`docs/white-label.md`). **Nenhuma tela foi edi
 - `.env` (semente): `APP_NAME=Acelera CRM`, `APP_ACCENT_HEX=#FF7300`. Só vale na primeira
   leitura — depois **o banco manda**. Numa instalação que já existe, aplique em **`/admin/marca`**.
 - Logo e ícone: a tela aceita **PNG ou JPG até 512 KB** (SVG é recusado). Originais vetoriais em
-  `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`logo-claro.png`,
-  `logo-escuro.png`, `icone.png`).
+  `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`acelera/marca/png/logo-claro.png`,
+  `acelera/marca/png/logo-escuro.png`, `acelera/marca/png/icone.png`).
 - **Identidade Acelera:** `app/acelera-tema.css` traz a paleta do guia de marca (laranja #FF7300 e
   cinzas neutros), cantos de 5 a 10 px, Inter no texto e Anton em caixa alta no `h1`, com o risco à
   mão em laranja sob o título. Ele também vence a cor de `/admin/marca` e de **Configurações → Marca**
   (as duas telas derivam o laranja por contraste e dão marrom), então a cor salva nelas não muda nada.
-- **Logo:** cadastre o par em **Configurações → Marca** (`logo-claro.png` e `logo-escuro.png`). Sem o logo
+- **Logo:** cadastre o par em **Configurações → Marca** (os dois PNGs de `acelera/marca/png/`). Sem o logo
   escuro, o produto desenha uma caixa branca em volta da arte no tema escuro. O Inbox segue a mesma
   paleta, sem verde (`app/acelera-whatsapp.css`).
 - **Testes de navegador do upstream que não valem mais aqui:** os três que procuram "Atkinson" no botão
@@ -148,6 +148,26 @@ Dependências do core usadas (se mudarem no upstream, revisar): `respostaDePonte
 
 Para atualizar: criar `acelera/<nova versão>` a partir da tag nova e `git cherry-pick` os commits
 do fork; conflito só pode aparecer nos dois arquivos alterados.
+
+## Botão "Conectar com o Facebook" (Configurações → Meta Ads)
+
+Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Escopo só `ads_read`.
+
+- **App só no ambiente do servidor (EasyPanel):** `META_APP_ID` (novo) e `META_APP_SECRET` (o mesmo que o
+  webhook já usa; é o mesmo app). Sem banco, sem campo em Admin. Sem uma das duas, o botão some e a tela diz
+  qual variável falta. Mudou o ambiente? **Reimplante** para valer. Se alguém trocar o segredo do webhook pela
+  tela Admin → Meta (que vence o `.env` no webhook), o login segue com o `META_APP_SECRET` do ambiente.
+- **URL de retorno a cadastrar no app da Meta** (Login do Facebook → URIs de redirecionamento válidos):
+  `https://comercial.aceleradelivery.com/api/v1/meta-ads/oauth/callback`
+- **Fluxo:** `GET /api/v1/meta-ads/oauth/connect` (admin) → Facebook → `GET /api/v1/meta-ads/oauth/callback`
+  (público no proxy; a identidade vem do `state` assinado + cookie de vínculo + nonce de uso único) → troca o
+  `code` pelo token curto e este pelo de longa duração (~60 dias) → grava em `ad_insights_connections`
+  (cifrado, `token_expires_at`, migration `acelera_0005`).
+- **Renovação:** sob demanda, em `lerCredencialDeLeitura`: faltando menos de 7 dias, troca por um novo e grava.
+  Sem cron. Token colado à mão (sem vencimento) nunca é renovado.
+- Sem acesso avançado a `ads_read` no app, só entra quem tem função no app (admin/dev/testador).
+- Arquivos: `lib/plataformas-de-anuncio/meta/login/*`, `app/api/v1/meta-ads/oauth/*`, e edições em
+  `credenciais-de-leitura.ts`, `/app/settings/meta-ads`, `lib/env.ts` (2 variáveis opcionais), `public-paths.ts` (1 linha).
 
 ## Botões do comercial na conversa
 

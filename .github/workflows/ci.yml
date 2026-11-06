@@ -324,7 +324,7 @@ jobs:
       # contra o REMOTO (e o script busca a base: o checkout daqui não traz origin/main).
       - name: Colisão de número de migration
         if: matrix.parte == 1
-        run: pnpm checar:colisao-de-migration
+        run: pnpm checar:colisao-de-migration "origin/${{ github.base_ref || 'main' }}"
 
       # POR QUE NÃO HÁ UMA CAMADA "o número foi tomado depois da prévia": o
       # passo acima JÁ É ELA. O script busca a base no remoto no instante do job

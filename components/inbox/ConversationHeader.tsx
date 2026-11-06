@@ -557,14 +557,14 @@ export function ConversationHeader({
         {/* ACELERA (só do fork): os gestos do comercial, como no Chronos. No
             celular moram no "⋮": a fileira que rola esconderia justo estes. */}
         {c?.id && (
-          <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("lead")} data-testid="criar-lead-da-conversa">
+          <Button size="sm" variant="outline" className="max-md:hidden" title={t("Cria um lead no funil para este contato.")} onClick={() => setAcaoComercial("lead")} data-testid="criar-lead-da-conversa">
             {t("+ Criar lead")}
           </Button>
         )}
-        <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("evento")} data-testid="disparar-evento">
+        <Button size="sm" variant="outline" className="max-md:hidden" title={t("Move o card do lead para uma etapa; a regra da etapa envia o evento à Meta.")} onClick={() => setAcaoComercial("evento")} data-testid="disparar-evento">
           {t("Disparar evento")}
         </Button>
-        <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("agendar")} data-testid="agendar-mensagem">
+        <Button size="sm" variant="outline" className="max-md:hidden" title={t("Agenda uma mensagem para ser enviada nesta conversa mais tarde.")} onClick={() => setAcaoComercial("agendar")} data-testid="agendar-mensagem">
           {t("Agendar mensagem")}
         </Button>
         {/* ACELERA: porta visível para os dados do contato (fechados por padrão).
@@ -619,7 +619,7 @@ export function ConversationHeader({
             )}
             {c?.id && (
               <DropdownMenuItem asChild>
-                <Link href={`/app/contacts/${c.id}`} className="flex items-center gap-1">
+                <Link href={`/app/contacts/${c.id}`} title={t("Abre a ficha completa deste contato.")} className="flex items-center gap-1">
                   {t("Ver contato")}
                   <ArrowRight size={12} weight="regular" aria-hidden />
                 </Link>
@@ -629,16 +629,26 @@ export function ConversationHeader({
             {isMineAssigned && (
               <DropdownMenuItem
                 disabled={release.isPending}
+                title={
+                  liberarDevolveAoAutomatico
+                    ? t("Solta esta conversa: ela fica sem dono e o atendimento automático volta a responder.")
+                    : t("Solta esta conversa: ela fica sem dono e volta para a fila, esperando um atendente.")
+                }
                 onSelect={() => release.mutate({ conversation_id: conversation.id })}
               >
                 {t("Liberar")}
               </DropdownMenuItem>
             )}
             {!encerrada && (
-              <DropdownMenuItem onSelect={() => setReassignOpen(true)}>{t("Transferir")}</DropdownMenuItem>
+              <DropdownMenuItem
+                title={t("Passa esta conversa para outro atendente. Se houver outro número conectado, dá para continuar o atendimento por ele.")}
+                onSelect={() => setReassignOpen(true)}
+              >
+                {t("Transferir")}
+              </DropdownMenuItem>
             )}
             {!encerrada && (
-              <DropdownMenuItem disabled={close.isPending} onSelect={() => {
+              <DropdownMenuItem disabled={close.isPending} title={t("Encerra o atendimento. Depois você pode reabrir a conversa.")} onSelect={() => {
                 // Padrão marcado a cada abertura: a escolha é DESTA conversa.
                 setDevolverAoFechar(true);
                 setConfirmFecharOpen(true);
@@ -649,6 +659,7 @@ export function ConversationHeader({
             {encerrada && (
               <DropdownMenuItem
                 disabled={reopen.isPending}
+                title={t("Reabre o atendimento desta conversa, que estava encerrada.")}
                 onSelect={() =>
                   reopen.mutate({
                     conversation_id: conversation.id,
@@ -661,7 +672,11 @@ export function ConversationHeader({
             )}
             {/* ARQUIVAR (#923): a conversa já arquivada não mostra o item. */}
             {status !== "archived" && (
-              <DropdownMenuItem disabled={arquivar.isPending} onSelect={() => setConfirmArquivarOpen(true)}>
+              <DropdownMenuItem
+                disabled={arquivar.isPending}
+                title={t("Guarda a conversa na aba Arquivadas. Se ainda estiver aberta, o atendimento é encerrado.")}
+                onSelect={() => setConfirmArquivarOpen(true)}
+              >
                 {arquivar.isPending ? t("Arquivando...") : t("Arquivar")}
               </DropdownMenuItem>
             )}

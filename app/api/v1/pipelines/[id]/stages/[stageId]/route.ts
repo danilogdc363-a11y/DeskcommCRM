@@ -65,6 +65,16 @@ const bodySchema = z
      * aqui é mandar a frase em português antes de tocar no banco.
      */
     expected_duration_hours: z.number().int().min(1).max(8760).nullable().optional(),
+    /**
+     * Cor da etapa, `#RRGGBB` (coluna `crm_stages.color`, CHECK
+     * `crm_stages_color_format`). `null` limpa e a etapa volta à cor padrão da
+     * posição (`lib/kanban/cores-de-etapa.ts`).
+     */
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, "Use uma cor no formato #RRGGBB.")
+      .nullable()
+      .optional(),
   })
   .strict()
   .refine((b) => Object.keys(b).length > 0, { message: "Nada para alterar." });

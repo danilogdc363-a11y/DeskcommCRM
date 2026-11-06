@@ -192,6 +192,7 @@ export type Database = {
           id: string;
           organization_id: string;
           platform: string;
+          token_expires_at: string | null;
           updated_at: string;
           updated_by: string | null;
         };
@@ -203,6 +204,7 @@ export type Database = {
           id?: string;
           organization_id: string;
           platform: string;
+          token_expires_at?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -213,6 +215,7 @@ export type Database = {
           id?: string;
           organization_id?: string;
           platform?: string;
+          token_expires_at?: string | null;
           updated_at?: string;
           updated_by?: string | null;
         };

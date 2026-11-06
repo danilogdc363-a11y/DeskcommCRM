@@ -184,10 +184,16 @@ describe("medição da folga (pergunta de aceite da issue #1341)", () => {
    * vínculo. É o número que o issue publica (15 itens: atendimento 4, CRM 3,
    * IA 3, canais 2, análise 3), medido aqui pelo módulo que alimenta o menu.
    */
-  it("hoje: 15 itens no menu lateral, folga 0 (é o teto da dobra a 1280x900)", () => {
-    expect(itensNoMenuLateral(INTERFACE_COMPLETA)).toBe(15);
+  it("hoje: 18 itens no menu lateral (15 do upstream + 3 do fork Acelera)", () => {
+    // ACELERA: o upstream mede 15 (atendimento 4, CRM 3, IA 3, canais 2, análise 3).
+    // O fork soma 3, por decisão deliberada: Menu Principal com WhatsApp e CRM
+    // (commit 4a6da5d9dc) e, em 39cf276f4c, Meta Ads e Conversões em Canais e
+    // Automações em Agente de IA. Hoje: principal 2, atendimento 3, CRM 3,
+    // IA 4, canais 4, análise 2. A folga da dobra a 1280x900 é problema do
+    // fork assumido, não deste teste: a escolha por empresa só encolhe o menu.
+    expect(itensNoMenuLateral(INTERFACE_COMPLETA)).toBe(18);
     // `undefined` é o caminho de quem não tem escolha nenhuma gravada
-    expect(itensNoMenuLateral(undefined)).toBe(15);
+    expect(itensNoMenuLateral(undefined)).toBe(18);
   });
 
   /**
@@ -195,8 +201,8 @@ describe("medição da folga (pergunta de aceite da issue #1341)", () => {
    * A escolha da empresa é interseção, então o menu só ENCOLHE — a mudança não
    * tem como empurrar o instrumento de tela para o vermelho.
    */
-  it("configuração COMPLETA (ninguém escolheu): 15 itens, folga 0 — igual a hoje", () => {
-    expect(itensNoMenuLateral(combinarInterfaces(completa, completa))).toBe(15);
+  it("configuração COMPLETA (ninguém escolheu): 18 itens — igual a hoje", () => {
+    expect(itensNoMenuLateral(combinarInterfaces(completa, completa))).toBe(18);
   });
 
   it("configuração SIMPLIFICADA (empresa escolhe o preset): 6 itens, folga 9", () => {

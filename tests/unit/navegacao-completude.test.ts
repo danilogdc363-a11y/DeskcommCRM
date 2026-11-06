@@ -50,6 +50,23 @@ const NAV_ALLOWLIST: Record<string, string> = {
     "sub-fluxo de criação de proposta, alcançado pelo botão 'Nova proposta' em /app/proposals",
 };
 
+/**
+ * Destinos do registro que NÃO são um `page.tsx` estático, e sim uma tela
+ * dinâmica (`[id]`) aberta com um id fixo. `rotasNoDisco` ignora segmentos
+ * `[id]`, então sem esta lista eles pareceriam "link morto".
+ *
+ * Toda entrada carrega o porquê e aponta a tela dinâmica que a atende — o
+ * teste abaixo confere que esse arquivo existe, para a declaração não virar
+ * licença para link morto.
+ */
+const DESTINOS_COM_ID_FIXO: Record<string, { tela: string; motivo: string }> = {
+  "/app/pipelines/b90d61dc-a9af-4b1c-a8f2-994823bc34bf": {
+    tela: path.join("pipelines", "[id]", "page.tsx"),
+    motivo:
+      "ACELERA (só do fork, commit 4a6da5d9dc): item CRM do Menu Principal, atalho direto para o funil Orçamentos da organização Acelera Delivery. Decisão deliberada; a tela é a de funil por id",
+  },
+};
+
 /** Deriva as rotas estáticas a partir dos arquivos de página que existem. */
 function rotasNoDisco(dir: string, prefixo = "/app"): string[] {
   const rotas: string[] = [];
@@ -96,8 +113,17 @@ describe("completude da navegação", () => {
   });
 
   it("todo destino do registro aponta para uma tela que existe", () => {
-    const mortos = NAV_DESTINATIONS.map((d) => d.href).filter((h) => !ROTAS.includes(h));
+    const mortos = NAV_DESTINATIONS.map((d) => d.href).filter(
+      (h) => !ROTAS.includes(h) && !(h in DESTINOS_COM_ID_FIXO),
+    );
     expect(mortos, `Link morto no registro:\n  ${mortos.join("\n  ")}`).toEqual([]);
+  });
+
+  it("todo destino com id fixo declarado tem a tela dinâmica que o atende", () => {
+    for (const [href, { tela }] of Object.entries(DESTINOS_COM_ID_FIXO)) {
+      expect(fs.existsSync(path.join(BASE, tela)), `${href} aponta para ${tela}, que não existe`).toBe(true);
+      expect(NO_REGISTRO.has(href), `${href} está declarado aqui mas saiu do registro — apague a entrada`).toBe(true);
+    }
   });
 
   it("todo hub de grupo aponta para uma tela que existe", () => {

@@ -627,6 +627,32 @@ assert_exit "$(wc -l < "$n33" | tr -d ' ')" 2 "e absorvida REPETINDO o clone, n�
 if [ -n "$(ls "$d/supabase/migrations/" 2>/dev/null)" ]; then ok "a árvore chega inteira"
 else falha "a árvore chega inteira" "supabase/migrations vazio: seguiu com o clone pela metade"; fi
 
+echo "34. (Acelera) sequência própria acelera_NNNN: livre passa; repetida na base, no PR ou no timestamp reprova"
+c="$TMP/c34a"; clonar "$c"; git -C "$c" switch -q -c fix/acelera-livre
+migrar "$c" "20260920100000_acelera_0001_primeira.sql"; commit "$c" "acelera_0001 livre"
+saida="$(gate "$c")"; code=$?
+assert_exit "$code" 0 "acelera_NNNN livre passa (sem a regra numérica do upstream)"
+assert_not_contains "$saida" "fora do padrão" "e não é acusado de nome fora do padrão"
+c="$TMP/c34b"; clonar "$c"; git -C "$c" switch -q -c fix/acelera-repete-no-pr
+migrar "$c" "20260920100000_acelera_0002_a.sql"; migrar "$c" "20260920110000_acelera_0002_b.sql"
+commit "$c" "dois acelera_0002"
+saida="$(gate "$c")"; code=$?
+assert_exit "$code" 1 "acelera_NNNN repetido entre os arquivos do PR reprova"
+assert_contains "$saida" "acelera_0002" "e nomeia o número"
+c="$TMP/c34c"; clonar "$c"
+# o acelera_0003 já está na base (o principal é a origin/main): é a migration "já mesclada"
+migrar "$principal" "20260920100000_acelera_0003_na_base.sql"; commit "$principal" "base com acelera_0003"
+git -C "$c" fetch -q origin; git -C "$c" switch -q -c fix/acelera-colide origin/main
+migrar "$c" "20260921100000_acelera_0003_outra.sql"; commit "$c" "repete acelera_0003"
+saida="$(gate "$c")"; code=$?
+assert_exit "$code" 1 "acelera_NNNN já existente na base reprova"
+assert_contains "$saida" "20260920100000_acelera_0003_na_base.sql" "e nomeia o arquivo da base"
+c="$TMP/c34d"; clonar "$c"; git -C "$c" switch -q -c fix/acelera-ts
+migrar "$c" "20260920100000_acelera_0004_ts_tomado.sql"; commit "$c" "timestamp tomado"
+saida="$(gate "$c")"; code=$?
+assert_exit "$code" 1 "acelera_NNNN com timestamp já tomado na base reprova"
+assert_contains "$saida" "20260920100000" "e nomeia o timestamp"
+
 echo
 if [ "$falhas" = 0 ]; then echo "colisao-de-migration: $casos casos, todos verdes"; exit 0
 else echo "colisao-de-migration: $falhas de $casos casos vermelhos"; exit 1; fi

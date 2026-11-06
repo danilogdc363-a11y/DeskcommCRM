@@ -149,17 +149,35 @@ function fazerSupabaseComEtapas(etapas: EtapaDoFunil[]) {
       return elo;
     };
     elo.single = () => Promise.resolve({ data: { id: `novo-${inseridos.length}` }, error: null });
-    elo.maybeSingle = () => {
-      if (tabela !== "crm_stages") return Promise.resolve({ data: null, error: null });
-      const campo = (linha: EtapaDoFunil, coluna: string) =>
-        (linha as unknown as Record<string, unknown>)[coluna];
+    const campo = (linha: EtapaDoFunil, coluna: string) =>
+      (linha as unknown as Record<string, unknown>)[coluna];
+    const filtradas = () => {
       const restantes = etapas.filter((linha) =>
         filtros.every(([coluna, valor]) => campo(linha, coluna) === valor),
       );
       const coluna = ordenadaPor;
       if (coluna) restantes.sort((a, b) => Number(campo(a, coluna)) - Number(campo(b, coluna)));
-      const escolhida = restantes.slice(0, teto)[0];
+      return restantes.slice(0, teto);
+    };
+    elo.maybeSingle = () => {
+      if (tabela !== "crm_stages") return Promise.resolve({ data: null, error: null });
+      const escolhida = filtradas()[0];
       return Promise.resolve({ data: escolhida ? { id: escolhida.id } : null, error: null });
+    };
+    // A rota agora LÊ TODAS as etapas abertas do funil (para casar a coluna
+    // "etapa" por nome) e escolhe a primeira aberta em código: o dublê honra os
+    // mesmos `.eq()` e devolve a lista inteira ao ser aguardado.
+    elo.then = (resolver: (v: unknown) => unknown, rejeitar?: (e: unknown) => unknown) => {
+      const dados =
+        tabela === "crm_stages"
+          ? filtradas().map((l) => ({
+              id: l.id,
+              name: `etapa ${l.id}`,
+              is_won: l.is_won,
+              is_lost: l.is_lost,
+            }))
+          : null;
+      return Promise.resolve({ data: dados, error: null }).then(resolver, rejeitar);
     };
     return elo;
   };

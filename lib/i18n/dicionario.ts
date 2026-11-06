@@ -1976,6 +1976,8 @@ export const DICIONARIO: Traducoes = {
   Roteadores: { es: "Enrutadores" },
   "Ver tudo em IA": { es: "Ver todo en IA" },
   "Ver tudo em CRM": { es: "Ver todo en CRM" },
+  // ACELERA: descrição do atalho CRM (funil Orçamentos) no Menu Principal.
+  "Atalho para o funil de Orçamentos.": { es: "Atajo al embudo de Presupuestos." },
   "Ver tudo em Análise": { es: "Ver todo en Análisis" },
   Conexões: { es: "Conexiones" },
   Webhooks: { es: "Webhooks" },
@@ -10290,13 +10292,15 @@ export const DICIONARIO: Traducoes = {
   "linha(s) com problema": { es: "fila(s) con problema" },
   "Não foi possível importar o arquivo.": { es: "No se pudo importar el archivo." },
   "Importar contatos de planilha": { es: "Importar contactos de una hoja de cálculo" },
-  "Envie um arquivo .csv com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags. Excel: use “Salvar como” → “CSV UTF-8”. Máximo de 500 linhas por arquivo.": {
-    es: "Envía un archivo .csv con encabezado — columnas reconocidas: nombre, teléfono, email, cpf, nacimiento, tags. Excel: usa “Guardar como” → “CSV UTF-8”. Máximo 500 líneas por archivo.",
+  "Envie um arquivo .csv ou .xlsx com cabeçalho — colunas reconhecidas: nome, telefone, email, cpf, nascimento, tags — ou um .vcf exportado da agenda do celular. Máximo de 500 linhas por arquivo.": {
+    es: "Envía un archivo .csv o .xlsx con encabezado — columnas reconocidas: nombre, teléfono, email, cpf, nacimiento, tags — o un .vcf exportado de la agenda del celular. Máximo 500 líneas por archivo.",
   },
   "Este arquivo não parece ser um CSV de texto. No Excel use “Salvar como” → “CSV UTF-8 (delimitado por vírgulas)”.": {
     es: "Este archivo no parece ser un CSV de texto. En Excel usa “Guardar como” → “CSV UTF-8 (delimitado por comas)”.",
   },
-  "Arquivo CSV": { es: "Archivo CSV" },
+  "Arquivo (CSV, Excel ou vCard)": {
+    es: "Archivo (CSV, Excel o vCard)",
+  },
   "Importando…": { es: "Importando…" },
   "Importar": { es: "Importar" },
   "linha(s) lidas": { es: "fila(s) leída(s)" },
@@ -10883,6 +10887,16 @@ export const DICIONARIO: Traducoes = {
   "Selecionar": { es: "Seleccionar" },
   "Selecionar todos em": { es: "Seleccionar todos en" },
   "Desmarcar todos em": { es: "Desmarcar todos en" },
+  "Cor da etapa": { es: "Color de la etapa" },
+  "Outra cor (hex)": { es: "Otro color (hex)" },
+  "Use o formato #RRGGBB.": { es: "Usa el formato #RRGGBB." },
+  "Voltar à cor padrão": { es: "Volver al color predeterminado" },
+  "Laranja": { es: "Naranja" },
+  "Rosa": { es: "Rosa" },
+  "Violeta": { es: "Violeta" },
+  "Ciano": { es: "Cian" },
+  "Turquesa": { es: "Turquesa" },
+  "Verde": { es: "Verde" },
   "Abrir esta conversa no Inbox": { es: "Abrir esta conversación en Inbox" },
   "conversa sem mensagens": { es: "conversación sin mensajes" },
   "Valor inválido": { es: "Valor inválido" },
@@ -13361,6 +13375,38 @@ export const DICIONARIO: Traducoes = {
     { es: "Al desconectar, se borra el token guardado. La pantalla de Meta Ads volverá a pedir una conexión. No se pierde ningún dato histórico, porque aquí no se almacena nada." },
   "Não consegui desconectar agora.": { es: "No pude desconectar ahora." },
 
+  // ─── Configurações → Meta Ads: botão "Conectar com o Facebook" (acelera_0005) ───
+  "Conectar com o Facebook": { es: "Conectar con Facebook" },
+  "Reconectar com o Facebook": { es: "Reconectar con Facebook" },
+  "Conta do Facebook conectada.": { es: "Cuenta de Facebook conectada." },
+  "Ou cole um token à mão": { es: "O pega un token a mano" },
+  "Reconecte.": { es: "Vuelve a conectar." },
+  "Conectado até": { es: "Conectado hasta" },
+  "A conexão venceu em": { es: "La conexión venció el" },
+  "Não consegui conectar com o Facebook.": { es: "No pude conectar con Facebook." },
+  "Entre com a sua conta do Facebook e autorize só a leitura dos anúncios. Não precisa gerar nem colar token: a conexão dura cerca de 60 dias e o sistema renova sozinho enquanto você usar a tela de Meta Ads.":
+    { es: "Entra con tu cuenta de Facebook y autoriza solo la lectura de los anuncios. No hace falta generar ni pegar un token: la conexión dura unos 60 días y el sistema la renueva solo mientras uses la pantalla de Meta Ads." },
+  "O botão do Facebook está desligado porque faltam estas configurações no servidor:":
+    { es: "El botón de Facebook está apagado porque faltan estas configuraciones en el servidor:" },
+  "Quem administra o sistema cadastra e reimplanta. Enquanto isso, você pode colar um token logo abaixo.":
+    { es: "Quien administra el sistema las registra y vuelve a desplegar. Mientras tanto, puedes pegar un token justo debajo." },
+  "Se o Facebook disser que o recurso está indisponível, é porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios. Sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador).":
+    { es: "Si Facebook dice que el recurso no está disponible, es porque la aplicación todavía no tiene el acceso avanzado para leer anuncios. Sin él, solo entra quien tiene un rol en la aplicación (administrador, desarrollador o probador)." },
+  "Você cancelou a conexão no Facebook. Quando quiser, é só clicar no botão de novo.":
+    { es: "Cancelaste la conexión en Facebook. Cuando quieras, solo haz clic en el botón otra vez." },
+  "O Facebook não deixou conectar. Isso costuma acontecer porque o aplicativo ainda não tem a liberação avançada de leitura de anúncios: sem ela, só entra quem tem função no aplicativo (administrador, desenvolvedor ou testador). Peça a quem cuida do aplicativo para te adicionar, ou cole um token abaixo.":
+    { es: "Facebook no permitió conectar. Suele pasar porque la aplicación todavía no tiene el acceso avanzado para leer anuncios: sin él, solo entra quien tiene un rol en la aplicación (administrador, desarrollador o probador). Pide a quien administra la aplicación que te agregue, o pega un token abajo." },
+  "Não consegui terminar a conexão com o Facebook. Tente de novo em instantes.":
+    { es: "No pude terminar la conexión con Facebook. Inténtalo de nuevo en unos instantes." },
+  "O pedido de conexão venceu ou não é mais válido. Clique no botão e tente de novo.":
+    { es: "La solicitud de conexión venció o ya no es válida. Haz clic en el botón e inténtalo de nuevo." },
+  "O Facebook não devolveu a autorização. Clique no botão e tente de novo.":
+    { es: "Facebook no devolvió la autorización. Haz clic en el botón e inténtalo de nuevo." },
+  "O botão do Facebook ainda não foi configurado no servidor (faltam META_APP_ID e META_APP_SECRET). Peça a quem administra o sistema.":
+    { es: "El botón de Facebook todavía no fue configurado en el servidor (faltan META_APP_ID y META_APP_SECRET). Pídeselo a quien administra el sistema." },
+  "Esta instalação está sem a chave mestra de criptografia, e a conexão não foi gravada. Quem instalou o sistema precisa configurá-la.":
+    { es: "Esta instalación no tiene la clave maestra de cifrado y la conexión no se guardó. Quien instaló el sistema debe configurarla." },
+
   // ─── ERRO_EM_PORTUGUES compartida por meta-ads/_form.tsx e conversoes/_form.tsx ───
   "Você não está em nenhuma organização ativa.": {
     es: "No estás en ninguna organización activa.",
@@ -13605,10 +13651,24 @@ export const DICIONARIO: Traducoes = {
   },
   "Não consegui salvar a marca agora.": { es: "No pude guardar la marca ahora." },
 
+  // ─── Importação: coluna "etapa", Excel e vCard ───
+  "etapa não encontrada neste funil (": { es: "etapa no encontrada en este embudo (" },
+  ") — linha ignorada": { es: ") — línea ignorada" },
+  "etapa de ganho ou perda não é aceita na importação (": {
+    es: "la etapa de ganado o perdido no se acepta en la importación (",
+  },
+  "Este arquivo não parece ser um vCard de texto.": { es: "Este archivo no parece ser un vCard de texto." },
+  "Não encontrei nenhum contato neste arquivo .vcf.": { es: "No encontré ningún contacto en este archivo .vcf." },
+  "cartão sem telefone legível nem e-mail — ignorado": {
+    es: "tarjeta sin teléfono legible ni correo — ignorada",
+  },
+  "só o primeiro telefone foi importado; não entraram: ": {
+    es: "solo se importó el primer teléfono; no entraron: ",
+  },
   // ─── Importar leads de planilha (extraído do PR #418) ───
   "Importar leads de uma planilha": { es: "Importar leads desde una hoja de cálculo" },
-  "Um arquivo CSV com uma linha por lead. Os leads entram na primeira etapa aberta do funil escolhido.": {
-    es: "Un archivo CSV con una fila por lead. Los leads entran en la primera etapa abierta del embudo elegido.",
+  "Um arquivo CSV ou Excel (.xlsx) com uma linha por lead. Sem a coluna “etapa”, os leads entram na primeira etapa aberta do funil escolhido; com ela, vão para a etapa de mesmo nome.": {
+    es: "Un archivo CSV o Excel (.xlsx) con una fila por lead. Sin la columna “etapa”, los leads entran en la primera etapa abierta del embudo elegido; con ella, van a la etapa del mismo nombre.",
   },
   "Funil de destino": { es: "Embudo de destino" },
   // As duas mensagens de recusa da ROTA de importação. Nasceram no #597, que
@@ -13616,7 +13676,9 @@ export const DICIONARIO: Traducoes = {
   // ("…o funil e a etapa de destino") deixou de ser emitida por qualquer caminho.
   "Escolha o funil de destino.": { es: "Elige el embudo de destino." },
   "Este funil não tem etapas abertas.": { es: "Este embudo no tiene etapas abiertas." },
-  "Escolher o arquivo CSV": { es: "Elegir el archivo CSV" },
+  "Escolher o arquivo (CSV ou Excel)": {
+    es: "Elegir el archivo (CSV o Excel)",
+  },
   "leads criados": { es: "leads creados" },
   "contatos novos": { es: "contactos nuevos" },
   "Colunas que não reconheci:": { es: "Columnas que no reconocí:" },
@@ -13643,8 +13705,8 @@ export const DICIONARIO: Traducoes = {
   },
   "linha recusada pelo banco": { es: "fila rechazada por la base de datos" },
   // Mensagens de erro de app/api/v1/products/import/route.ts
-  "Formato não suportado — envie um arquivo .csv. No Excel use 'Salvar como' → 'CSV UTF-8'.": {
-    es: "Formato no compatible — envía un archivo .csv. En Excel usa 'Guardar como' → 'CSV UTF-8'.",
+  "Formato não suportado — envie um arquivo .csv, .xlsx ou .vcf.": {
+    es: "Formato no admitido — envía un archivo .csv, .xlsx o .vcf.",
   },
   "produtos por importação — divida a planilha.": {
     es: "productos por importación — divide la hoja de cálculo.",
@@ -19676,6 +19738,17 @@ export const DICIONARIO: Traducoes = {
   "A Meta não concluiu a conexão. Tente de novo.": { es: "Meta no completó la conexión. Inténtalo de nuevo." },
   "Chave da conta da instalação no provedor parceiro": { es: "Clave de la cuenta de la instalación en el proveedor asociado" },
   "Com ela, cada empresa conecta o número oficial do WhatsApp com um clique, sem ter conta no provedor. Os números ficam na conta da instalação e entram na fatura dela.": { es: "Con ella, cada empresa conecta el número oficial de WhatsApp con un clic, sin tener cuenta en el proveedor. Los números quedan en la cuenta de la instalación y entran en su factura." },
+  "Reportar também leads sem origem de anúncio": { es: "Reportar también leads sin origen de anuncio" },
+  "Envia à Meta quem chegou por formulário ou WhatsApp direto, casado por telefone e e-mail. A Meta só credita o anúncio se a pessoa viu ou clicou em um.": { es: "Envía a Meta a quien llegó por formulario o WhatsApp directo, cruzado por teléfono y correo. Meta solo acredita el anuncio si la persona vio uno o hizo clic en él." },
+  "Criar lead": { es: "Crear lead" },
+  "Dados do contato": { es: "Datos del contacto" },
+  "Fechar dados do contato": { es: "Cerrar datos del contacto" },
+  "Ver dados do contato": { es: "Ver datos del contacto" },
+  "Mais opções": { es: "Más opciones" },
+  "Cadastrar cliente": { es: "Registrar cliente" },
+  "Cria um lead no funil para este contato.": { es: "Crea un lead en el embudo para este contacto." },
+  "Move o card do lead para uma etapa; a regra da etapa envia o evento à Meta.": { es: "Mueve la tarjeta del lead a una etapa; la regla de la etapa envía el evento a Meta." },
+  "Agenda uma mensagem para ser enviada nesta conversa mais tarde.": { es: "Programa un mensaje para enviarlo más tarde en esta conversación." },
 };
 
 /**

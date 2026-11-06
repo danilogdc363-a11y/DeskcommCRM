@@ -782,10 +782,7 @@ function BotaoDeRecolherDoPainel({
       type="button"
       onClick={onAlternar}
       // Vocabulário e ícone iguais aos do menu da esquerda (`BotaoDeRecolher`).
-      className={cn(
-        "flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-        recolhido && "justify-center",
-      )}
+      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       aria-label={rotulo}
       aria-expanded={!recolhido}
       title={rotulo}
@@ -796,7 +793,6 @@ function BotaoDeRecolherDoPainel({
       ) : (
         <CaretDoubleLeft size={14} aria-hidden />
       )}
-      {!recolhido && <span>{t("Recolher")}</span>}
     </button>
   );
 }
