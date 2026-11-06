@@ -72700,3 +72700,13 @@ grant update (status, cancelado_por, concluida_em) on public.mensagens_agendadas
 grant all on public.mensagens_agendadas to service_role;
 
 notify pgrst, 'reload schema';
+
+-- ---- login com o Facebook na tela Meta Ads (migration acelera_0005) ----
+-- manifest: **(Acelera) Login com o Facebook na tela Meta Ads.** `ad_insights_connections.token_expires_at`, coluna nullable.
+alter table public.ad_insights_connections
+  add column if not exists token_expires_at timestamptz;
+
+comment on column public.ad_insights_connections.token_expires_at is
+  'Quando o token de longa duração obtido pelo login com o Facebook vence (acelera_0005). Nulo = token colado à mão, sem vencimento conhecido. A leitura renova o token sob demanda quando falta pouco.';
+
+notify pgrst, 'reload schema';
