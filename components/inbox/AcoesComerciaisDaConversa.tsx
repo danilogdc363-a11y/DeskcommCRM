@@ -332,7 +332,7 @@ export function MensagensAgendadasDaConversa({ conversationId }: { conversationI
   return (
     <ul className="w-full space-y-1 text-xs" data-testid="mensagens-agendadas">
       {itens.map((item) => (
-        <li key={item.id} className="flex min-w-0 items-center gap-2 rounded border border-border px-2 py-1">
+        <li key={item.id} className="flex min-w-0 items-center gap-2 rounded-md border border-border px-2 py-1">
           <span className="shrink-0 font-medium">{formatoDoHorario.format(new Date(item.enviar_em))}</span>
           <span className="min-w-0 flex-1 truncate" title={item.corpo}>
             {item.status === "falhou"

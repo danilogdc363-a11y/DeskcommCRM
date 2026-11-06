@@ -1976,6 +1976,8 @@ export const DICIONARIO: Traducoes = {
   Roteadores: { es: "Enrutadores" },
   "Ver tudo em IA": { es: "Ver todo en IA" },
   "Ver tudo em CRM": { es: "Ver todo en CRM" },
+  // ACELERA: descrição do atalho CRM (funil Orçamentos) no Menu Principal.
+  "Atalho para o funil de Orçamentos.": { es: "Atajo al embudo de Presupuestos." },
   "Ver tudo em Análise": { es: "Ver todo en Análisis" },
   Conexões: { es: "Conexiones" },
   Webhooks: { es: "Webhooks" },
