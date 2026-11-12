@@ -56,6 +56,7 @@ export type PlataformaDeAnuncio = "meta_ads" | "google_ads";
 export type NomeDoEvento =
   | "Purchase"
   | "QualifiedLead"
+  | "LeadSubmitted"
   | `Etapa:${string}`
   | `MetaEtapa:${string}`;
 
@@ -69,7 +70,8 @@ import type { IdentidadeParaMeta } from "./meta/user-data";
 
 export interface ConversaoOffline {
   organizationId: string;
-  leadId: string;
+  /** `null` no LeadSubmitted por clique CTWA: o evento nasce do clique, sem card. */
+  leadId: string | null;
   evento: NomeDoEvento;
   /**
    * Deduplicação, determinística: `<leadId>:<evento>`.
