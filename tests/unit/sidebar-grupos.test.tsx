@@ -72,7 +72,8 @@ describe("Sidebar agrupado", () => {
     //
     // ACELERA (commit 4a6da5d9dc): o fork abre o menu com o grupo "Menu Principal"
     // (WhatsApp e CRM), antes de Atendimento. Decisão deliberada do fork.
-    expect(titulos).toEqual(["Menu Principal", "Atendimento", "CRM", "Agente de IA", "Canais", "Análise"]);
+    // "Tintim" é o grupo TINTIM-TEMPORARIO do catálogo (só na 1.84; sai quando o Tintim for cancelado).
+    expect(titulos).toEqual(["Menu Principal", "Atendimento", "CRM", "Agente de IA", "Canais", "Análise", "Tintim"]);
   });
 
   it("leva às Etapas do funil pelo CRM, e não por Configurações", () => {
