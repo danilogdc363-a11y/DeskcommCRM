@@ -50,6 +50,7 @@ import { ApiError } from "@/lib/api/types";
 import { autorizarCaptacaoParaIA, camposDaCaptacao } from "@/lib/ai/elegibilidade/formulario";
 import { autorizarContatoParaIA } from "@/lib/ai/elegibilidade/autorizacao";
 import { kickLocalPipeline } from "@/lib/dev/kick-local-pipeline";
+import { estamparOrigemDaPagina, origemDoFormulario } from "@/lib/leads/origem-do-site";
 import {
   normalizarCamposNumericos,
   webhookFormFieldsSchema,
@@ -775,6 +776,22 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
         organizationId: source.organization_id,
         contactId,
         error: eConsent.message,
+      });
+    }
+  }
+
+  // (Acelera) Origem do formulário pelo telefone: carimba o contato ANTES do
+  // lead nascer, para o evento do nascimento já sair atribuído. O primeiro
+  // toque fica com `fn_estampar_atribuicao_de_anuncio`: contato que já veio de
+  // anúncio não é reescrito. Falha é log, nunca perda da captação.
+  const origemDoEnvio = contactId ? origemDoFormulario(mapped.source_metadata) : null;
+  if (contactId && origemDoEnvio) {
+    const gravou = await estamparOrigemDaPagina(admin, source.organization_id, contactId, origemDoEnvio);
+    if (!gravou) {
+      logger.warn("[webhooks.inbound] origem do formulário não gravada", {
+        webhookSourceId: source.id,
+        organizationId: source.organization_id,
+        contactId,
       });
     }
   }
