@@ -50,6 +50,7 @@ import { VERSAO_PADRAO_DA_GRAPH } from "@/lib/graph-version";
 import { logger } from "@/lib/logger";
 
 import { baseDaGraphDeAnuncio } from "./graph-base";
+import { montarUserData } from "./user-data";
 import type {
   ConversaoOffline,
   CredencialDeConversao,
@@ -134,46 +135,52 @@ async function enviar(
     };
   }
 
-  const userData: Record<string, unknown> = comClique ? { ctwa_clid: conversao.cliqueDeOrigem } : {};
   // ─── Página ou WABA, só no clique-para-WhatsApp (#2098) ────────────────────
   //
   // A Meta cobra UM dos dois apenas quando a origem é `business_messaging` +
   // canal `whatsapp`. No caminho da página (`system_generated`) os ids não são
-  // exigidos, e mandá-los lá acrescentaria dado que ninguém pediu.
-  //
-  // UM por envio, não os dois: a plataforma pede "o que estiver vinculado ao
-  // conjunto de dados", então mandar o par inteiro exibiria um id que talvez
-  // não seja deste dataset — e a página é a identidade do clique. A WABA entra
-  // só quando não há página. Sem nenhum dos dois: nada é acrescentado, o
-  // evento sai como antes e a recusa (com a frase da Meta) fica no livro-razão.
-  if (comClique) {
-    const pageId = credencial.meta?.pageId ?? null;
-    const wabaId = credencial.meta?.whatsappBusinessAccountId ?? null;
-    if (pageId) userData.page_id = pageId;
-    else if (wabaId) userData.whatsapp_business_account_id = wabaId;
-    else
-      logger.warn("[conversoes.meta] sem page_id nem whatsapp_business_account_id", {
-        leadId: conversao.leadId,
-        organizationId: conversao.organizationId,
-        motivo: "identidade_ausente_em_settings_conversions",
-      });
-  }
-
-  // Array de propósito: o formato aceita múltiplos valores por campo, e mandar
-  // string crua onde ele espera lista é aceito com aviso e ignorado no match.
-  if (conversao.telefone) userData.ph = [hash(conversao.telefone)];
-  if (!comClique) {
-    if (conversao.email) userData.em = [hash(conversao.email.toLowerCase())];
-    const sinais = conversao.sinaisDoNavegador;
-    if (sinais?.fbc) userData.fbc = sinais.fbc;
-    if (sinais?.fbp) userData.fbp = sinais.fbp;
-    if (sinais?.ip) userData.client_ip_address = sinais.ip;
-    if (sinais?.userAgent) userData.client_user_agent = sinais.userAgent;
-    if (sinais?.leadId) userData.lead_id = sinais.leadId;
-  }
+  // exigidos. Sem nenhum dos dois: o evento sai e a recusa (com a frase da
+  // Meta) fica no livro-razão. A montagem campo a campo está em `user-data.ts`.
+  const pageId = credencial.meta?.pageId ?? null;
+  const wabaId = credencial.meta?.whatsappBusinessAccountId ?? null;
+  if (comClique && !pageId && !wabaId)
+    logger.warn("[conversoes.meta] sem page_id nem whatsapp_business_account_id", {
+      leadId: conversao.leadId,
+      organizationId: conversao.organizationId,
+      motivo: "identidade_ausente_em_settings_conversions",
+    });
+  // (Acelera) No clique-para-WhatsApp sai o que já saía (`ctwa_clid`, página,
+  // telefone): o enriquecimento é do envio sem clique, onde a Meta casa pela
+  // pessoa. O formulário (`sinaisDoNavegador`, `email`) vence a leitura do
+  // contato, e o `lead_id` do formulário nativo liga direto ao anúncio.
+  const sinais = conversao.sinaisDoNavegador;
+  const userData = montarUserData({
+    telefone: conversao.telefone,
+    ...(comClique
+      ? {
+          clique: {
+            ctwaClid: conversao.cliqueDeOrigem,
+            pageId,
+            whatsappBusinessAccountId: wabaId,
+          },
+        }
+      : {
+          identidade: {
+            ...conversao.identidade,
+            email: conversao.email ?? conversao.identidade?.email,
+            fbc: sinais?.fbc ?? conversao.identidade?.fbc,
+            fbp: sinais?.fbp ?? conversao.identidade?.fbp,
+            ip: sinais?.ip ?? conversao.identidade?.ip,
+            userAgent: sinais?.userAgent ?? conversao.identidade?.userAgent,
+          },
+          leadIdDoFormulario: sinais?.leadId,
+        }),
+  });
 
   const customData: Record<string, unknown> = {};
-  if (ehCompra && conversao.valorCentavos !== null) {
+  // (Acelera) Valor também fora da compra quando o chamador o manda (pós-venda:
+  // `ClienteAtivo` leva a mensalidade). Etapa do funil chega sem valor.
+  if (conversao.valorCentavos !== null) {
     customData.value = conversao.valorCentavos / 100;
     customData.currency = conversao.moeda.toUpperCase();
   }
