@@ -78,13 +78,18 @@ para os leads que chegam direto pelo WhatsApp, o ganho imediato vem de
 para perto do 7,8 do formulário, depende de o `fbc`, o IP e o navegador chegarem
 junto com o lead. Veja o que falta abaixo.
 
-## Decisão pendente: retenção de IP e navegador
+## Retenção de IP e navegador (aprovada pelo Danilo em 12/11/2026)
 
-O IP, o navegador e o `fbp` ficam guardados em `meta_ads_click_refs` para todo
-clique, sem prazo. A Meta só aceita evento de até 7 dias, então guardar mais que
-isso não melhora a correspondência. A proposta é apagar esses três campos depois
-de 30 dias, deixando o clique e as UTMs, e também quando o contato for
-anonimizado. Isso fica para o Danilo decidir; não foi implementado.
+- O cron diário `data-retention` chama `fn_limpar_navegador_dos_cliques`, que
+  zera IP, user agent e `fbp` dos cliques com mais de 30 dias. O clique e as
+  UTMs ficam. O piso de 30 dias mora no corpo da função.
+- O contato anonimizado (LGPD) perde na hora o navegador dos cliques dele, por
+  um gatilho em `contacts`.
+- Migration: `supabase/migrations/20261112150000_acelera_0007_retencao_do_navegador_do_clique.sql`.
+  **Não aplicada em produção.** Aplicar só com o ok do Danilo. Antes de ela
+  entrar, o cron registra a falha nomeada dessa poda e segue com as outras.
+- Confira se o cron `data-retention` está agendado no EasyPanel; sem ele, só a
+  limpeza por anonimização acontece.
 
 ## O que ainda falta para a EMQ alta
 
