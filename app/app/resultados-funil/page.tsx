@@ -30,7 +30,9 @@ export default async function ResultadosDoFunilPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{t("Resultados do funil")}</h1>
         <p className="text-sm text-muted-foreground">
-          {t("Quantos negócios passaram por cada etapa, quantos o CRM avisou ao Meta e quantos o Meta registrou.")}
+          {t(
+            "Quantos negócios passaram por cada etapa, quantos o CRM avisou ao Meta e quantos o Meta registrou.",
+          )}
         </p>
       </header>
       <ResultadosDoFunilClient />

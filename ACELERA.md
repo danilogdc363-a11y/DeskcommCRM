@@ -140,8 +140,13 @@ Novos (Análise → Resultados do funil, `/app/resultados-funil`, piso `manager`
 (lê `/{dataset}/stats`, agregação por evento, `SERVER_ONLY`, com o conjunto e o token da API de Conversões;
 token só no servidor), `app/api/v1/reports/funil-meta/route.ts`, `hooks/reports/useFunilMeta.ts`,
 `app/app/resultados-funil/*`. Funil = padrão da organização, contado em Brasília; comparação com o Meta
-cortada no fuso da conta (America/Los_Angeles) e limitada aos 28 dias que o Meta guarda. Entrada no menu em
-`lib/navigation/catalogo.ts` (1 bloco). Sem migration.
+cortada no fuso da conta (America/Los_Angeles) e limitada aos 28 dias que o Meta guarda (dia fora disso, ou
+leitura do Meta que falhou, aparece como "Sem dados do Meta", nunca como "Não chegou"). A rota lê com o admin
+client e `organization_id` explícito, porque `ad_conversion_dispatches`, `meta_ads_conversion_rules` e
+`meta_ctwa_click_dispatches` são revogadas de `authenticated`. `stage_changed` é lido nas duas grafias
+(`from_stage_id`/`to_stage_id` e `de`/`para`). Cliques CTWA somem da tela se a tabela não existir (antes da 1.100).
+Paginação ordenada em `lib/reports/ler-tudo.ts`. Entrada no menu em `lib/navigation/catalogo.ts` (1 bloco) e
+textos em espanhol no fim de `lib/i18n/dicionario.ts`. Sem migration.
 
 Alterados (poucas linhas, marcadas com `ACELERA (fork)`):
 - `components/kanban/KanbanCardActions.tsx` e `components/inbox/CRMSidePanel.tsx` — botão "Cadastrar cliente" em lead ganho

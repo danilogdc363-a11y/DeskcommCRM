@@ -60,7 +60,14 @@ function deslocamentoMin(instante: Date, fuso: string): number {
     second: "2-digit",
   }).formatToParts(instante);
   const v = (t: string) => Number(p.find((x) => x.type === t)?.value);
-  const comoUtc = Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second"));
+  const comoUtc = Date.UTC(
+    v("year"),
+    v("month") - 1,
+    v("day"),
+    v("hour"),
+    v("minute"),
+    v("second"),
+  );
   return Math.round((comoUtc - instante.getTime()) / 60_000);
 }
 
@@ -157,6 +164,15 @@ export interface EnvioAoMeta {
   metaEventName: string | null;
   status: string;
   criadoEm: string;
+  /** Quando foi de fato tentado; o dia do Meta sai daqui (cai em criadoEm). */
+  tentadoEm?: string | null;
+}
+
+/** "sent" foi; "failed" falhou; o resto (skipped, retry, pending) não foi ainda ou foi pulado. */
+function grupoDoStatus(status: string): "enviado" | "falhou" | "outro" {
+  if (status === "sent") return "enviado";
+  if (status === "failed") return "falhou";
+  return "outro";
 }
 
 export interface LinhaDoFunil {
@@ -166,7 +182,10 @@ export interface LinhaDoFunil {
   abertosAgora: number;
   entradas: number;
   enviadosAoMeta: number;
+  /** status = failed. */
   naoEnviados: number;
+  /** skipped, retry ou pendente: nem enviado nem falho. */
+  pulados: number;
 }
 
 /** A etapa de um envio: `MetaEtapa:<id>` aponta a etapa; o resto é venda. */
@@ -196,9 +215,11 @@ export function montarFunil(input: {
 
   const enviados = new Map<string, number>();
   const falhos = new Map<string, number>();
+  const pulados = new Map<string, number>();
   for (const e of input.envios) {
     const etapa = etapaDoEnvio(e.eventName, ordenadas);
-    somar(e.status === "sent" ? enviados : falhos, etapa);
+    const g = grupoDoStatus(e.status);
+    somar(g === "enviado" ? enviados : g === "falhou" ? falhos : pulados, etapa);
   }
 
   return ordenadas.map((e) => ({
@@ -209,12 +230,13 @@ export function montarFunil(input: {
     entradas: entradas.get(e.id) ?? 0,
     enviadosAoMeta: enviados.get(e.id) ?? 0,
     naoEnviados: falhos.get(e.id) ?? 0,
+    pulados: pulados.get(e.id) ?? 0,
   }));
 }
 
 // ─── Comparação CRM × Meta ──────────────────────────────────────────────────
 
-export type Situacao = "bate" | "diferenca" | "nao_chegou" | "so_no_meta";
+export type Situacao = "bate" | "diferenca" | "nao_chegou" | "so_no_meta" | "sem_dados_meta";
 
 export interface ContagemDoMeta {
   dia: string; // fuso da conta do Meta
@@ -227,7 +249,8 @@ export interface LinhaDeComparacao {
   evento: string;
   etapa: string | null;
   crmEnviou: number;
-  metaRecebeu: number;
+  /** null = o Meta não foi lido para este dia (falha ou fora dos 28 dias). */
+  metaRecebeu: number | null;
   situacao: Situacao;
 }
 
@@ -245,9 +268,12 @@ export function situacaoDe(crmEnviou: number, metaRecebeu: number): Situacao {
  */
 export function compararComMeta(input: {
   envios: EnvioAoMeta[];
-  meta: ContagemDoMeta[];
+  /** null = o Meta não foi lido; nenhum dia é comparado. */
+  meta: ContagemDoMeta[] | null;
   etapas: Etapa[];
   dias: string[];
+  /** Dias para os quais o Meta foi lido por inteiro. Sem ele, todos. */
+  diasComMeta?: Set<string>;
 }): LinhaDeComparacao[] {
   const eventoDaEtapa = new Map<string, string>(); // evento → nome da etapa
   for (const e of input.etapas) if (e.eventoMeta) eventoDaEtapa.set(e.eventoMeta, e.nome);
@@ -261,12 +287,12 @@ export function compararComMeta(input: {
     const ev = e.metaEventName ?? eventoDoEnvio(e.eventName, input.etapas);
     if (!ev) continue;
     eventos.add(ev);
-    const k = chave(diaNoFuso(e.criadoEm, FUSO_DO_META), ev);
+    const k = chave(diaNoFuso(e.tentadoEm ?? e.criadoEm, FUSO_DO_META), ev);
     crm.set(k, (crm.get(k) ?? 0) + 1);
   }
 
   const meta = new Map<string, number>();
-  for (const m of input.meta) {
+  for (const m of input.meta ?? []) {
     if (!eventos.has(m.evento)) continue;
     const k = chave(m.dia, m.evento);
     meta.set(k, (meta.get(k) ?? 0) + m.quantidade);
@@ -276,15 +302,16 @@ export function compararComMeta(input: {
   for (const dia of [...input.dias].sort().reverse()) {
     for (const ev of eventos) {
       const c = crm.get(chave(dia, ev)) ?? 0;
-      const m = meta.get(chave(dia, ev)) ?? 0;
-      if (c === 0 && m === 0) continue;
+      const lido = input.meta !== null && (input.diasComMeta?.has(dia) ?? true);
+      const m = lido ? (meta.get(chave(dia, ev)) ?? 0) : null;
+      if (c === 0 && !m) continue;
       linhas.push({
         dia,
         evento: ev,
         etapa: eventoDaEtapa.get(ev) ?? null,
         crmEnviou: c,
         metaRecebeu: m,
-        situacao: situacaoDe(c, m),
+        situacao: m === null ? "sem_dados_meta" : situacaoDe(c, m),
       });
     }
   }
@@ -302,7 +329,11 @@ function eventoDoEnvio(eventName: string, etapas: Etapa[]): string | null {
  * dia. `start_time` vem em UTC; o dia é o do fuso da conta.
  */
 export interface RespostaDeStats {
-  data?: Array<{ start_time?: string; timestamp?: string; data?: Array<{ value: string; count: number }> }>;
+  data?: Array<{
+    start_time?: string;
+    timestamp?: string;
+    data?: Array<{ value: string; count: number }>;
+  }>;
 }
 
 export function lerStatsDoMeta(resposta: RespostaDeStats, fuso = FUSO_DO_META): ContagemDoMeta[] {
@@ -342,4 +373,35 @@ export function resumirCliques(cliques: CliqueCtwa[], dias: string[]) {
     leadSubmitted: serie.reduce((s, l) => s + l.leadSubmitted, 0),
     porDia: serie,
   };
+}
+
+// ─── Leituras auxiliares ────────────────────────────────────────────────────
+
+/**
+ * As duas grafias de `stage_changed`: rotas de movimento gravam
+ * `from_stage_id`/`to_stage_id`; agente, handoff e agenda gravam `de`/`para`
+ * (sem `pipeline_id`). Ler só uma subcontaria o que não foi movido à mão.
+ */
+export function mudancaDeEtapa(payload: Record<string, unknown> | null | undefined): {
+  fromStageId: string | null;
+  toStageId: string | null;
+} {
+  const texto = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+  return {
+    fromStageId: texto(payload?.from_stage_id) ?? texto(payload?.de),
+    toStageId: texto(payload?.to_stage_id) ?? texto(payload?.para),
+  };
+}
+
+/** O Meta guarda 28 dias de estatística. */
+export const DIAS_GUARDADOS_PELO_META = 28;
+
+/**
+ * Dias (fuso do Meta) que o `/stats` cobre POR INTEIRO: começam depois do
+ * limite de retenção. Um dia cortado ao meio daria "diferença" falsa; é melhor
+ * dizer "sem dados do Meta".
+ */
+export function diasCobertosPeloMeta(dias: string[], agora: Date): Set<string> {
+  const limite = agora.getTime() - DIAS_GUARDADOS_PELO_META * 86_400_000;
+  return new Set(dias.filter((d) => inicioDoDia(d, FUSO_DO_META).getTime() >= limite));
 }
