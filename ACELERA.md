@@ -93,13 +93,13 @@ O CRM já tem white-label nativo (`docs/white-label.md`). **Nenhuma tela foi edi
 - `.env` (semente): `APP_NAME=Acelera CRM`, `APP_ACCENT_HEX=#FF7300`. Só vale na primeira
   leitura — depois **o banco manda**. Numa instalação que já existe, aplique em **`/admin/marca`**.
 - Logo e ícone: a tela aceita **PNG ou JPG até 512 KB** (SVG é recusado). Originais vetoriais em
-  `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`logo-claro.png`,
-  `logo-escuro.png`, `icone.png`).
+  `acelera/marca/`; os PNGs prontos para subir estão em `acelera/marca/png/` (`acelera/marca/png/logo-claro.png`,
+  `acelera/marca/png/logo-escuro.png`, `acelera/marca/png/icone.png`).
 - **Identidade Acelera:** `app/acelera-tema.css` traz a paleta do guia de marca (laranja #FF7300 e
   cinzas neutros), cantos de 5 a 10 px, Inter no texto e Anton em caixa alta no `h1`, com o risco à
   mão em laranja sob o título. Ele também vence a cor de `/admin/marca` e de **Configurações → Marca**
   (as duas telas derivam o laranja por contraste e dão marrom), então a cor salva nelas não muda nada.
-- **Logo:** cadastre o par em **Configurações → Marca** (`logo-claro.png` e `logo-escuro.png`). Sem o logo
+- **Logo:** cadastre o par em **Configurações → Marca** (os dois PNGs de `acelera/marca/png/`). Sem o logo
   escuro, o produto desenha uma caixa branca em volta da arte no tema escuro. O Inbox segue a mesma
   paleta, sem verde (`app/acelera-whatsapp.css`).
 - **Testes de navegador do upstream que não valem mais aqui:** os três que procuram "Atkinson" no botão

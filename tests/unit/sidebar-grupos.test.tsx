@@ -69,7 +69,11 @@ describe("Sidebar agrupado", () => {
       .filter(Boolean);
     // Organização não tem título aqui: seu hub (Configurações) vive no rodapé
     // fixo, fora da área que rola — medido, ele caía fora da dobra até em 1080px.
-    expect(titulos).toEqual(["Atendimento", "CRM", "Agente de IA", "Canais", "Análise"]);
+    //
+    // ACELERA (commit 4a6da5d9dc): o fork abre o menu com o grupo "Menu Principal"
+    // (WhatsApp e CRM), antes de Atendimento. Decisão deliberada do fork.
+    // "Tintim" é o grupo TINTIM-TEMPORARIO do catálogo (só na 1.84; sai quando o Tintim for cancelado).
+    expect(titulos).toEqual(["Menu Principal", "Atendimento", "CRM", "Agente de IA", "Canais", "Análise", "Tintim"]);
   });
 
   it("leva às Etapas do funil pelo CRM, e não por Configurações", () => {
@@ -88,7 +92,7 @@ describe("Sidebar agrupado", () => {
     expect(screen.queryByRole("link", { name: "Etapas do funil" })).toBeNull();
   });
 
-  it("o número de Casos mora no item de Casos, e o da Fila no item de Inbox", () => {
+  it("o número de Casos mora no item de Casos, e o da Fila no item de WhatsApp (a Inbox, renomeada no fork)", () => {
     comoPapel("admin");
     render(<Sidebar collapsed={false} />);
     const casos = screen.getAllByTestId("marcador-casos");
@@ -170,13 +174,14 @@ describe("Sidebar agrupado", () => {
     comoPapel("admin");
     render(<Sidebar collapsed />);
     expect(screen.queryAllByRole("heading")).toHaveLength(0);
-    expect(screen.getByRole("link", { name: /Inbox/ })).toBeTruthy();
+    // ACELERA: o item da Inbox se chama "WhatsApp" no fork (commit 4a6da5d9dc).
+    expect(screen.getByRole("link", { name: /WhatsApp/ })).toBeTruthy();
   });
 
   it("marca a rota atual com aria-current", () => {
     comoPapel("admin");
     render(<Sidebar collapsed={false} />);
-    expect(screen.getByRole("link", { name: /Inbox/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute("aria-current", "page");
     // "Kanban" saiu da interface; o item da mesma URL agora se chama "Funis".
     expect(screen.getByRole("link", { name: "Funis" })).not.toHaveAttribute("aria-current");
   });

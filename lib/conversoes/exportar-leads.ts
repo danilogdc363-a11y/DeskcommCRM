@@ -6,6 +6,8 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
+
 import { celulaCsv } from "./exportar-csv";
 import { inicioDoPeriodo, type Periodo } from "./historico";
 
@@ -64,6 +66,7 @@ export function origemDoLead(contato: unknown, lead: unknown) {
 }
 
 interface ContatoLido {
+  name: string | null;
   display_name: string | null;
   phone_number: string | null;
   source_metadata: unknown;
@@ -80,7 +83,7 @@ export async function lerLeadsParaExportar(
   let q = admin
     .from("crm_leads")
     .select(
-      "id, title, status, value_cents, currency, created_at, source_metadata, crm_stages(name), contacts(display_name, phone_number, source_metadata)",
+      "id, title, status, value_cents, currency, created_at, source_metadata, crm_stages!crm_leads_stage_id_fkey(name), contacts(name, display_name, phone_number, source_metadata)",
       { count: "exact" },
     )
     .eq("organization_id", organizationId);
@@ -111,7 +114,7 @@ export async function lerLeadsParaExportar(
       id: l.id,
       criadoEm: l.created_at,
       titulo: l.title,
-      nomeDoContato: contato?.display_name ?? null,
+      nomeDoContato: nomeDoContato(contato),
       telefone: contato?.phone_number ?? null,
       etapa: primeiro(l.crm_stages)?.name ?? null,
       situacao: l.status,

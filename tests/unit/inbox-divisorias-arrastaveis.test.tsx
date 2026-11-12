@@ -294,6 +294,10 @@ describe("no layout — duas divisorias arrastáveis (#2579)", () => {
 
   beforeEach(() => {
     window.localStorage.clear();
+    // ACELERA: no fork o painel do contato nasce FECHADO (botão "Dados do contato",
+    // commit 22466d6c3) e a grade tem duas colunas. Esta suíte mede a grade de três,
+    // então abre o painel como o usuário abriria — pela mesma chave que o botão grava.
+    window.localStorage.setItem("acelera:inbox:painel-contato", "1");
     larguraGrade = 1040;
     janelaEm(1440); // faixa xl: padrão 272 (lista) / 296 (ficha)
     window.HTMLElement.prototype.setPointerCapture = vi.fn();
@@ -449,10 +453,12 @@ describe("no layout — duas divisorias arrastáveis (#2579)", () => {
       montar();
       expect(await screen.findByText("Selecione uma conversa")).toBeInTheDocument();
       const lista = await alca(0);
+      // ACELERA: sem armazenamento não há como lembrar o painel do contato aberto,
+      // então a grade é a de duas colunas do fork, onde a lista nasce com 380 (xl).
       fireEvent.keyDown(lista, { key: "ArrowRight" });
-      expect(lista).toHaveAttribute("aria-valuenow", String(272 + PASSO_TECLADO));
+      expect(lista).toHaveAttribute("aria-valuenow", String(380 + PASSO_TECLADO));
       fireEvent.doubleClick(lista);
-      expect(lista).toHaveAttribute("aria-valuenow", "272");
+      expect(lista).toHaveAttribute("aria-valuenow", "380");
     } finally {
       if (original) Object.defineProperty(window, "localStorage", original);
     }
