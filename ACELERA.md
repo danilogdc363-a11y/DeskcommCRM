@@ -126,6 +126,14 @@ Novos (não conflitam): `ACELERA.md`, `docker-compose.easypanel.yml`, `acelera/m
 
 Novos (lead ganho → Novo cliente no OS): `lib/acelera/novo-cliente-url{,.test}.ts`, `app/api/v1/acelera/novo-cliente/route.ts`, `hooks/acelera/useNovoClienteUrl.ts`. Variável de runtime `ACELERA_OS_NOVO_CLIENTE_URL` = `https://<OS>/app/<slug>/empresas/novo`; sem ela o botão "Cadastrar cliente" não aparece.
 
+Novos (Análise → Resultados do funil, `/app/resultados-funil`, piso `manager`): `lib/reports/funil-meta{,.test}.ts`
+(cálculo puro: janelas, funil, comparação CRM × Meta), `lib/plataformas-de-anuncio/meta/estatisticas-do-conjunto.ts`
+(lê `/{dataset}/stats`, agregação por evento, `SERVER_ONLY`, com o conjunto e o token da API de Conversões;
+token só no servidor), `app/api/v1/reports/funil-meta/route.ts`, `hooks/reports/useFunilMeta.ts`,
+`app/app/resultados-funil/*`. Funil = padrão da organização, contado em Brasília; comparação com o Meta
+cortada no fuso da conta (America/Los_Angeles) e limitada aos 28 dias que o Meta guarda. Entrada no menu em
+`lib/navigation/catalogo.ts` (1 bloco). Sem migration.
+
 Alterados (poucas linhas, marcadas com `ACELERA (fork)`):
 - `components/kanban/KanbanCardActions.tsx` e `components/inbox/CRMSidePanel.tsx` — botão "Cadastrar cliente" em lead ganho
 - `app/api/v1/contacts/route.ts` — POST aceita Bearer `dsk_` com `mcp:write` (OS grava lead de formulário); telefone repetido = 409 `contact_exists` com `details.contact_id`
