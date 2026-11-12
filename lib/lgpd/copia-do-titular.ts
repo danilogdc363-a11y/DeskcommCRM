@@ -102,6 +102,8 @@ export const O_QUE_FICA = {
   tasks: "o que se combinou fazer para ele",
   webhook_captures:
     "o que ele enviou num formulário, com o IP e o navegador de onde enviou: dado dele, origem do contato (art. 19, II)",
+  link_clicks:
+    "os cliques dele no link do anúncio, com as campanhas e, até 30 dias, o IP e o navegador: dado dele, origem do contato (art. 19, II)",
   audit_log_extract: "o registro de quem acessou e mudou os dados dele (o PDF já entrega)",
   meeting_deliveries: "o envio do link da reunião a ele, e em que estado ficou",
   voice_calls: "as chamadas de voz dele: número, duração e como terminaram",

@@ -24,6 +24,7 @@
   "proposals": [],
   "tasks": [],
   "webhook_captures": [],
+  "link_clicks": [],
   "audit_log_extract": [],
   "meeting_deliveries": [],
   "appointment_notices": [],
