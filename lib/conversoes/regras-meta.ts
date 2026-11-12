@@ -25,6 +25,12 @@ export const EVENTOS_DA_META = [
   { valor: "InitiateCheckout", rotulo: "Início de compra (orçamento)" },
   { valor: "AddToCart", rotulo: "Adicionou ao carrinho" },
   { valor: "ViewContent", rotulo: "Viu o conteúdo" },
+  // (Acelera) Os nomes que o Tintim já mandava: manter o nome mantém o histórico
+  // do conjunto de dados e as campanhas que otimizam por eles. Saem só pela
+  // conexão direta; o canal não os repassa.
+  { valor: "Contact", rotulo: "Contato (Contact)" },
+  { valor: "Respondidos", rotulo: "Respondidos (personalizado)" },
+  { valor: "Schedule", rotulo: "Agendamento (Schedule)" },
 ] as const;
 
 export type EventoDaMeta = (typeof EVENTOS_DA_META)[number]["valor"];

@@ -13,7 +13,7 @@ e a leitura em `lib/conversoes/identidade-para-meta.ts`.
 | `ph` | `contacts.phone_number` | SHA-256 |
 | `external_id` | telefone em dígitos com DDI (o mesmo do formulário do OS); sem telefone, `contacts.id` | SHA-256 |
 | `em` | `contacts.email` | SHA-256 |
-| `fn` / `ln` | `contacts.name`, senão `display_name` | SHA-256 (o `ln` só sai quando há mais de um nome) |
+| `fn` / `ln` | `contacts.name`, senão `display_name` | SHA-256, sem acento, igual ao formulário do OS (o `ln` só sai quando há mais de um nome) |
 | `ct` / `st` | `contacts.source_metadata.Cidade` / `Estado` | SHA-256 (estado vira sigla: `São Paulo` → `sp`) |
 | `country` | DDI 55 do telefone | SHA-256 de `br` |
 | `fbc` | 1º `custom_fields.meta_fbc` do negócio (cookie do formulário); 2º `fbclid` do link rastreável com a hora do clique; 3º `fbclid` da origem do contato | em claro, `fb.1.<ms>.<fbclid>` |
@@ -24,6 +24,18 @@ O `event_id` não muda (`<lead>:<evento>`), então a deduplicação continua igu
 Contato anonimizado (LGPD) sai sem nada além do que já saía. Se a leitura
 falhar, o evento sai só com o telefone, como antes: ele nunca deixa de sair
 por causa disso.
+
+## Regras da produção que continuam valendo
+
+- `Contact`, `Respondidos` e `Schedule` saem como `system_generated` mesmo com
+  clique CTWA (a Meta recusa esses nomes em `business_messaging`), e por isso
+  levam o `user_data` completo.
+- No clique CTWA (`business_messaging`), o `user_data` continua só com
+  `ctwa_clid`, a página e o telefone, como já era.
+- O formulário (`custom_fields.meta_*`, e-mail, `lead_id` do Lead Ads) vence a
+  leitura do contato e do link.
+- Telefone sem o 55 ganha o DDI, no `ph` e no `external_id`.
+- Vale o clique mais recente do link rastreável.
 
 ## Captura no link rastreável
 
@@ -65,6 +77,14 @@ para os leads que chegam direto pelo WhatsApp, o ganho imediato vem de
 `external_id`, `fn`, `country` e (quando houver) `ct`/`st`. O salto grande,
 para perto do 7,8 do formulário, depende de o `fbc`, o IP e o navegador chegarem
 junto com o lead. Veja o que falta abaixo.
+
+## Decisão pendente: retenção de IP e navegador
+
+O IP, o navegador e o `fbp` ficam guardados em `meta_ads_click_refs` para todo
+clique, sem prazo. A Meta só aceita evento de até 7 dias, então guardar mais que
+isso não melhora a correspondência. A proposta é apagar esses três campos depois
+de 30 dias, deixando o clique e as UTMs, e também quando o contato for
+anonimizado. Isso fica para o Danilo decidir; não foi implementado.
 
 ## O que ainda falta para a EMQ alta
 

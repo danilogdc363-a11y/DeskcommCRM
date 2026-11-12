@@ -20,3 +20,7 @@ comment on column public.meta_ads_click_refs.client_user_agent is
   'User agent de quem clicou no link (acelera_0006). Vai à Meta como client_user_agent.';
 comment on column public.meta_ads_click_refs.fbp is
   'Cookie _fbp repassado pela página na query (acelera_0006). Vai à Meta como fbp.';
+
+-- Sem o reload, o PostgREST não vê as colunas novas e o insert cai no
+-- fallback sem navegador (captura-de-clique.ts).
+notify pgrst, 'reload schema';

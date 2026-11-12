@@ -55,6 +55,8 @@ export const AUDIT_ACTIONS = [
   // N `lead.created`: "quem despejou 300 negócios neste funil, e quando" é a
   // pergunta que se faz depois, e ela não se responde contando linhas soltas.
   "lead.imported",
+  // Baixar o histórico de envios de conversão (CSV com nome de negócio).
+  "conversion.exported",
   "contact.created",
   "contact.updated",
   "contacts.imported",
@@ -250,6 +252,7 @@ export const AUDIT_ACTIONS = [
   "channel.social_webhook_ressincronizado",
   "channel.ai_access_updated",
   "channel.acervo_updated",
+  "channel.historico_importado",
   "channel.reconnected",
   // Duas ações distintas de propósito: `deleted` apagou a linha (canal virgem),
   // `archived` só a escondeu porque conversas/mensagens ainda a referenciam.
@@ -382,6 +385,9 @@ export const AUDIT_ACTIONS = [
   "conversation.snoozed",
   "conversation.snooze_cancelled",
   "conversation.snooze_watcher_run",
+  "conversation.mensagens_agendadas_run",
+  "conversation.mensagem_agendada",
+  "conversation.mensagem_agendada_cancelada",
   // Rodada do cron que devolve ao agente o handoff parado além do prazo da
   // organização — só quando devolveu (ou falhou) alguma.
   "conversation.handoff_auto_return_run",

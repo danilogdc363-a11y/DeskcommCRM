@@ -55,6 +55,8 @@ export interface EntradaDoUserData {
   /** E.164 sem `+`, em claro. */
   telefone: string | null;
   identidade?: IdentidadeParaMeta;
+  /** O id do lead do formulário nativo da Meta (Lead Ads). Em claro. */
+  leadIdDoFormulario?: string | null;
   /** Clique-para-WhatsApp: `ctwa_clid` + página/WABA. */
   clique?: {
     ctwaClid: string;
@@ -78,9 +80,24 @@ export function normalizarEmail(v: string | null | undefined): string | null {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : null;
 }
 
-/** Só letras (com acento) — nome com dígito ou emoji vira o que sobrar. */
+/**
+ * Só letras, SEM acento (`joão` → `joao`): o formulário do OS normaliza
+ * assim, e o hash só casa entre as duas fontes com a forma idêntica.
+ */
 function limparParteDoNome(v: string): string {
-  return basico(v).replace(/[^\p{L}]/gu, "");
+  return semAcento(basico(v)).replace(/[^a-z]/g, "");
+}
+
+/**
+ * Telefone como a Meta (e o formulário do OS) espera: só dígitos, com DDI.
+ * Número brasileiro sem o 55 (10 ou 11 dígitos: DDD + número) ganha o DDI;
+ * sem isso o hash não casa com o do formulário. O nono dígito não é
+ * inventado.
+ */
+export function normalizarTelefone(v: string | null | undefined): string | null {
+  const d = v?.replace(/\D/g, "") ?? "";
+  if (d.length === 10 || d.length === 11) return `55${d}`;
+  return d.length >= 8 ? d : null;
 }
 
 /**
@@ -107,7 +124,9 @@ export function partesDoNome(v: string | null | undefined): {
 /** `São José dos Campos` → `saojosedoscampos` (a Meta pede sem espaço). */
 export function normalizarCidade(v: string | null | undefined): string | null {
   if (!v) return null;
-  const c = semAcento(basico(v)).replace(/[^a-z]/g, "");
+  // `São Paulo - SP` → `saopaulo`: o sufixo de UF sai antes, como no OS.
+  const semUf = basico(v).replace(/\s*[-/,]\s*[a-z]{2}$/, "");
+  const c = semAcento(semUf).replace(/[^a-z]/g, "");
   return c.length >= 2 ? c : null;
 }
 
@@ -212,7 +231,7 @@ export function userAgentValido(v: string | null | undefined): string | null {
 }
 
 export function montarUserData(entrada: EntradaDoUserData): Record<string, unknown> {
-  const { telefone, identidade: i = {}, clique } = entrada;
+  const { telefone, identidade: i = {}, clique, leadIdDoFormulario } = entrada;
   const ud: Record<string, unknown> = {};
   const emHash = (campo: string, valor: string | null) => {
     if (valor) ud[campo] = [sha256(valor)];
@@ -226,7 +245,7 @@ export function montarUserData(entrada: EntradaDoUserData): Record<string, unkno
       ud.whatsapp_business_account_id = clique.whatsappBusinessAccountId;
   }
 
-  const ph = telefone?.replace(/\D/g, "") || null;
+  const ph = normalizarTelefone(telefone);
   emHash("ph", ph);
   emHash("em", normalizarEmail(i.email));
   const { fn, ln } = partesDoNome(i.nome);
@@ -246,5 +265,7 @@ export function montarUserData(entrada: EntradaDoUserData): Record<string, unkno
   if (fbp) ud.fbp = fbp;
   if (ip) ud.client_ip_address = ip;
   if (ua) ud.client_user_agent = ua;
+  const leadId = leadIdDoFormulario?.trim();
+  if (leadId && /^\d{6,25}$/.test(leadId)) ud.lead_id = leadId;
   return ud;
 }

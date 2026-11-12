@@ -17,7 +17,15 @@ import type { CapacidadeDaOrganizacao } from "@/lib/organizacao/capacidades";
  * Doutrina: docs/doctrine/sistema-vivo.md — "por qual porta se chega até mim?"
  */
 
-export type NavGroupId = "atendimento" | "crm" | "ia" | "canais" | "analise" | "organizacao";
+export type NavGroupId =
+  | "principal"
+  | "atendimento"
+  | "crm"
+  | "ia"
+  | "canais"
+  | "analise"
+  | "tintim" // TINTIM-TEMPORARIO
+  | "organizacao";
 
 export interface NavGroup {
   id: NavGroupId;
@@ -87,11 +95,16 @@ export interface NavMetadata {
  * mesma conversa para a sexta tela.
  */
 export const NAV_GROUPS: NavGroup[] = [
+  // ACELERA (só do fork): as duas telas do dia a dia comercial, no topo.
+  { id: "principal", label: "Menu Principal" },
   { id: "atendimento", label: "Atendimento" },
   { id: "crm", label: "CRM", hub: { href: "/app/crm", label: "Ver tudo em CRM" } },
   { id: "ia", label: "Agente de IA", hub: { href: "/app/ai", label: "Ver tudo em IA" } },
   { id: "canais", label: "Canais" },
   { id: "analise", label: "Análise", hub: { href: "/app/analise", label: "Ver tudo em Análise" } },
+  // TINTIM-TEMPORARIO: reúne as telas que substituem o Tintim até ele ser cancelado.
+  // Para desfazer: apague este grupo e devolva `group` das três portas marcadas abaixo.
+  { id: "tintim", label: "Tintim" },
   {
     id: "organizacao",
     label: "Organização",
@@ -168,10 +181,10 @@ export const NAV_CATALOG = [
   // ---- Atendimento — onde o operador passa o dia ----
   {
     href: "/app/inbox",
-    label: "Inbox",
+    label: "WhatsApp",
     description: "As conversas de WhatsApp, com você e a IA atendendo lado a lado.",
     icon: "Inbox",
-    group: "atendimento",
+    group: "principal",
     sidebar: true,
     // Quantas conversas a IA passou para a equipe e esperam uma pessoa (aba Fila).
     contador: "fila",
@@ -241,11 +254,10 @@ export const NAV_CATALOG = [
     // organização Acelera Delivery. O id é desse funil; em outra organização
     // a página responde "não encontrado" — o fork só atende a Acelera.
     href: "/app/pipelines/b90d61dc-a9af-4b1c-a8f2-994823bc34bf",
-    label: "Orçamentos",
+    label: "CRM",
     description: "Atalho para o funil de Orçamentos.",
     icon: "Funnel",
-    group: "crm",
-    section: "O dia a dia da venda",
+    group: "principal",
     sidebar: true,
   },
   {
@@ -834,7 +846,7 @@ export const NAV_CATALOG = [
     label: "Meta Ads",
     description: "Quanto custou cada resultado das campanhas que trazem gente para cá.",
     icon: "Megaphone",
-    group: "analise",
+    group: "tintim", // TINTIM-TEMPORARIO (era "analise")
     section: "Os números do período",
     // `manager`, e não o `viewer` de Desempenho: aqui não há recorte por
     // pessoa — orçamento e criativo são da empresa inteira. Mesmo grau dos
@@ -932,9 +944,10 @@ export const NAV_CATALOG = [
     label: "Automações",
     description: "O freio único do passo em que a IA escolhe entre as opções de uma regra, para a empresa inteira.",
     icon: "FlowArrow",
-    group: "organizacao",
+    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
     section: "Sua empresa",
     minRole: "manager",
+    sidebar: true,
   },
   {
     // A porta que faltava para o vocabulário de etiquetas (issue #852). Até
@@ -991,12 +1004,13 @@ export const NAV_CATALOG = [
     description:
       "Devolver ao anúncio as vendas que ele trouxe, e marcar a origem de quem chega pelo site.",
     icon: "ChartLineUp",
-    group: "organizacao",
+    group: "tintim", // TINTIM-TEMPORARIO (era "organizacao")
     section: "Sua empresa",
     // `admin` pelo mesmo critério das vizinhas: o token grava na conta de
     // anúncios da empresa, e quem o troca decide para onde vai o dinheiro de
     // mídia. Um `manager` ficaria acima de billing na mesma prancheta.
     minRole: "admin",
+    sidebar: true,
   },
   {
     // Vizinha de Conversões, e SEPARADA dela de propósito. As duas conectam "a

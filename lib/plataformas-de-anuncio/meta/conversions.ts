@@ -90,6 +90,9 @@ function classifica4xx(codigo: number | null, mensagem: string): ResultadoDeEnvi
   return { tipo: "permanente", detalhe: mensagem };
 }
 
+/** (Acelera) Nomes do Tintim que `business_messaging` não aceita (invalid event name). */
+const EVENTOS_FORA_DA_CONVERSA = new Set(["Contact", "Respondidos", "Schedule"]);
+
 async function enviar(
   credencial: CredencialDeConversao,
   conversao: ConversaoOffline,
@@ -120,12 +123,15 @@ async function enviar(
   // `business_messaging` sem `ctwa_clid` é recusado, e `website` exige dados do
   // navegador que o CRM não tem — `system_generated` é a origem declarada para
   // venda registrada em sistema, casada pelo telefone em hash.
-  const comClique = conversao.cliqueDeOrigem.trim() !== "";
-  if (!comClique && !conversao.telefone) {
+  // (Acelera) Estes nomes a Meta recusa como evento de conversa: saem casados
+  // pelo telefone, mesmo quando o lead tem clique.
+  const comClique =
+    conversao.cliqueDeOrigem.trim() !== "" && !EVENTOS_FORA_DA_CONVERSA.has(nomeNoFio ?? "");
+  if (!comClique && !conversao.telefone && !conversao.email) {
     return {
       tipo: "permanente",
       detalhe:
-        "Sem o clique do anúncio e sem telefone no contato, a Meta não tem como reconhecer o cliente.",
+        "Sem o clique do anúncio e sem telefone ou e-mail no contato, a Meta não tem como reconhecer o cliente.",
     };
   }
 
@@ -143,9 +149,13 @@ async function enviar(
       organizationId: conversao.organizationId,
       motivo: "identidade_ausente_em_settings_conversions",
     });
+  // (Acelera) No clique-para-WhatsApp sai o que já saía (`ctwa_clid`, página,
+  // telefone): o enriquecimento é do envio sem clique, onde a Meta casa pela
+  // pessoa. O formulário (`sinaisDoNavegador`, `email`) vence a leitura do
+  // contato, e o `lead_id` do formulário nativo liga direto ao anúncio.
+  const sinais = conversao.sinaisDoNavegador;
   const userData = montarUserData({
     telefone: conversao.telefone,
-    identidade: conversao.identidade,
     ...(comClique
       ? {
           clique: {
@@ -154,11 +164,23 @@ async function enviar(
             whatsappBusinessAccountId: wabaId,
           },
         }
-      : {}),
+      : {
+          identidade: {
+            ...conversao.identidade,
+            email: conversao.email ?? conversao.identidade?.email,
+            fbc: sinais?.fbc ?? conversao.identidade?.fbc,
+            fbp: sinais?.fbp ?? conversao.identidade?.fbp,
+            ip: sinais?.ip ?? conversao.identidade?.ip,
+            userAgent: sinais?.userAgent ?? conversao.identidade?.userAgent,
+          },
+          leadIdDoFormulario: sinais?.leadId,
+        }),
   });
 
   const customData: Record<string, unknown> = {};
-  if (ehCompra && conversao.valorCentavos !== null) {
+  // (Acelera) Valor também fora da compra quando o chamador o manda (pós-venda:
+  // `ClienteAtivo` leva a mensalidade). Etapa do funil chega sem valor.
+  if (conversao.valorCentavos !== null) {
     customData.value = conversao.valorCentavos / 100;
     customData.currency = conversao.moeda.toUpperCase();
   }
@@ -250,6 +272,11 @@ async function enviar(
     codigo,
     leadId: conversao.leadId,
   });
+
+  // (Acelera) O que saiu no fio, no livro-razão: a versão da imagem é fixa, e só
+  // isto separa "código antigo no ar" de "a Meta recusou mesmo assim".
+  const enviado = `[enviado: action_source=${comClique ? "business_messaging" : "system_generated"}, ctwa_clid=${comClique ? "sim" : "nao"}]`;
+  mensagem = `${enviado} ${mensagem}`;
 
   if (resposta.status === 429 || resposta.status >= 500) {
     return { tipo: "transitorio", detalhe: `${resposta.status}: ${mensagem}` };

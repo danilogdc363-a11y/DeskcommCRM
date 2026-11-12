@@ -49,7 +49,7 @@ describe("montarUserData", () => {
     expect(ud).toEqual({
       ph: [h("5511988887777")],
       em: [h("joao@exemplo.com")],
-      fn: [h("joão")],
+      fn: [h("joao")],
       ln: [h("silva")],
       ct: [h("saojosedoscampos")],
       st: [h("sp")],
@@ -221,7 +221,7 @@ describe("o fio do transporte", () => {
     expect(ev.action_source).toBe("system_generated");
     expect(ev.user_data).toEqual({
       ph: [h("5581999990000")],
-      fn: [h("zé")],
+      fn: [h("ze")],
       ct: [h("recife")],
       country: [h("br")],
       external_id: [h("contato-1")],
@@ -229,15 +229,51 @@ describe("o fio do transporte", () => {
     });
   });
 
-  it("clique-para-WhatsApp: business_messaging + ctwa_clid + página, e o resto junto", async () => {
-    const ev = await corpoEnviado({ ...base, cliqueDeOrigem: "ARctwa123" });
+  it("clique-para-WhatsApp: business_messaging + ctwa_clid + página, como antes", async () => {
+    const ev = await corpoEnviado({
+      ...base,
+      cliqueDeOrigem: "ARctwa123",
+      eventoNaPlataforma: "InitiateCheckout",
+    });
     expect(ev.action_source).toBe("business_messaging");
     expect(ev.messaging_channel).toBe("whatsapp");
-    expect(ev.user_data).toMatchObject({
+    expect(ev.user_data).toEqual({
       ctwa_clid: "ARctwa123",
       page_id: "pagina-1",
-      external_id: [h("contato-1")],
+      ph: [h("5581999990000")],
+      country: [h("br")],
     });
+  });
+
+  it("Schedule com clique sai pela pessoa (a Meta recusa o nome na conversa)", async () => {
+    const ev = await corpoEnviado({ ...base, cliqueDeOrigem: "ARctwa123" });
+    expect(ev.action_source).toBe("system_generated");
+    expect(ev.user_data).toMatchObject({ external_id: [h("contato-1")] });
+    expect(ev.user_data).not.toHaveProperty("ctwa_clid");
+  });
+
+  it("o formulário vence a leitura do contato, e o lead_id do Lead Ads vai junto", async () => {
+    const ev = await corpoEnviado({
+      ...base,
+      email: "Ana@Ex.com",
+      sinaisDoNavegador: { fbp: "fb.1.1731250800000.7", leadId: "1234567890123" },
+    });
+    expect(ev.user_data).toMatchObject({
+      em: [h("ana@ex.com")],
+      fbp: "fb.1.1731250800000.7",
+      lead_id: "1234567890123",
+    });
+  });
+
+  it("evento com valor fora da compra (pós-venda) leva value e currency; etapa não", async () => {
+    const ativo = await corpoEnviado({
+      ...base,
+      eventoNaPlataforma: "ClienteAtivo",
+      valorCentavos: 99700,
+    });
+    expect(ativo.custom_data).toEqual({ value: 997, currency: "BRL" });
+    const etapa = await corpoEnviado(base);
+    expect(etapa).not.toHaveProperty("custom_data");
   });
 
   it("sem identidade, sai como antes: só o telefone", async () => {
@@ -306,5 +342,100 @@ describe("o navegador do clique no link rastreável", () => {
     expect(inserts).toHaveLength(2);
     expect(inserts[1]).not.toHaveProperty("client_ip_address");
     expect(inserts[1]).toMatchObject({ utm: { utm_source: "meta" } });
+  });
+});
+
+describe("casos de borda da revisão", () => {
+  it("telefone sem o 55 ganha o DDI, no ph e no external_id", async () => {
+    const { normalizarTelefone } = await import("@/lib/plataformas-de-anuncio/meta/user-data");
+    expect(normalizarTelefone("(11) 98888-7777")).toBe("5511988887777");
+    expect(normalizarTelefone("1133334444")).toBe("551133334444");
+    expect(normalizarTelefone("+55 11 98888-7777")).toBe("5511988887777");
+    expect(normalizarTelefone("123")).toBeNull();
+    expect(montarUserData({ telefone: "11988887777" }).ph).toEqual([h("5511988887777")]);
+    const i = identidadeDosDados({
+      contato: {
+        id: "c",
+        phone_number: "11988887777",
+        name: null,
+        display_name: null,
+        email: null,
+        source_metadata: {},
+      },
+      camposDoLead: null,
+      cliqueDoLink: null,
+    });
+    expect(i.externalId).toBe("5511988887777");
+  });
+
+  it("IPv6 sai minúsculo; e-mail e CEP inválidos não saem", () => {
+    const ud = montarUserData({
+      telefone: null,
+      identidade: { ip: "2804:14C:5B70::1", email: "a@b", cep: "123" },
+    });
+    expect(ud).toEqual({ client_ip_address: "2804:14c:5b70::1" });
+    expect(montarUserData({ telefone: null, identidade: { cep: "01310-100" } }).zp).toEqual([
+      h("01310100"),
+    ]);
+  });
+
+  function adminFalso(respostas: Record<string, { data: unknown; error: unknown }>, lanca = false) {
+    return {
+      from(tabela: string) {
+        if (lanca) throw new Error("rede caiu");
+        const c = {
+          select: () => c,
+          eq: () => c,
+          order: () => c,
+          limit: () => c,
+          maybeSingle: async () => respostas[tabela] ?? { data: null, error: null },
+        };
+        return c;
+      },
+    };
+  }
+
+  it("contato anonimizado: nada além do que já saía", async () => {
+    const { lerIdentidadeParaMeta } = await import("@/lib/conversoes/identidade-para-meta");
+    const admin = adminFalso({
+      contacts: {
+        data: {
+          id: "c",
+          name: "Fulano",
+          email: "f@x.com",
+          is_anonymized: true,
+          source_metadata: {},
+        },
+        error: null,
+      },
+      crm_leads: { data: { custom_fields: { meta_ip: "1.2.3.4" } }, error: null },
+    });
+    expect(await lerIdentidadeParaMeta(admin as never, "org", "lead", "c")).toEqual({});
+  });
+
+  it("erro de leitura não derruba o envio: devolve o que deu para ler", async () => {
+    const { lerIdentidadeParaMeta } = await import("@/lib/conversoes/identidade-para-meta");
+    expect(await lerIdentidadeParaMeta(adminFalso({}, true) as never, "org", "lead", "c")).toEqual(
+      {},
+    );
+    const parcial = await lerIdentidadeParaMeta(
+      adminFalso({
+        contacts: { data: null, error: { message: "timeout" } },
+        crm_leads: { data: { custom_fields: { meta_ip: "1.2.3.4" } }, error: null },
+      }) as never,
+      "org",
+      "lead",
+      "c",
+    );
+    expect(parcial.ip).toBe("1.2.3.4");
+    expect(parcial.externalId).toBeNull();
+  });
+});
+
+describe("igual ao formulário do OS", () => {
+  it("cidade com sufixo de UF e nome sem acento", () => {
+    expect(normalizarCidade("São Paulo - SP")).toBe("saopaulo");
+    expect(normalizarCidade("Recife/PE")).toBe("recife");
+    expect(partesDoNome("João Ávila")).toEqual({ fn: "joao", ln: "avila" });
   });
 });

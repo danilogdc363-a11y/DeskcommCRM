@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useT } from "@/hooks/i18n/useT";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { ArrowRight, CaretDoubleLeft, CaretDoubleRight, CaretDown, Gear } from "@/lib/ui/icons";
+import { ArrowRight, CaretDoubleLeft, CaretDoubleRight, CaretRight, Gear } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 import { toggleSidebar } from "@/app/actions/shell/toggleSidebar";
 import { useAuth } from "@/hooks/auth/AuthProvider";
@@ -187,6 +187,10 @@ export function SidebarContent({
                 className="hidden h-7 w-auto max-w-[min(10rem,100%)] object-contain dark:block"
               />
             ) : null}
+            {/* ACELERA (fork): a linha de baixo da marca, como o "Painel iFood" do PXD Hub. */}
+            <span className="mt-0.5 block text-[10px] font-medium tracking-[0.14em] text-text-subtle uppercase">
+              {t("CRM comercial")}
+            </span>
           </div>
         ) : marcaDoProduto ? (
           // O desenho do produto, inline (ver `components/branding/MarcaDoProduto.tsx`):
@@ -290,9 +294,14 @@ export function SidebarContent({
       <nav className="flex-1 space-y-2 overflow-y-auto p-2" aria-label={t("Navegação principal")}>
         {grupos.map(({ group, items }) => {
           const tituloId = `nav-grupo-${group.id}`;
+          // ACELERA (fork): como no Acelera OS, o grupo da página aberta não
+          // fecha — senão o item aceso some junto com ele.
+          const temAtivo = items.some(
+            (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
+          );
           // Recolhido o sidebar inteiro (rail de 64px), o grupo sempre mostra
           // seus itens — não há onde desenhar cabeçalho nem seta para fechá-lo.
-          const aberto = collapsed || !gruposFechados.has(group.id);
+          const aberto = collapsed || temAtivo || !gruposFechados.has(group.id);
           return (
             <div key={group.id} className="space-y-1">
               {/* Colapsado, o sidebar tem 64px: seis rótulos ali seriam ilegíveis.
@@ -304,16 +313,19 @@ export function SidebarContent({
                   <button
                     type="button"
                     onClick={() => toggleGrupo(group.id)}
+                    disabled={temAtivo}
                     aria-expanded={aberto}
-                    className="flex w-full items-center justify-between rounded-md px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                    // ACELERA (fork): rótulo de seção do PXD Hub (caixa alta, espaçado)
+                    // com a seta do Acelera OS, que gira para baixo quando abre.
+                    className="flex w-full items-center justify-between rounded-md px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.12em] text-text-subtle uppercase transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-text-subtle"
                   >
                     {t(group.label)}
-                    <CaretDown
+                    <CaretRight
                       size={12}
                       weight="bold"
                       className={cn(
-                        "shrink-0 text-text-subtle transition-transform",
-                        !aberto && "-rotate-90",
+                        "shrink-0 text-text-subtle transition-transform duration-base",
+                        aberto && "rotate-90",
                       )}
                       aria-hidden
                     />
@@ -336,15 +348,9 @@ export function SidebarContent({
                           title={collapsed ? t(item.label) : undefined}
                           aria-current={isActive ? "page" : undefined}
                           onClick={onNavigate}
-                          className={cn(
-                            "relative flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
-                            isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                            collapsed && "justify-center px-2",
-                          )}
+                          className={cn("relative", classeDoItem(isActive, collapsed))}
                         >
-                          <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden />
+                          <Icon size={18} className={cn(isActive && "text-accent")} aria-hidden />
                           {!collapsed && <span className="truncate">{t(item.label)}</span>}
                           {item.healthDot && (
                             <ConnectionHealthDot
@@ -364,15 +370,13 @@ export function SidebarContent({
                         title={collapsed ? t(group.hub.label) : undefined}
                         aria-current={pathname === group.hub.href ? "page" : undefined}
                         onClick={onNavigate}
-                        className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
-                          pathname === group.hub.href
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                          collapsed && "justify-center px-2",
-                        )}
+                        className={classeDoItem(pathname === group.hub.href, collapsed)}
                       >
-                        <ArrowRight size={18} aria-hidden />
+                        <ArrowRight
+                          size={18}
+                          className={cn(pathname === group.hub.href && "text-accent")}
+                          aria-hidden
+                        />
                         {!collapsed && <span className="truncate">{t(group.hub.label)}</span>}
                       </Link>
                     </li>
@@ -390,21 +394,34 @@ export function SidebarContent({
             title={collapsed ? t(rodape.label) : undefined}
             aria-current={pathname.startsWith(rodape.href) ? "page" : undefined}
             onClick={onNavigate}
-            className={cn(
-              "mb-1 flex items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors",
-              pathname.startsWith(rodape.href)
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-              collapsed && "justify-center px-2",
-            )}
+            className={cn("mb-1", classeDoItem(pathname.startsWith(rodape.href), collapsed))}
           >
-            <Gear size={18} aria-hidden />
+            <Gear
+              size={18}
+              className={cn(pathname.startsWith(rodape.href) && "text-accent")}
+              aria-hidden
+            />
             {!collapsed && <span className="truncate">{t(rodape.label)}</span>}
           </Link>
         )}
         <VersionFooter collapsed={collapsed} onNavigate={onNavigate} />
       </div>
     </>
+  );
+}
+
+/**
+ * ACELERA (fork): o item aceso vira um cartão claro sobre o menu tingido, com a
+ * barra e o ícone em laranja e o texto em cinza escuro (o guia de marca não usa
+ * laranja em texto pequeno). Os outros ficam cinza e só escurecem no hover.
+ */
+function classeDoItem(ativo: boolean, collapsed: boolean): string {
+  return cn(
+    "relative flex items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors",
+    ativo
+      ? "bg-surface font-semibold text-foreground shadow-sm before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-sm before:bg-accent"
+      : "text-muted-foreground hover:bg-surface/60 hover:text-foreground",
+    collapsed && "justify-center px-2",
   );
 }
 
@@ -493,7 +510,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         // `duration-base` em vez do `duration-200` literal: 200ms é o mesmo
         // número, mas vindo de `--duration-base`. A Lei de movimento fecha a
         // tabela de durações, e número solto é o que a faz apodrecer.
-        "sticky top-0 z-30 flex h-dvh shrink-0 flex-col border-r bg-card transition-[width] duration-base",
+        "sticky top-0 z-30 flex h-dvh shrink-0 flex-col border-r bg-[var(--acelera-menu)] transition-[width] duration-base",
         collapsed ? "w-16" : "w-60",
       )}
     >

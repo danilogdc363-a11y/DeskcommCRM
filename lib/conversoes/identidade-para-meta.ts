@@ -23,6 +23,7 @@ import { logger } from "@/lib/logger";
 import {
   fbcDoClique,
   fbcValido,
+  normalizarTelefone,
   type IdentidadeParaMeta,
 } from "@/lib/plataformas-de-anuncio/meta/user-data";
 
@@ -80,7 +81,9 @@ export function identidadeDosDados(d: DadosBrutosDaIdentidade): IdentidadeParaMe
     // dígitos, com DDI. Assim a Meta liga o lead do formulário aos eventos de
     // etapa do CRM da mesma pessoa. Sem telefone, o id do contato ainda
     // identifica a pessoa entre os eventos do próprio CRM.
-    externalId: d.contato?.phone_number?.replace(/\D/g, "") || d.contato?.id || null,
+    // Ressalva: sem telefone sai o id do contato, e ele deixa de ser o mesmo
+    // quando o telefone chega depois. Contato sem telefone é raro aqui.
+    externalId: normalizarTelefone(d.contato?.phone_number) ?? d.contato?.id ?? null,
     email: texto(d.contato?.email),
     // `name` é o que alguém digitou; `display_name` pode ser o apelido do
     // WhatsApp — ainda serve, mas só na falta do primeiro.
@@ -126,7 +129,9 @@ export async function lerIdentidadeParaMeta(
             .select("*")
             .eq("organization_id", organizationId)
             .eq("contact_id", contactId)
-            .order("created_at", { ascending: true })
+            // O clique MAIS RECENTE: é o que levou à conversa de agora, e o
+            // `fbc`/IP dele são os que valem na janela de atribuição.
+            .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),

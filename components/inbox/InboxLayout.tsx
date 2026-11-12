@@ -185,6 +185,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
   const [aux, setAux] = useState<Omit<InboxFiltersValue, "tab">>({
     search: "",
     onlyUnread: false,
+    onlySemResposta: false,
     onlyGroups: false,
     ...(tagNaUrl ? { tag: tagNaUrl } : {}),
   });
@@ -205,7 +206,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
   // Desliga só os AUXILIARES e mantém a aba: a aba é onde a pessoa está, e
   // limpá-la junto a tiraria do lugar sem ela ter pedido.
   const limparFiltrosAuxiliares = useCallback(() => {
-    setFilterValue({ tab, search: "", onlyUnread: false, onlyGroups: false });
+    setFilterValue({ tab, search: "", onlyUnread: false, onlySemResposta: false, onlyGroups: false });
   }, [tab, setFilterValue]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? idNaUrl);
@@ -281,6 +282,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
       tag: filterValue.tag,
       tagMode: filterValue.tagMode,
       unread: filterValue.onlyUnread || undefined,
+      sem_resposta: filterValue.onlySemResposta || undefined,
       is_group: filterValue.onlyGroups || undefined,
     }),
     [
@@ -292,6 +294,7 @@ export function InboxLayout({ initialSelectedId = null, rascunho = null }: Inbox
       filterValue.tag,
       filterValue.tagMode,
       filterValue.onlyUnread,
+      filterValue.onlySemResposta,
       filterValue.onlyGroups,
     ],
   );

@@ -1,55 +1,57 @@
-/* ACELERA — INBOX COM CARA DE WHATSAPP WEB.
+/* ACELERA — INBOX NA IDENTIDADE DA ACELERA.
  *
  * Só do fork (ver ACELERA.md). Tudo escopado em `.wa-inbox` (a grade do
  * InboxLayout) e nos marcadores `wa-*` / `data-wa-lado` que o fork pôs nos
  * componentes: o resto do produto não muda. CSS fora de @layer de propósito —
  * vence os utilitários do Tailwind (que moram em camada) sem `!important`.
- * Cores tiradas do WhatsApp Web (claro e escuro).
+ * A estrutura lembra o WhatsApp (lista, bolhas, rodapé); as cores são as da marca:
+ * cinzas neutros, como o próprio app de desktop, e o laranja como único acento.
  */
 
 .wa-inbox {
   --wa-painel: #ffffff;
-  --wa-barra: #f0f2f5;
-  --wa-fundo: #efeae2;
-  --wa-rabisco: rgba(0, 0, 0, 0.06);
-  --wa-enviada: #d9fdd3;
+  --wa-barra: #f7f7f7;
+  --wa-fundo: #f2f2f2;
+  --wa-enviada: #ffe9d6;
   --wa-recebida: #ffffff;
-  --wa-texto: #111b21;
-  --wa-texto-2: #667781;
-  --wa-hover: #f5f6f6;
-  --wa-ativa: #f0f2f5;
-  --wa-linha: #e9edef;
-  --wa-verde: #00a884;
-  --wa-verde-texto: #008069;
-  --wa-pilula: #f0f2f5;
-  --wa-pilula-ativa: #d9fdd3;
-  --wa-pilula-ativa-texto: #008069;
+  --wa-texto: #2d2d2d;
+  --wa-texto-2: #666666;
+  --wa-hover: #f7f7f7;
+  --wa-ativa: #f2f2f2;
+  --wa-linha: #e3e3e3;
+  --wa-laranja-texto: #994500;
+  --wa-pilula: #f2f2f2;
+  --wa-pilula-ativa: #ffeee0;
+  --wa-pilula-ativa-texto: #994500;
   --wa-campo: #ffffff;
-  --wa-check-lido: #53bdeb;
+  --wa-check-lido: #c25700;
+  --wa-link: #994500;
   background: var(--wa-painel);
   color: var(--wa-texto);
-  font-family: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell,
-    "Fira Sans", sans-serif;
+  border: 1px solid var(--wa-linha);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 :where([data-theme="dark"]) .wa-inbox {
-  --wa-painel: #111b21;
-  --wa-barra: #202c33;
-  --wa-fundo: #0b141a;
-  --wa-rabisco: rgba(255, 255, 255, 0.035);
-  --wa-enviada: #005c4b;
-  --wa-recebida: #202c33;
-  --wa-texto: #e9edef;
-  --wa-texto-2: #8696a0;
-  --wa-hover: #202c33;
-  --wa-ativa: #2a3942;
-  --wa-linha: #222d34;
-  --wa-verde: #00a884;
-  --wa-verde-texto: #00a884;
-  --wa-pilula: #202c33;
-  --wa-pilula-ativa: #0a332c;
-  --wa-pilula-ativa-texto: #00a884;
-  --wa-campo: #2a3942;
+  --wa-painel: #202020;
+  --wa-barra: #262626;
+  --wa-fundo: #181818;
+  /* Cinza, e não laranja escuro: no fundo escuro o laranja apagado vira marrom. */
+  --wa-enviada: #3a3a3a;
+  --wa-recebida: #2a2a2a;
+  --wa-texto: #f2f2f2;
+  --wa-texto-2: #a3a3a3;
+  --wa-hover: #2a2a2a;
+  --wa-ativa: #303030;
+  --wa-linha: #333333;
+  --wa-laranja-texto: #ffb67a;
+  --wa-pilula: #2a2a2a;
+  --wa-pilula-ativa: #412610;
+  --wa-pilula-ativa-texto: #ffb67a;
+  --wa-campo: #2a2a2a;
+  --wa-check-lido: #ff943d;
+  --wa-link: #ffb67a;
 }
 
 .wa-inbox .border-border,
@@ -70,34 +72,42 @@
   color: var(--wa-texto-2);
 }
 
-/* Busca arredondada no cinza do WhatsApp. */
+/* Busca e filtros: cantos discretos no lugar das pílulas. */
 .wa-inbox .wa-lista input[type="search"],
 .wa-inbox .wa-lista input.rounded-full {
-  background: var(--wa-barra);
+  background: var(--wa-pilula);
   border-color: transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--wa-texto);
 }
+.wa-inbox .wa-lista button.rounded-full,
+.wa-inbox .wa-lista .rounded-full[role="combobox"] {
+  border-radius: var(--radius-md);
+}
 
-/* Abas viram pílulas ("Tudo", "Não lidas", "Grupos"). */
+/* Abas ("Fila", "Minhas", "Todas"). */
+.wa-inbox .wa-lista [role="tablist"] + span.w-4,
+.wa-inbox .wa-lista span.w-4:has(+ [role="tablist"]) {
+  display: none;
+}
 .wa-inbox .wa-lista [role="tablist"] {
-  gap: 8px;
+  gap: 6px;
   justify-content: flex-start;
   padding-bottom: 8px;
 }
 .wa-inbox .wa-lista [role="tab"] {
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--radius-md);
   background: var(--wa-pilula);
   color: var(--wa-texto-2);
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: 400;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 500;
 }
 .wa-inbox .wa-lista [role="tab"][data-state="active"] {
   background: var(--wa-pilula-ativa);
   color: var(--wa-pilula-ativa-texto);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Itens: sem divisória entre linhas, hover e selecionada no cinza. */
@@ -119,14 +129,14 @@
   height: 49px;
   width: 49px;
 }
-/* Contador de não lidas verde. */
-.wa-inbox .wa-lista [data-conversation-id] .bg-accent {
-  background: var(--wa-verde);
-  color: #fff;
-}
+/* Posição na fila em texto, sem caixa em volta. */
 .wa-inbox .wa-lista [data-conversation-id] .bg-accent-soft.text-accent {
   background: transparent;
-  color: var(--wa-verde-texto);
+  color: var(--wa-laranja-texto);
+}
+/* O selo do canal em cinza: o laranja fica só para o que pede atenção. */
+.wa-inbox .text-\[\#128c4a\] {
+  color: var(--wa-texto-2);
 }
 
 /* ─── CABEÇALHO DA CONVERSA ─────────────────────────────────────────────── */
@@ -146,15 +156,11 @@
   border-color: transparent;
 }
 
-/* ─── FUNDO COM RABISCOS ────────────────────────────────────────────────── */
+/* ─── FUNDO ──────────────────────────────────────────────────────────────── */
 
 .wa-inbox .wa-fundo,
 .wa-inbox .wa-vazio {
   background-color: var(--wa-fundo);
-  background-image: radial-gradient(var(--wa-rabisco) 1.2px, transparent 1.4px),
-    radial-gradient(var(--wa-rabisco) 1px, transparent 1.2px);
-  background-size: 26px 26px, 26px 26px;
-  background-position: 0 0, 13px 13px;
 }
 .wa-inbox .wa-fundo .bg-background:not([data-testid="message-bubble"] *) {
   background: transparent;
@@ -164,8 +170,8 @@
 .wa-inbox .wa-data {
   background: var(--wa-recebida);
   color: var(--wa-texto-2);
-  border-radius: 7.5px;
-  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
   backdrop-filter: none;
   text-transform: uppercase;
   font-size: 12.5px;
@@ -175,10 +181,10 @@
 /* ─── BOLHAS ────────────────────────────────────────────────────────────── */
 
 .wa-inbox [data-wa-lado] {
-  border-radius: 7.5px;
-  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
   color: var(--wa-texto);
-  font-size: 14.2px;
+  font-size: 14px;
   line-height: 19px;
   padding: 6px 7px 8px 9px;
   max-width: 65%;
@@ -209,7 +215,7 @@
   background: var(--wa-recebida);
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
-/* Texto, hora e menu da bolha enviada: no WhatsApp não são brancos. */
+/* Texto, hora e menu da bolha enviada: escuros sobre o laranja claro. */
 .wa-inbox [data-wa-lado] .text-primary-foreground,
 .wa-inbox [data-wa-lado].text-primary-foreground {
   color: var(--wa-texto);
@@ -222,10 +228,7 @@
   color: var(--wa-check-lido);
 }
 .wa-inbox [data-wa-lado] a {
-  color: #027eb5;
-}
-:where([data-theme="dark"]) .wa-inbox [data-wa-lado] a {
-  color: #53bdeb;
+  color: var(--wa-link);
 }
 
 /* ─── COMPOSER ──────────────────────────────────────────────────────────── */
@@ -237,8 +240,8 @@
 }
 .wa-inbox .wa-campo {
   background: var(--wa-campo);
-  border-color: transparent;
-  border-radius: 8px;
+  border-color: var(--wa-linha);
+  border-radius: var(--radius-md);
   color: var(--wa-texto);
   font-size: 15px;
   padding: 9px 12px;
@@ -246,6 +249,11 @@
 .wa-inbox .wa-composer:not(.bg-warning-bg) button[aria-label="Enviar"] {
   background: transparent;
   color: var(--wa-texto-2);
+}
+
+/* "Responder" e "Nota interna". */
+.wa-inbox .wa-composer button.rounded-full {
+  border-radius: var(--radius-md);
 }
 
 /* ─── DADOS DO CONTATO ──────────────────────────────────────────────────── */

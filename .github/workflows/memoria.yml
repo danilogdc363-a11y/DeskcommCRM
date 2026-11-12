@@ -1,0 +1,25 @@
+# Registro automático dos pushes de produção na memória compartilhada
+# (AceleraDelivery/Memory). Modelo: automacao/memoria.yml daquele repositório.
+# A BRANCH abaixo é a branch canônica de produção; ao atualizar o upstream
+# (acelera/1.100.0), troque a branch aqui junto com a do EasyPanel.
+# Sem o segredo MEMORY_TOKEN o passo sai sem erro e não registra nada.
+name: Memoria
+on:
+  push:
+    branches: [acelera/1.84.0]
+permissions: {}
+jobs:
+  registrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Registrar na memória
+        env:
+          MEMORY_TOKEN: ${{ secrets.MEMORY_TOKEN }}
+        run: |
+          if [ -z "$MEMORY_TOKEN" ]; then
+            echo "MEMORY_TOKEN não configurado: nada registrado."
+            exit 0
+          fi
+          git clone -q "https://x-access-token:${MEMORY_TOKEN}@github.com/AceleraDelivery/Memory.git" memoria
+          node memoria/scripts/mem.mjs auto crm --evento "$GITHUB_EVENT_PATH"

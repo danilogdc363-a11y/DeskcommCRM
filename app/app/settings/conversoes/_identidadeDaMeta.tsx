@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
 
@@ -42,16 +43,19 @@ const ERRO: Record<string, string> = {
 export function IdentidadeDaConversao({
   pageId,
   whatsappBusinessAccountId,
+  reportarSemOrigem,
   idioma,
 }: {
   pageId: string | null;
   whatsappBusinessAccountId: string | null;
+  reportarSemOrigem: boolean;
   idioma: Idioma;
 }) {
   const t = (texto: string) => traduzir(texto, idioma);
   const router = useRouter();
   const [pagina, setPagina] = useState(pageId ?? "");
   const [waba, setWaba] = useState(whatsappBusinessAccountId ?? "");
+  const [semOrigem, setSemOrigem] = useState(reportarSemOrigem);
   const [isPending, startTransition] = useTransition();
 
   function salvar(evento: React.FormEvent) {
@@ -60,6 +64,7 @@ export function IdentidadeDaConversao({
       const r = await definirIdentidadeDaConversao({
         page_id: pagina.trim(),
         whatsapp_business_account_id: waba.trim(),
+        reportar_sem_origem: semOrigem,
       });
       if (r.ok) {
         toast.success(t("Identidade salva."));
@@ -112,6 +117,18 @@ export function IdentidadeDaConversao({
               "Só números. Serve quando não há página a informar: a Meta aceita um ou outro, não os dois juntos.",
             )}
           </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="meta_sem_origem">{t("Reportar também leads sem origem de anúncio")}</Label>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "Envia à Meta quem chegou por formulário ou WhatsApp direto, casado por telefone e e-mail. A Meta só credita o anúncio se a pessoa viu ou clicou em um.",
+              )}
+            </p>
+          </div>
+          <Switch id="meta_sem_origem" checked={semOrigem} onCheckedChange={setSemOrigem} />
         </div>
 
         <div>

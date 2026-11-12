@@ -76,6 +76,11 @@ export function contagemSoNaoLidas(sp: URLSearchParams): boolean {
   return sp.get("unread") === "true";
 }
 
+/** Verdadeiro quando a contagem deve pedir só quem aguarda a 1ª resposta. */
+export function contagemSoSemResposta(sp: URLSearchParams): boolean {
+  return sp.get("sem_resposta") === "true";
+}
+
 export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
   const supabase = await createClient();
@@ -105,6 +110,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const sp = req.nextUrl.searchParams;
   const auxiliares = filtrosAuxiliaresDaContagem(sp);
   const soNaoLidas = contagemSoNaoLidas(sp);
+  const soSemResposta = contagemSoSemResposta(sp);
   // ⚠️ O badge conta o MESMO que a lista mostra, então o marcador é lido com
   // `getAll` e o `modo` viaja junto (#1274). Ler com `get` aqui deixaria o badge
   // de um filtro de duas etiquetas contando uma só — e a aba diria "Fila 3"
@@ -135,6 +141,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     q = aplicarMarcadores(q, marcadores, modo);
     if (pessoais.length > 0) q = q.not("contact_id", "in", `(${pessoais.join(",")})`);
     if (soNaoLidas) q = q.gt("unread_count_for_assignee", 0);
+    // O mesmo predicado da lista (ver `_handler.ts`).
+    if (soSemResposta) {
+      q = q.is("last_outbound_at", null).not("last_inbound_at", "is", null).eq("is_group", false);
+    }
     return q;
   };
 

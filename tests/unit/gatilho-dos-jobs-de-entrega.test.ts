@@ -204,6 +204,14 @@ const GATILHO_ESPERADO: Record<string, { condicao: string | null; efeito: string
       "três dias atrás mergeado com número duplicado, e a descoberta vira o `db push` de um " +
       "self-hoster.",
   },
+  "memoria.yml::registrar": {
+    condicao: null,
+    efeito:
+      "Acelera: registra cada push da branch de produção na memória compartilhada " +
+      "(AceleraDelivery/Memory). Sem `if:` no job; quem decide é o segredo `MEMORY_TOKEN`, " +
+      "lido no próprio script — sem ele o passo sai sem erro e não registra nada. Desligá-lo " +
+      "só faz o log de entregas parar de receber linhas.",
+  },
   "ci.yml::invariants-alcance": {
     condicao: null,
     efeito:

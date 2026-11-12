@@ -293,6 +293,15 @@ export async function listConversationsHandler(
   // Este handler usa o admin client, que passa por cima da RLS: esse filtro é a Única
   // barreira. Consulta nova só para os não lidos nasceria sem barreira nenhuma.
   if (q.unread) query = query.gt("unread_count_for_assignee", 0);
+  // "Aguardando 1ª resposta": o cliente escreveu e a equipe nunca respondeu. Compõe
+  // sobre a MESMA `query` (que já filtra a organização). Grupo fora: ali ninguém
+  // "espera resposta" de um atendente.
+  if (q.sem_resposta) {
+    query = query
+      .is("last_outbound_at", null)
+      .not("last_inbound_at", "is", null)
+      .eq("is_group", false);
+  }
 
   if (q.assigned_to === "me") {
     if (ctx.actor.type !== "user") {

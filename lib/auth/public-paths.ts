@@ -111,6 +111,9 @@ export const PUBLIC_PATHS: RegExp[] = [
   // `reactivations`) que `[^/]+$` alcançaria por engano, tornando-os "públicos"
   // (proxy não decide) quando nenhum deles tem suporte a Bearer.
   /^\/api\/v1\/leads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  // (Acelera) DOSSIÊ DO LEAD para o Acelera OS: sessão OU Bearer `dsk_…` com
+  // `mcp:read`, resolvidos DENTRO da rota (`app/api/v1/leads/[id]/dossie`).
+  /^\/api\/v1\/leads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/dossie$/i,
   // MARCAR/REMARCAR/CANCELAR COMPROMISSO SERVER-TO-SERVER. Mesma dualidade dos
   // dois de cima: sessão OU Bearer `dsk_…`, resolvidos por `lib/api/auth-dual.ts`
   // DENTRO da rota (`app/api/v1/agenda/agendamentos/route.ts`, função
