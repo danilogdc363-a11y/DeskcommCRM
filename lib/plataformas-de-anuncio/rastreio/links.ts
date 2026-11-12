@@ -25,6 +25,8 @@ export async function destinoDoLink(
   admin: SupabaseClient,
   link: LinkRastreavel,
   search: URLSearchParams,
+  /** Só vai para o clique da Meta (`pagina-de-captura.ts`). */
+  navegador: Record<string, string | null> = {},
 ): Promise<string> {
   const ids = lerIdentificadoresGoogle(Object.fromEntries(search.entries()));
   const utm = utmsDoLink(link, search);
@@ -35,7 +37,7 @@ export async function destinoDoLink(
         wbraid: ids.wbraid ?? null,
         query_raw: { ...utm, ...ids },
       }
-    : { utm, query_raw: utm };
+    : { utm, query_raw: utm, ...navegador };
   let ref = null;
   try {
     ref = await criarClickRef(

@@ -46,6 +46,7 @@ import { criarClickRef } from "@/lib/plataformas-de-anuncio/captura-de-clique";
 import { lerConfigDaLanding } from "@/lib/plataformas-de-anuncio/landing-config";
 import {
   clientIp,
+  navegadorDoClique,
   paginaDeSaida,
   textoSemRef,
   whatsAppUrl,
@@ -112,6 +113,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<Response
   const criado = await criarClickRef(admin, "meta_ads_click_refs", organizationId, {
     utm,
     query_raw: utm,
+    ...navegadorDoClique(req),
   });
   if (!criado) {
     // Falha ao gravar: mesma régua — a pessoa não paga o preço de um erro

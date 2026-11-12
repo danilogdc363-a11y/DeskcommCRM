@@ -12,6 +12,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { ipDoCliente } from "@/lib/http/ip-do-cliente";
 
+import { fbpValido, ipValido, userAgentValido } from "./meta/user-data";
+
 /** Mesma lição de `lib/auth/rate-limit.ts`: sem IP identificável, não conta —
  * um balde global aqui trancaria a landing page da instalação inteira. */
 export function clientIp(req: NextRequest): string | null {
@@ -48,4 +50,23 @@ export function paginaDeSaida(destino: string | null): NextResponse {
     `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link indisponível</title></head><body style="font-family:system-ui,sans-serif;padding:2rem;text-align:center;color:#333"><p>Este link não está disponível no momento.</p></body></html>`,
     { status: 404, headers: { "content-type": "text/html; charset=utf-8" } },
   );
+}
+
+/**
+ * O navegador de quem clicou, para a Meta reconhecer a pessoa (EMQ). É a única
+ * hora em que o CRM o vê: depois a pessoa está no WhatsApp. `fbp` só vem se a
+ * página repassar o cookie `_fbp` na query (`fbp=` ou `_fbp=`). Tudo validado:
+ * o que não tem forma de IP, user agent ou `fbp` não é gravado.
+ */
+export function navegadorDoClique(req: NextRequest): {
+  client_ip_address: string | null;
+  client_user_agent: string | null;
+  fbp: string | null;
+} {
+  const q = new URL(req.url).searchParams;
+  return {
+    client_ip_address: ipValido(clientIp(req)),
+    client_user_agent: userAgentValido(req.headers.get("user-agent")),
+    fbp: fbpValido(q.get("fbp") ?? q.get("_fbp")),
+  };
 }

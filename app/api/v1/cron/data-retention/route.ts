@@ -233,7 +233,21 @@ export interface ResultadoDaRetencao {
    * doutrina da casa: aberta na ação e aberta na informação, nunca engolida.
    */
   falhas: string[];
+  /**
+   * (Acelera, acelera_0007) IP, user agent e `fbp` do clique no link rastreável
+   * apagados depois de 30 dias — o clique e as UTMs ficam. Prazo do Danilo
+   * (12/11/2026): a Meta só aceita evento de até 7 dias, então guardar mais não
+   * melhora a correspondência. Opcionais para não exigir o campo de quem monta
+   * um resultado à mão.
+   */
+  navegador_dos_cliques_limpo?: number;
+  lotes_navegador_dos_cliques?: number;
+  navegador_dos_cliques_tem_resto?: boolean;
+  retencao_navegador_dos_cliques_dias?: number;
 }
+
+/** O prazo do navegador do clique. Decisão do dono, não knob de ambiente. */
+export const RETENCAO_NAVEGADOR_DO_CLIQUE_DIAS = 30;
 
 /** Só a superfície que este cron usa — o teste injeta uma implementação. */
 export interface PodaDb {
@@ -255,6 +269,7 @@ export interface PodaDb {
       | "fn_expurgar_copias_enviadas_vencidas"
       | "fn_expurgar_checkpoints_superados"
       | "fn_expurgar_traco_do_turno_vencido",
+      | "fn_limpar_navegador_dos_cliques",
     args: { p_retencao_dias: number; p_limite: number },
   ): Promise<{ data: number | null; error: { message: string } | null }>;
   /**
@@ -324,6 +339,7 @@ async function drenar(
     | "fn_expurgar_copias_enviadas_vencidas"
     | "fn_expurgar_checkpoints_superados"
     | "fn_expurgar_traco_do_turno_vencido",
+    | "fn_limpar_navegador_dos_cliques",
   dias: number,
 ): Promise<{ apagadas: number; lotes: number; temResto: boolean }> {
   let apagadas = 0;
@@ -666,6 +682,9 @@ export async function podarHistorico(
   const ritmoDrenado = await executarDreno(falhas, "fn_expurgar_ritmo_de_envio_vencido", () => drenar(db, "fn_expurgar_ritmo_de_envio_vencido", ritmoDeEnvio.dias), zerado);
   const copiasDrenadas = await executarDreno(falhas, "fn_expurgar_copias_enviadas_vencidas", () => drenar(db, "fn_expurgar_copias_enviadas_vencidas", copiasEnviadas.dias), zerado);
   const checkpointsDrenados = await executarDreno(falhas, "fn_expurgar_checkpoints_superados", () => drenar(db, "fn_expurgar_checkpoints_superados", checkpoints.dias), zerado);
+  // (Acelera) O navegador do clique no link rastreável (acelera_0007): limpa as
+  // três colunas, não apaga a linha. O piso de 30 dias mora no CORPO da função.
+  const navegadorLimpo = await executarDreno(falhas, "fn_limpar_navegador_dos_cliques", () => drenar(db, "fn_limpar_navegador_dos_cliques", RETENCAO_NAVEGADOR_DO_CLIQUE_DIAS), zerado);
 
   return {
     jobs_apagados: jobs.apagadas,
@@ -754,6 +773,10 @@ export async function podarHistorico(
       checkpoints.aviso,
     ].filter((a): a is string => a !== null),
     falhas,
+    navegador_dos_cliques_limpo: navegadorLimpo.apagadas,
+    lotes_navegador_dos_cliques: navegadorLimpo.lotes,
+    navegador_dos_cliques_tem_resto: navegadorLimpo.temResto,
+    retencao_navegador_dos_cliques_dias: RETENCAO_NAVEGADOR_DO_CLIQUE_DIAS,
   };
 }
 
@@ -764,6 +787,8 @@ export async function podarHistorico(
  */
 export function houveEfeito(resultado: ResultadoDaRetencao): boolean {
   return (
+    // (Acelera) Limpar o navegador do clique é mutação: audita.
+    (resultado.navegador_dos_cliques_limpo ?? 0) > 0 ||
     resultado.jobs_apagados > 0 ||
     resultado.auditoria_apagada > 0 ||
     // A terceira conta: sem ela, uma rodada que só podou o espelho apagaria
