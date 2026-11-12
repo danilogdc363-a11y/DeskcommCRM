@@ -24,6 +24,18 @@ import { useT } from "@/hooks/i18n/useT";
 import { useFunilMeta, type Periodo } from "@/hooks/reports/useFunilMeta";
 import type { LinhaDoFunil, Preset, Situacao } from "@/lib/reports/funil-meta";
 
+/** Por que o Meta não foi lido, em palavras de quem opera. */
+const MOTIVO_SEM_META: Record<string, string> = {
+  sem_conexao: "A API de Conversões do Meta não está conectada nesta empresa.",
+  conexao_desabilitada: "A conexão com o Meta está pausada.",
+  credencial_incompleta: "A conexão com o Meta está sem conjunto de dados ou token.",
+  cifra_indisponivel: "A instalação não consegue abrir o token guardado.",
+  leitura_indisponivel: "A leitura do Meta está indisponível nesta instalação.",
+  recusado_pelo_meta: "O Meta recusou a leitura das estatísticas.",
+  falha_de_rede: "Não foi possível falar com o Meta agora.",
+  fora_dos_28_dias: "O Meta só guarda os últimos 28 dias; este período é mais antigo.",
+};
+
 const PRESETS: Array<{ valor: Preset; rotulo: string }> = [
   { valor: "7d", rotulo: "Últimos 7 dias" },
   { valor: "14d", rotulo: "Últimos 14 dias" },
@@ -32,11 +44,15 @@ const PRESETS: Array<{ valor: Preset; rotulo: string }> = [
   { valor: "semana_passada", rotulo: "Semana passada" },
 ];
 
-const SITUACAO: Record<Situacao, { rotulo: string; variant: "success" | "warning" | "error" | "info" }> = {
+const SITUACAO: Record<
+  Situacao,
+  { rotulo: string; variant: "success" | "warning" | "error" | "info" | "neutral" }
+> = {
   bate: { rotulo: "Bate", variant: "success" },
   diferenca: { rotulo: "Diferença", variant: "warning" },
   nao_chegou: { rotulo: "Não chegou", variant: "error" },
   so_no_meta: { rotulo: "Só no Meta", variant: "info" },
+  sem_dados_meta: { rotulo: "Sem dados do Meta", variant: "neutral" },
 };
 
 function diaCurto(dia: string): string {
@@ -50,7 +66,10 @@ function Funil({ etapas }: { etapas: LinhaDoFunil[] }) {
   return (
     <div className="flex flex-col gap-2" data-testid="funil">
       {etapas.map((e) => (
-        <div key={e.etapaId} className="grid grid-cols-1 gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_auto]">
+        <div
+          key={e.etapaId}
+          className="grid grid-cols-1 gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_auto]"
+        >
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="font-medium">{e.nome}</span>
@@ -63,7 +82,10 @@ function Funil({ etapas }: { etapas: LinhaDoFunil[] }) {
               )}
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-accent" style={{ width: `${(e.entradas / teto) * 100}%` }} />
+              <div
+                className="h-full rounded-full bg-accent"
+                style={{ width: `${(e.entradas / teto) * 100}%` }}
+              />
             </div>
           </div>
           <dl className="grid grid-cols-3 gap-4 text-right text-sm tabular-nums">
@@ -80,8 +102,13 @@ function Funil({ etapas }: { etapas: LinhaDoFunil[] }) {
               <dd className="font-semibold">
                 {e.enviadosAoMeta}
                 {e.naoEnviados > 0 && (
-                  <span className="ml-1 text-xs font-normal text-destructive" title={t("Envios que falharam ou foram pulados")}>
-                    +{e.naoEnviados} {t("sem envio")}
+                  <span className="ml-1 text-xs font-normal text-destructive">
+                    +{e.naoEnviados} {t("com falha")}
+                  </span>
+                )}
+                {e.pulados > 0 && (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    +{e.pulados} {t("pulados")}
                   </span>
                 )}
               </dd>
@@ -100,7 +127,8 @@ export function ResultadosDoFunilClient() {
   const [ate, setAte] = useState("");
 
   const livreValido = modo === "livre" && de && ate && de <= ate;
-  const periodo: Periodo = modo === "livre" ? (livreValido ? { de, ate } : { preset: "7d" }) : { preset: modo };
+  const periodo: Periodo =
+    modo === "livre" ? (livreValido ? { de, ate } : { preset: "7d" }) : { preset: modo };
   const { data, isLoading, isError, error } = useFunilMeta(periodo);
   const r = data?.data;
 
@@ -122,8 +150,20 @@ export function ResultadosDoFunilClient() {
         </Select>
         {modo === "livre" && (
           <>
-            <Input type="date" className="w-40" value={de} onChange={(e) => setDe(e.target.value)} aria-label={t("De")} />
-            <Input type="date" className="w-40" value={ate} onChange={(e) => setAte(e.target.value)} aria-label={t("Até")} />
+            <Input
+              type="date"
+              className="w-40"
+              value={de}
+              onChange={(e) => setDe(e.target.value)}
+              aria-label={t("De")}
+            />
+            <Input
+              type="date"
+              className="w-40"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+              aria-label={t("Até")}
+            />
           </>
         )}
         {r && (
@@ -170,11 +210,18 @@ export function ResultadosDoFunilClient() {
             <CardContent>
               {!r.meta.ok && (
                 <p className="mb-3 text-sm text-destructive">
-                  {t("Não foi possível ler o Meta")}: {r.meta.motivo}
+                  {t(MOTIVO_SEM_META[r.meta.motivo] ?? "Não foi possível ler o Meta.")}
+                </p>
+              )}
+              {r.meta.ok && r.meta.diasSemDados > 0 && (
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {t("Dias mais antigos que 28 dias aparecem como sem dados do Meta.")}
                 </p>
               )}
               {r.meta.comparacao.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("Nenhum evento enviado ou registrado no período.")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("Nenhum evento enviado ou registrado no período.")}
+                </p>
               ) : (
                 <Table data-testid="comparacao">
                   <TableHeader>
@@ -191,10 +238,13 @@ export function ResultadosDoFunilClient() {
                         <TableCell className="tabular-nums">{diaCurto(l.dia)}</TableCell>
                         <TableCell>{l.etapa ?? "—"}</TableCell>
                         <TableCell className="tabular-nums">
-                          {l.crmEnviou} → {l.metaRecebeu} <code className="text-xs">{l.evento}</code>
+                          {l.crmEnviou} → {l.metaRecebeu ?? "—"}{" "}
+                          <code className="text-xs">{l.evento}</code>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={SITUACAO[l.situacao].variant}>{t(SITUACAO[l.situacao].rotulo)}</Badge>
+                          <Badge variant={SITUACAO[l.situacao].variant}>
+                            {t(SITUACAO[l.situacao].rotulo)}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -204,41 +254,50 @@ export function ResultadosDoFunilClient() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("Cliques de anúncio no WhatsApp")}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t("Conversas abertas por anúncio Click-to-WhatsApp e quantas viraram LeadSubmitted no Meta.")}
-              </p>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <dl className="flex gap-8 tabular-nums">
-                <div>
-                  <dt className="text-xs text-muted-foreground">{t("Cliques")}</dt>
-                  <dd className="text-2xl font-semibold">{r.cliques.total}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">LeadSubmitted</dt>
-                  <dd className="text-2xl font-semibold">{r.cliques.leadSubmitted}</dd>
-                </div>
-              </dl>
-              <div className="flex items-end gap-1 overflow-x-auto pb-1">
-                {r.cliques.porDia.map((d) => {
-                  const teto = Math.max(1, ...r.cliques.porDia.map((x) => x.cliques));
-                  return (
-                    <div key={d.dia} className="flex min-w-[18px] flex-1 flex-col items-center gap-1">
+          {r.cliques && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("Cliques de anúncio no WhatsApp")}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "Conversas abertas por anúncio Click-to-WhatsApp e quantas viraram LeadSubmitted no Meta.",
+                  )}
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <dl className="flex gap-8 tabular-nums">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">{t("Cliques")}</dt>
+                    <dd className="text-2xl font-semibold">{r.cliques.total}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">LeadSubmitted</dt>
+                    <dd className="text-2xl font-semibold">{r.cliques.leadSubmitted}</dd>
+                  </div>
+                </dl>
+                <div className="flex items-end gap-1 overflow-x-auto pb-1">
+                  {r.cliques.porDia.map((d, _i, todos) => {
+                    const teto = Math.max(1, ...todos.map((x) => x.cliques));
+                    return (
                       <div
-                        className="w-full rounded-sm bg-accent/70"
-                        style={{ height: `${Math.max(2, (d.cliques / teto) * 56)}px` }}
-                        title={`${diaCurto(d.dia)}: ${d.cliques} ${t("cliques")}, ${d.leadSubmitted} LeadSubmitted`}
-                      />
-                      <span className="text-[10px] tabular-nums text-muted-foreground">{diaCurto(d.dia)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                        key={d.dia}
+                        className="flex min-w-[18px] flex-1 flex-col items-center gap-1"
+                      >
+                        <div
+                          className="w-full rounded-sm bg-accent/70"
+                          style={{ height: `${Math.max(2, (d.cliques / teto) * 56)}px` }}
+                          title={`${diaCurto(d.dia)}: ${d.cliques} ${t("cliques")}, ${d.leadSubmitted} LeadSubmitted`}
+                        />
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {diaCurto(d.dia)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>

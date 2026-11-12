@@ -19749,6 +19749,70 @@ export const DICIONARIO: Traducoes = {
   "Cria um lead no funil para este contato.": { es: "Crea un lead en el embudo para este contacto." },
   "Move o card do lead para uma etapa; a regra da etapa envia o evento à Meta.": { es: "Mueve la tarjeta del lead a una etapa; la regla de la etapa envía el evento a Meta." },
   "Agenda uma mensagem para ser enviada nesta conversa mais tarde.": { es: "Programa un mensaje para enviarlo más tarde en esta conversación." },
+
+  // ─── Acelera: Análise › Resultados do funil ───
+  "Resultados do funil": { es: "Resultados del embudo" },
+  "Entradas por etapa no período, o que foi enviado ao Meta e o que o Meta registrou.": {
+    es: "Entradas por etapa en el período, lo que se envió a Meta y lo que Meta registró.",
+  },
+  "Quantos negócios passaram por cada etapa, quantos o CRM avisou ao Meta e quantos o Meta registrou.": {
+    es: "Cuántos negocios pasaron por cada etapa, cuántos el CRM avisó a Meta y cuántos Meta registró.",
+  },
+  "A API de Conversões do Meta não está conectada nesta empresa.": {
+    es: "La API de Conversiones de Meta no está conectada en esta empresa.",
+  },
+  "A conexão com o Meta está pausada.": { es: "La conexión con Meta está en pausa." },
+  "A conexão com o Meta está sem conjunto de dados ou token.": {
+    es: "A la conexión con Meta le falta el conjunto de datos o el token.",
+  },
+  "A instalação não consegue abrir o token guardado.": {
+    es: "La instalación no puede abrir el token guardado.",
+  },
+  "A leitura do Meta está indisponível nesta instalação.": {
+    es: "La lectura de Meta no está disponible en esta instalación.",
+  },
+  "Não foi possível falar com o Meta agora.": { es: "No fue posible comunicarse con Meta ahora." },
+  "O Meta recusou a leitura das estatísticas.": { es: "Meta rechazó la lectura de las estadísticas." },
+  "O Meta só guarda os últimos 28 dias; este período é mais antigo.": {
+    es: "Meta solo guarda los últimos 28 días; este período es más antiguo.",
+  },
+  "Não foi possível ler o Meta.": { es: "No fue posible leer Meta." },
+  "Abertos agora": { es: "Abiertos ahora" },
+  "Bate": { es: "Coincide" },
+  "Diferença": { es: "Diferencia" },
+  "Não chegou": { es: "No llegó" },
+  "Só no Meta": { es: "Solo en Meta" },
+  "Sem dados do Meta": { es: "Sin datos de Meta" },
+  "CRM enviou → Meta recebeu": { es: "CRM envió → Meta recibió" },
+  "Cliques de anúncio no WhatsApp": { es: "Clics de anuncio en WhatsApp" },
+  "Conversas abertas por anúncio Click-to-WhatsApp e quantas viraram LeadSubmitted no Meta.": {
+    es: "Conversaciones abiertas por anuncio Click-to-WhatsApp y cuántas se volvieron LeadSubmitted en Meta.",
+  },
+  "Conjunto de dados": { es: "Conjunto de datos" },
+  "Dias mais antigos que 28 dias aparecem como sem dados do Meta.": {
+    es: "Los días con más de 28 días aparecen sin datos de Meta.",
+  },
+  "Entradas": { es: "Entradas" },
+  "Entradas na etapa e envios ao Meta contados no horário de Brasília.": {
+    es: "Entradas en la etapa y envíos a Meta contados en el horario de Brasilia.",
+  },
+  "Enviadas ao Meta": { es: "Enviadas a Meta" },
+  "Evento no Meta": { es: "Evento en Meta" },
+  "Sem evento no Meta": { es: "Sin evento en Meta" },
+  "Funil no período": { es: "Embudo en el período" },
+  "Intervalo livre": { es: "Intervalo libre" },
+  "Nenhum evento enviado ou registrado no período.": {
+    es: "Ningún evento enviado o registrado en el período.",
+  },
+  "O que o Meta registrou": { es: "Lo que Meta registró" },
+  "Por dia no fuso da conta do Meta (Los Angeles), só eventos do servidor.": {
+    es: "Por día en la zona horaria de la cuenta de Meta (Los Ángeles), solo eventos del servidor.",
+  },
+  "Semana passada": { es: "Semana pasada" },
+  "Últimos 28 dias": { es: "Últimos 28 días" },
+  "cliques": { es: "clics" },
+  "com falha": { es: "con error" },
+  "pulados": { es: "omitidos" },
 };
 
 /**

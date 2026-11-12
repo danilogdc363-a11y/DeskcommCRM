@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   compararComMeta,
+  diasCobertosPeloMeta,
+  inicioDoDia,
+  mudancaDeEtapa,
   diaNoFuso,
   janelaDoPreset,
   janelaLivre,
@@ -39,12 +42,22 @@ describe("compararComMeta", () => {
   it("2 vendas enviadas → 2 Purchase no Meta = bate", () => {
     const linhas = compararComMeta({
       etapas: ETAPAS,
-      envios: [envio("Purchase", "2026-11-10T15:00:00Z"), envio("Purchase", "2026-11-10T18:00:00Z")],
+      envios: [
+        envio("Purchase", "2026-11-10T15:00:00Z"),
+        envio("Purchase", "2026-11-10T18:00:00Z"),
+      ],
       meta: [{ dia: "2026-11-10", evento: "Purchase", quantidade: 2 }],
       dias: ["2026-11-10"],
     });
     expect(linhas).toEqual([
-      { dia: "2026-11-10", evento: "Purchase", etapa: "Fechou", crmEnviou: 2, metaRecebeu: 2, situacao: "bate" },
+      {
+        dia: "2026-11-10",
+        evento: "Purchase",
+        etapa: "Fechou",
+        crmEnviou: 2,
+        metaRecebeu: 2,
+        situacao: "bate",
+      },
     ]);
   });
 
@@ -63,12 +76,20 @@ describe("compararComMeta", () => {
   it("não conta envio que falhou e aponta o que não chegou", () => {
     const linhas = compararComMeta({
       etapas: ETAPAS,
-      envios: [envio("MetaEtapa:s1", "2026-11-10T15:00:00Z"), envio("MetaEtapa:s1", "2026-11-10T16:00:00Z", "failed")],
+      envios: [
+        envio("MetaEtapa:s1", "2026-11-10T15:00:00Z"),
+        envio("MetaEtapa:s1", "2026-11-10T16:00:00Z", "failed"),
+      ],
       meta: [],
       dias: ["2026-11-10"],
     });
     expect(linhas).toEqual([
-      expect.objectContaining({ evento: "Contact", crmEnviou: 1, metaRecebeu: 0, situacao: "nao_chegou" }),
+      expect.objectContaining({
+        evento: "Contact",
+        crmEnviou: 1,
+        metaRecebeu: 0,
+        situacao: "nao_chegou",
+      }),
     ]);
   });
 
@@ -83,7 +104,13 @@ describe("compararComMeta", () => {
       dias: ["2026-11-10"],
     });
     expect(linhas).toEqual([
-      expect.objectContaining({ evento: "Lead", etapa: null, crmEnviou: 1, metaRecebeu: 3, situacao: "diferenca" }),
+      expect.objectContaining({
+        evento: "Lead",
+        etapa: null,
+        crmEnviou: 1,
+        metaRecebeu: 3,
+        situacao: "diferenca",
+      }),
     ]);
   });
 
@@ -122,15 +149,39 @@ describe("montarFunil", () => {
       abertosPorEtapa: { s1: 4 },
       atividades: [
         { tipo: "lead_created", performedAt: "2026-11-10T12:00:00Z" },
-        { tipo: "stage_changed", performedAt: "2026-11-10T12:00:00Z", fromStageId: "s1", toStageId: "s2" },
-        { tipo: "stage_changed", performedAt: "2026-11-10T12:00:00Z", fromStageId: "s2", toStageId: "s2" },
+        {
+          tipo: "stage_changed",
+          performedAt: "2026-11-10T12:00:00Z",
+          fromStageId: "s1",
+          toStageId: "s2",
+        },
+        {
+          tipo: "stage_changed",
+          performedAt: "2026-11-10T12:00:00Z",
+          fromStageId: "s2",
+          toStageId: "s2",
+        },
       ],
-      envios: [envio("MetaEtapa:s2", "2026-11-10T12:00:00Z"), envio("Purchase", "2026-11-10T12:00:00Z", "failed")],
+      envios: [
+        envio("MetaEtapa:s2", "2026-11-10T12:00:00Z"),
+        envio("Purchase", "2026-11-10T12:00:00Z", "failed"),
+        envio("MetaEtapa:s1", "2026-11-10T12:00:00Z", "skipped"),
+        envio("MetaEtapa:s1", "2026-11-10T12:00:00Z", "retry"),
+      ],
     });
-    expect(linhas.map((l) => [l.etapaId, l.abertosAgora, l.entradas, l.enviadosAoMeta, l.naoEnviados])).toEqual([
-      ["s1", 4, 1, 0, 0],
-      ["s2", 0, 1, 1, 0],
-      ["s3", 0, 0, 0, 1],
+    expect(
+      linhas.map((l) => [
+        l.etapaId,
+        l.abertosAgora,
+        l.entradas,
+        l.enviadosAoMeta,
+        l.naoEnviados,
+        l.pulados,
+      ]),
+    ).toEqual([
+      ["s1", 4, 1, 0, 0, 2],
+      ["s2", 0, 1, 1, 0, 0],
+      ["s3", 0, 0, 0, 1, 0],
     ]);
   });
 });
@@ -173,5 +224,87 @@ describe("resumirCliques", () => {
       ["2026-11-10"],
     );
     expect(r).toMatchObject({ total: 2, leadSubmitted: 1 });
+  });
+});
+
+describe("sem dados do Meta", () => {
+  it("Meta não lido: vira sem dados do Meta, nunca não chegou", () => {
+    const linhas = compararComMeta({
+      etapas: ETAPAS,
+      envios: [envio("Purchase", "2026-11-10T15:00:00Z")],
+      meta: null,
+      dias: ["2026-11-10"],
+    });
+    expect(linhas).toEqual([
+      expect.objectContaining({ crmEnviou: 1, metaRecebeu: null, situacao: "sem_dados_meta" }),
+    ]);
+  });
+
+  it("dia fora dos 28 dias não é comparado; os cobertos são", () => {
+    const linhas = compararComMeta({
+      etapas: ETAPAS,
+      envios: [
+        envio("Purchase", "2026-10-15T20:00:00Z"),
+        envio("Purchase", "2026-11-10T20:00:00Z"),
+      ],
+      meta: [{ dia: "2026-11-10", evento: "Purchase", quantidade: 1 }],
+      dias: ["2026-10-15", "2026-11-10"],
+      diasComMeta: new Set(["2026-11-10"]),
+    });
+    expect(linhas.map((l) => [l.dia, l.situacao])).toEqual([
+      ["2026-11-10", "bate"],
+      ["2026-10-15", "sem_dados_meta"],
+    ]);
+  });
+
+  it("usa a hora da tentativa para o dia quando existe", () => {
+    // criado 23h de 09/11 em LA, tentado 01h de 10/11 em LA
+    const e = { ...envio("Purchase", "2026-11-10T07:00:00Z"), tentadoEm: "2026-11-10T09:00:00Z" };
+    const linhas = compararComMeta({
+      etapas: ETAPAS,
+      envios: [e],
+      meta: [],
+      dias: ["2026-11-09", "2026-11-10"],
+    });
+    expect(linhas[0]?.dia).toBe("2026-11-10");
+  });
+
+  it("o preset de 28 dias cabe inteiro; o dia anterior, cortado pelo Meta, fica de fora", () => {
+    const agora = new Date("2026-11-12T13:00:00Z");
+    const dias = Array.from({ length: 29 }, (_, i) =>
+      new Date(Date.UTC(2026, 9, 15 + i)).toISOString().slice(0, 10),
+    );
+    const cobertos = diasCobertosPeloMeta(dias, agora);
+    expect(cobertos.has("2026-10-15")).toBe(false);
+    expect(cobertos.has("2026-10-16")).toBe(true);
+    expect(cobertos.has("2026-11-12")).toBe(true);
+  });
+});
+
+describe("mudancaDeEtapa", () => {
+  it("lê as duas grafias do payload", () => {
+    expect(mudancaDeEtapa({ from_stage_id: "a", to_stage_id: "b" })).toEqual({
+      fromStageId: "a",
+      toStageId: "b",
+    });
+    expect(mudancaDeEtapa({ passo_do_agente: "x", de: "a", para: "b" })).toEqual({
+      fromStageId: "a",
+      toStageId: "b",
+    });
+    expect(mudancaDeEtapa(null)).toEqual({ fromStageId: null, toStageId: null });
+  });
+});
+
+describe("horário de verão", () => {
+  it("meia-noite em Los Angeles nos dois lados da virada de 01/11/2026", () => {
+    expect(inicioDoDia("2026-10-31", "America/Los_Angeles").toISOString()).toBe(
+      "2026-10-31T07:00:00.000Z",
+    );
+    expect(inicioDoDia("2026-11-01", "America/Los_Angeles").toISOString()).toBe(
+      "2026-11-01T07:00:00.000Z",
+    );
+    expect(inicioDoDia("2026-11-02", "America/Los_Angeles").toISOString()).toBe(
+      "2026-11-02T08:00:00.000Z",
+    );
   });
 });
