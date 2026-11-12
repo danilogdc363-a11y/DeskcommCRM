@@ -677,7 +677,7 @@ export interface ExportPayload {
    * as UTMs e, enquanto não vencem os 30 dias, o IP, o navegador e o `fbp`.
    * A anonimização limpa o navegador, então o acesso o entrega.
    */
-  link_clicks: LinkClickRow[];
+  link_clicks?: LinkClickRow[];
   audit_log_extract: AuditRow[];
   meeting_deliveries: MeetingDeliveryRow[];
   appointment_notices: AppointmentNoticeRow[];
