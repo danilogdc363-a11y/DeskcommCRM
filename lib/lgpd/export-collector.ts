@@ -565,6 +565,15 @@ export interface Art15NoDocumento {
   decisoes_automatizadas: string;
 }
 
+/** Um clique no link rastreável da Meta, sem token nem ids internos. */
+export interface LinkClickRow {
+  created_at: string;
+  utm: Record<string, string>;
+  client_ip_address: string | null;
+  client_user_agent: string | null;
+  fbp: string | null;
+}
+
 export interface ExportPayload {
   request_id: string;
   organization_id: string;
@@ -663,6 +672,12 @@ export interface ExportPayload {
   proposals: ProposalRow[];
   tasks: TaskRow[];
   webhook_captures: CaptureRow[];
+  /**
+   * (Acelera, acelera_0006/0007) Os cliques dele no link rastreável da Meta:
+   * as UTMs e, enquanto não vencem os 30 dias, o IP, o navegador e o `fbp`.
+   * A anonimização limpa o navegador, então o acesso o entrega.
+   */
+  link_clicks: LinkClickRow[];
   audit_log_extract: AuditRow[];
   meeting_deliveries: MeetingDeliveryRow[];
   appointment_notices: AppointmentNoticeRow[];
@@ -1768,6 +1783,30 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
     }
   }
 
+  // (Acelera) Cliques no link rastreável da Meta — a anonimização limpa o
+  // navegador deles (acelera_0007), então o acesso os entrega. `*` porque as
+  // colunas do navegador só existem depois da acelera_0006.
+  let link_clicks: LinkClickRow[] = [];
+  if (contactId) {
+    const { data, error } = await admin
+      .from("meta_ads_click_refs")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .eq("contact_id", contactId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    // Uma falha não pode virar um relatório que diz que não guardamos dados.
+    if (error) throw error;
+    conferirTeto("link_clicks", data ?? [], 500);
+    link_clicks = (data ?? []).map((r: Record<string, unknown>) => ({
+      created_at: String(r.created_at),
+      utm: (r.utm as Record<string, string> | null) ?? {},
+      client_ip_address: (r.client_ip_address as string | null | undefined) ?? null,
+      client_user_agent: (r.client_user_agent as string | null | undefined) ?? null,
+      fbp: (r.fbp as string | null | undefined) ?? null,
+    }));
+  }
+
   // Propostas de campo do contato: a anonimização as APAGA, e o valor proposto é
   // dado do titular. Mesmo escopo da função que apaga, com os ids internos fora.
   //
@@ -2271,6 +2310,7 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
     proposals,
     tasks,
     webhook_captures,
+    link_clicks,
     audit_log_extract,
     reply_drafts,
     meeting_deliveries,
@@ -2465,6 +2505,7 @@ function emptyPayload(
     proposals: [],
     tasks: [],
     webhook_captures: [],
+    link_clicks: [],
     audit_log_extract: [],
     meeting_deliveries: [],
     appointment_notices: [],
