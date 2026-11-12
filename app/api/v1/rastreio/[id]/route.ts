@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { clientIp, paginaDeSaida } from "@/lib/plataformas-de-anuncio/pagina-de-captura";
+import { clientIp, navegadorDoClique, paginaDeSaida } from "@/lib/plataformas-de-anuncio/pagina-de-captura";
 import { destinoDoLink, type LinkRastreavel } from "@/lib/plataformas-de-anuncio/rastreio/links";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,12 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     .eq("enabled", true)
     .maybeSingle();
   if (error || !data) return paginaDeSaida(null);
-  const destino = await destinoDoLink(admin, data as LinkRastreavel, new URL(req.url).searchParams);
+  const destino = await destinoDoLink(
+    admin,
+    data as LinkRastreavel,
+    new URL(req.url).searchParams,
+    navegadorDoClique(req),
+  );
   const response = paginaDeSaida(destino);
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("Referrer-Policy", "no-referrer");

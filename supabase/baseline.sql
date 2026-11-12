@@ -57624,3 +57624,17 @@ comment on column public.webhook_lead_captures.outcome is
   'criado = virou lead novo; duplicado = envio repetido, nada mudou no card; atualizado = o card da mesma fonte recebeu o dado novo (issue #2316, só com a opção da fonte ligada); recusado = não entrou (reject_reason diz por quê).';
 
 notify pgrst, 'reload schema';
+
+-- ---- navegador no clique do link (migration acelera_0006) ----
+alter table public.meta_ads_click_refs add column if not exists client_ip_address text;
+alter table public.meta_ads_click_refs add column if not exists client_user_agent text;
+alter table public.meta_ads_click_refs add column if not exists fbp text;
+
+comment on column public.meta_ads_click_refs.client_ip_address is
+  'IP de quem clicou no link (acelera_0006). Vai à Meta como client_ip_address.';
+comment on column public.meta_ads_click_refs.client_user_agent is
+  'User agent de quem clicou no link (acelera_0006). Vai à Meta como client_user_agent.';
+comment on column public.meta_ads_click_refs.fbp is
+  'Cookie _fbp repassado pela página na query (acelera_0006). Vai à Meta como fbp.';
+
+notify pgrst, 'reload schema';

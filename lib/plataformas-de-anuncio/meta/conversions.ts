@@ -50,6 +50,7 @@ import { VERSAO_PADRAO_DA_GRAPH } from "@/lib/graph-version";
 import { logger } from "@/lib/logger";
 
 import { baseDaGraphDeAnuncio } from "./graph-base";
+import { montarUserData } from "./user-data";
 import type {
   ConversaoOffline,
   CredencialDeConversao,
@@ -128,34 +129,33 @@ async function enviar(
     };
   }
 
-  const userData: Record<string, unknown> = comClique ? { ctwa_clid: conversao.cliqueDeOrigem } : {};
   // ─── Página ou WABA, só no clique-para-WhatsApp (#2098) ────────────────────
   //
   // A Meta cobra UM dos dois apenas quando a origem é `business_messaging` +
   // canal `whatsapp`. No caminho da página (`system_generated`) os ids não são
-  // exigidos, e mandá-los lá acrescentaria dado que ninguém pediu.
-  //
-  // UM por envio, não os dois: a plataforma pede "o que estiver vinculado ao
-  // conjunto de dados", então mandar o par inteiro exibiria um id que talvez
-  // não seja deste dataset — e a página é a identidade do clique. A WABA entra
-  // só quando não há página. Sem nenhum dos dois: nada é acrescentado, o
-  // evento sai como antes e a recusa (com a frase da Meta) fica no livro-razão.
-  if (comClique) {
-    const pageId = credencial.meta?.pageId ?? null;
-    const wabaId = credencial.meta?.whatsappBusinessAccountId ?? null;
-    if (pageId) userData.page_id = pageId;
-    else if (wabaId) userData.whatsapp_business_account_id = wabaId;
-    else
-      logger.warn("[conversoes.meta] sem page_id nem whatsapp_business_account_id", {
-        leadId: conversao.leadId,
-        organizationId: conversao.organizationId,
-        motivo: "identidade_ausente_em_settings_conversions",
-      });
-  }
-
-  // Array de propósito: o formato aceita múltiplos valores por campo, e mandar
-  // string crua onde ele espera lista é aceito com aviso e ignorado no match.
-  if (conversao.telefone) userData.ph = [hash(conversao.telefone)];
+  // exigidos. Sem nenhum dos dois: o evento sai e a recusa (com a frase da
+  // Meta) fica no livro-razão. A montagem campo a campo está em `user-data.ts`.
+  const pageId = credencial.meta?.pageId ?? null;
+  const wabaId = credencial.meta?.whatsappBusinessAccountId ?? null;
+  if (comClique && !pageId && !wabaId)
+    logger.warn("[conversoes.meta] sem page_id nem whatsapp_business_account_id", {
+      leadId: conversao.leadId,
+      organizationId: conversao.organizationId,
+      motivo: "identidade_ausente_em_settings_conversions",
+    });
+  const userData = montarUserData({
+    telefone: conversao.telefone,
+    identidade: conversao.identidade,
+    ...(comClique
+      ? {
+          clique: {
+            ctwaClid: conversao.cliqueDeOrigem,
+            pageId,
+            whatsappBusinessAccountId: wabaId,
+          },
+        }
+      : {}),
+  });
 
   const customData: Record<string, unknown> = {};
   if (ehCompra && conversao.valorCentavos !== null) {

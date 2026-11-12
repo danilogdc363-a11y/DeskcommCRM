@@ -87,6 +87,18 @@ export async function criarClickRef(
       ...campos,
     });
     if (!error) return { token };
+    // Coluna que o banco ainda não tem (a acelera_0006 não aplicada, ou um
+    // clone atrasado): grava o clique SEM o navegador em vez de perder a
+    // atribuição inteira. PGRST204 é o PostgREST; 42703, o Postgres.
+    if ((error.code === "PGRST204" || error.code === "42703") && temNavegador(campos)) {
+      logger.warn("[plataformas-de-anuncio.captura-de-clique] sem colunas do navegador", {
+        tabela,
+        organizationId,
+      });
+      campos = semNavegador(campos);
+      tentativa--;
+      continue;
+    }
     // 23505 = unique_violation. Qualquer outro código não se resolve tentando
     // de novo com outro token — é falha de rede/schema, não de sorte.
     if (error.code !== "23505") {
@@ -104,4 +116,17 @@ export async function criarClickRef(
     organizationId,
   });
   return null;
+}
+
+/** As colunas do navegador no clique (acelera_0006). */
+const COLUNAS_DO_NAVEGADOR = ["client_ip_address", "client_user_agent", "fbp"] as const;
+
+function temNavegador(campos: Record<string, unknown>): boolean {
+  return COLUNAS_DO_NAVEGADOR.some((c) => c in campos);
+}
+
+function semNavegador(campos: Record<string, unknown>): Record<string, unknown> {
+  const resto = { ...campos };
+  for (const c of COLUNAS_DO_NAVEGADOR) delete resto[c];
+  return resto;
 }
