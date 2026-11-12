@@ -53,6 +53,11 @@ import type { ConversationWithContact } from "@/hooks/inbox/useConversationsReal
 import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
 import { rotuloDoCanalDaConversa } from "@/lib/channels/estado";
+import {
+  DialogosComerciais,
+  MensagensAgendadasDaConversa,
+  type AcaoComercial,
+} from "@/components/inbox/AcoesComerciaisDaConversa";
 
 interface Props {
   conversation: ConversationWithContact;
@@ -130,6 +135,7 @@ export function ConversationHeader({
   const [confirmFecharOpen, setConfirmFecharOpen] = useState(false);
   const [confirmArquivarOpen, setConfirmArquivarOpen] = useState(false);
   const [confirmPessoalOpen, setConfirmPessoalOpen] = useState(false);
+  const [acaoComercial, setAcaoComercial] = useState<AcaoComercial | null>(null);
 
   const c = conversation.contacts ?? null;
   const displayName = rotuloDoContato(c, t);
@@ -468,6 +474,19 @@ export function ConversationHeader({
             snoozeUntil={conversation.snooze_until ?? null}
           />
         )}
+        {/* ACELERA (só do fork): os gestos do comercial, como no Chronos. No
+            celular moram no "⋮": a fileira que rola esconderia justo estes. */}
+        {c?.id && (
+          <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("lead")} data-testid="criar-lead-da-conversa">
+            {t("+ Criar lead")}
+          </Button>
+        )}
+        <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("evento")} data-testid="disparar-evento">
+          {t("Disparar evento")}
+        </Button>
+        <Button size="sm" variant="outline" className="max-md:hidden" onClick={() => setAcaoComercial("agendar")} data-testid="agendar-mensagem">
+          {t("Agendar mensagem")}
+        </Button>
         {/* ACELERA: porta visível para os dados do contato (fechados por padrão).
             Ícone + rótulo para ninguém precisar descobrir que o nome é clicável;
             fica realçado enquanto o painel está aberto. */}
@@ -503,6 +522,18 @@ export function ConversationHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-52">
+            {c?.id && (
+              <DropdownMenuItem className="md:hidden" onSelect={() => setAcaoComercial("lead")}>
+                {t("+ Criar lead")}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem className="md:hidden" onSelect={() => setAcaoComercial("evento")}>
+              {t("Disparar evento")}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="md:hidden" onSelect={() => setAcaoComercial("agendar")}>
+              {t("Agendar mensagem")}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="md:hidden" />
             {onAlternarFicha && c?.id && (
               <DropdownMenuItem onSelect={onAlternarFicha}>{t("Dados do contato")}</DropdownMenuItem>
             )}
@@ -586,6 +617,15 @@ export function ConversationHeader({
           </Badge>
         )}
       </div>
+      <MensagensAgendadasDaConversa conversationId={conversation.id} />
+      <DialogosComerciais
+        acao={acaoComercial}
+        onFechar={() => setAcaoComercial(null)}
+        conversationId={conversation.id}
+        contactId={c?.id ?? null}
+        provider={conversation.channel_sessions?.provider ?? null}
+        lastInboundAt={conversation.last_inbound_at}
+      />
       <ReassignDialog
         conversationId={conversation.id}
         open={reassignOpen}

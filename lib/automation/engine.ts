@@ -140,6 +140,22 @@ export async function buildContext(admin: SupabaseClient, row: EventRow): Promis
         .eq("organization_id", org)
         .maybeSingle();
       if (contact) context.contact = contact;
+      // Acelera: a fala da equipe precisa saber em que etapa o negócio está, senão
+      // "primeira mensagem → Em atendimento" empurra de volta quem já avançou. O
+      // negócio é o aberto mais recente do contato; os outros gatilhos de mensagem
+      // seguem sem `lead`, para uma condição antiga em `lead.*` não mudar de valor.
+      if (contact && row.event_type === "message.team_sent") {
+        const { data: lead } = await admin
+          .from("crm_leads")
+          .select("*")
+          .eq("organization_id", org)
+          .eq("contact_id", contactId)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (lead) context.lead = lead;
+      }
     }
   }
   return context;

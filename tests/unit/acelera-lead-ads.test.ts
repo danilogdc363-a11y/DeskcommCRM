@@ -85,6 +85,39 @@ describe("lead ads", () => {
     });
   });
 
+  it("UTM leva o nome do anúncio e o id fica à parte", () => {
+    const corpo = corpoDaCaptacao({
+      ...lead,
+      ad_name: "Vídeo cardápio",
+      adset_id: "8",
+      adset_name: "Raio 5km",
+      campaign_id: "7",
+      campaign_name: "Black Friday",
+    });
+    expect(corpo).toMatchObject({
+      utm_campaign: "Black Friday",
+      utm_adset: "Raio 5km",
+      utm_ad: "Vídeo cardápio",
+      meta_campaign_id: "7",
+      meta_adset_id: "8",
+      meta_ad_id: "9",
+    });
+  });
+
+  it("pede os nomes e, se a Meta recusar, relê sem eles", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(lead)))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await importarLeadDaMeta("123", { fetch, env });
+    const urls = fetch.mock.calls.map((c) => String(c[0]));
+    expect(urls[0]).toContain("campaign_name");
+    expect(urls[1]).not.toContain("campaign_name");
+    const entrega = fetch.mock.calls[2] as [string, RequestInit];
+    expect(JSON.parse(entrega[1].body as string)).toMatchObject({ utm_ad: "9" });
+  });
+
   it("falha transitória da captação lança, recusa não", async () => {
     const com = (status: number) =>
       vi
