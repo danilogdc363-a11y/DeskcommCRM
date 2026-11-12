@@ -6,8 +6,35 @@ import {
   estamparOrigemDaPagina,
   extrairOrigemDaPagina,
   montarCodigoDeOrigemDoSite,
+  origemDoFormulario,
   TAMANHO_MAXIMO_DO_CODIGO,
 } from "@/lib/leads/origem-do-site";
+
+describe("(Acelera) a origem que o formulário trouxe no envio", () => {
+  const agora = new Date("2026-11-12T18:00:00.000Z");
+
+  it("fica com as UTMs e o fbclid, e larga o resto do envio", () => {
+    const origem = origemDoFormulario(
+      {
+        utm_source: "facebook",
+        utm_campaign: "captacao",
+        fbclid: "ABC",
+        raw_phone: "11 99999-8888",
+        webhook_source_id: "x",
+      },
+      agora,
+    );
+    expect(origem).toEqual({
+      utm: { utm_source: "facebook", utm_campaign: "captacao", fbclid: "ABC" },
+      capturadaEm: "2026-11-12T18:00:00.000Z",
+    });
+  });
+
+  it("devolve null quando o envio não trouxe UTM", () => {
+    expect(origemDoFormulario({ raw_phone: "11 99999-8888" }, agora)).toBeNull();
+    expect(origemDoFormulario({}, agora)).toBeNull();
+  });
+});
 
 /**
  * A ORIGEM DA PÁGINA NÃO TEM POR ONDE ENTRAR NO WHATSAPP.
