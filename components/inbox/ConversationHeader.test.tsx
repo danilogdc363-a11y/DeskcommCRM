@@ -54,6 +54,13 @@ vi.mock("@/components/inbox/FaixaDaCarteira", () => ({ FaixaDaCarteira: () => nu
 vi.mock("@/components/inbox/ReassignDialog", () => ({ ReassignDialog: () => null }));
 vi.mock("@/components/inbox/SnoozeButton", () => ({ SnoozeButton: () => null }));
 vi.mock("@/components/inbox/JanelaSelo", () => ({ JanelaSelo: () => null }));
+// ACELERA: os botões do comercial moram em AcoesComerciaisDaConversa, que lê
+// react-query (lista de agendados, funil). Estes testes medem a barra de ações,
+// não esse componente: sem o mock, o `useQueryClient` exigiria provider.
+vi.mock("@/components/inbox/AcoesComerciaisDaConversa", () => ({
+  DialogosComerciais: () => null,
+  MensagensAgendadasDaConversa: () => null,
+}));
 vi.mock("@/components/inbox/ChannelLogo", () => ({ ChannelLogo: () => null }));
 vi.mock("@/hooks/voice/useVoiceSessionStatus", () => ({
   useVoiceSessionStatus: () => ({ data: { configured: true, paired: true } }),

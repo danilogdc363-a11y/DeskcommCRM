@@ -1479,6 +1479,17 @@ export const DICIONARIO: Traducoes = {
   "Ver tudo em CRM": { es: "Ver todo en CRM" },
   // ACELERA: descrição do atalho CRM (funil Orçamentos) no Menu Principal.
   "Atalho para o funil de Orçamentos.": { es: "Atajo al embudo de Presupuestos." },
+  // ACELERA (fork): menu, cabeçalho da conversa e Conversões. Mesmas traduções da acelera/1.100.0.
+  WhatsApp: { es: "WhatsApp" },
+  "Menu Principal": { es: "Menú principal" },
+  "CRM comercial": { es: "CRM comercial" },
+  "Reportar também leads sem origem de anúncio": { es: "Reportar también leads sin origen de anuncio" },
+  "Envia à Meta quem chegou por formulário ou WhatsApp direto, casado por telefone e e-mail. A Meta só credita o anúncio se a pessoa viu ou clicou em um.": { es: "Envía a Meta a quien llegó por formulario o WhatsApp directo, cruzado por teléfono y correo. Meta solo acredita el anuncio si la persona vio uno o hizo clic en él." },
+  "Dados do contato": { es: "Datos del contacto" },
+  "Fechar dados do contato": { es: "Cerrar datos del contacto" },
+  "Ver dados do contato": { es: "Ver datos del contacto" },
+  "Mais opções": { es: "Más opciones" },
+  "Cadastrar cliente": { es: "Registrar cliente" },
   "Ver tudo em Análise": { es: "Ver todo en Análisis" },
   Conexões: { es: "Conexiones" },
   Webhooks: { es: "Webhooks" },
