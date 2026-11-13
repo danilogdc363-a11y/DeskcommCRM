@@ -15,6 +15,7 @@ let nonceJaUsado = false;
 vi.mock("@/lib/env", () => ({
   env: { NEXT_PUBLIC_APP_URL: "https://comercial.aceleradelivery.com", INTERNAL_SECRET: "segredo-interno-de-teste-bem-comprido" },
 }));
+vi.mock("@/lib/branding/saida", () => ({ marcaDaSaida: vi.fn(async () => ({ nome: "Acelera CRM" })) }));
 vi.mock("@/lib/impersonate/support", () => ({ supportCallbackWriteAllowed: vi.fn(async () => true) }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));
 vi.mock("@/lib/webhooks/secrets", () => ({
@@ -43,20 +44,26 @@ import { emitirEstado } from "@/lib/plataformas-de-anuncio/meta/login/estado";
 
 import { GET } from "@/app/api/v1/meta-ads/oauth/callback/route";
 
-function chamar(query: Record<string, string>, comVinculo = true, nonce = "nonce-1") {
+type Volta = Response & { html: string };
+
+async function chamar(query: Record<string, string>, comVinculo = true, nonce = "nonce-1"): Promise<Volta> {
   const url = new URL("https://comercial.aceleradelivery.com/api/v1/meta-ads/oauth/callback");
   for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
   const headers = new Headers();
   if (comVinculo) headers.set("cookie", `${NOME_DO_VINCULO}=${assinarVinculo(nonce, SEGREDO)}`);
-  return GET(new NextRequest(url, { headers }));
+  const r = await GET(new NextRequest(url, { headers }));
+  return Object.assign(r, { html: await r.clone().text() });
 }
 
 function stateValido(nonce = "nonce-1") {
   return emitirEstado({ organizationId: ORG, userId: USER }, { segredo: SEGREDO, agora: new Date(), nonce });
 }
 
-function destino(r: Response) {
-  return new URL(r.headers.get("location")!);
+// A volta é uma PÁGINA-PONTE (200 + `location.replace`), nunca um 302: o destino
+// está no link de fallback do documento.
+function destino(r: Volta) {
+  const href = /<a href="([^"]+)"/.exec(r.html)?.[1] ?? "";
+  return new URL(href.replace(/&amp;/g, "&"), "https://comercial.aceleradelivery.com");
 }
 
 describe("callback do login com o Facebook", () => {
@@ -68,6 +75,19 @@ describe("callback do login com o Facebook", () => {
     vi.unstubAllGlobals();
     vi.stubEnv("META_APP_ID", "123456789");
     vi.stubEnv("META_APP_SECRET", "segredo-do-app");
+  });
+
+  it("volta por ponte (200 com HTML), nunca por redirect: o cookie de sessão é Strict", async () => {
+    const r = await chamar({ error: "access_denied" });
+    expect(r.status).toBe(200);
+    expect(r.headers.get("location")).toBeNull();
+    expect(r.headers.get("content-type")).toContain("text/html");
+    expect(r.html).toContain("window.location.replace(");
+    expect(r.html).toContain("/app/settings/meta-ads?erro=cancelado");
+    // só o cookie de vínculo é limpo; nenhum cookie de sessão é tocado
+    const cookies = r.headers.getSetCookie();
+    expect(cookies).toHaveLength(1);
+    expect(cookies[0]).toContain(`${NOME_DO_VINCULO}=;`);
   });
 
   it("cancelar no Facebook volta com erro=cancelado, sem tocar no banco", async () => {
@@ -137,7 +157,7 @@ describe("callback do login com o Facebook", () => {
     // Não mexe na conta padrão que a pessoa já escolheu.
     expect(gravado.valores).not.toHaveProperty("default_account_id");
     // O token nunca vai para a URL de volta.
-    expect(r.headers.get("location")).not.toContain("L".repeat(20));
+    expect(r.html).not.toContain("L".repeat(20));
   });
 
   it("Meta diz recurso indisponível: explica na tela e não grava nada", async () => {
