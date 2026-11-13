@@ -86,16 +86,6 @@ const BASELINE = "supabase/baseline.sql";
 // trouxe para o schema e tirou daqui.
 
 const CONGELADAS: Record<string, { degradacao: string; porque: string }> = {
-  fn_claim_meta_ctwa_click: {
-    degradacao: "lib/conversoes/clique-meta.handler.ts:86",
-    porque:
-      "(Acelera) Função da migration 0805 do upstream (LeadSubmitted por clique CTWA). Ela JÁ existe no banco de produção da Acelera, mas o arquivo só entra no repositório com a acelera/1.100.0. Sem ela o handler devolve retry e nada sai para a Meta. Remover esta entrada quando a 1.100 chegar.",
-  },
-  fn_settle_meta_ctwa_click: {
-    degradacao: "lib/conversoes/clique-meta.handler.ts:109",
-    porque:
-      "(Acelera) Função da migration 0805 do upstream (LeadSubmitted por clique CTWA). Ela JÁ existe no banco de produção da Acelera, mas o arquivo só entra no repositório com a acelera/1.100.0. Sem ela o handler devolve retry e nada sai para a Meta. Remover esta entrada quando a 1.100 chegar.",
-  },
   jsonb_set_last_alarm_at: {
     degradacao: "lib/lgpd/sla-alarm.ts:203",
     porque:

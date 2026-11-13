@@ -268,7 +268,7 @@ export interface PodaDb {
       | "fn_expurgar_ritmo_de_envio_vencido"
       | "fn_expurgar_copias_enviadas_vencidas"
       | "fn_expurgar_checkpoints_superados"
-      | "fn_expurgar_traco_do_turno_vencido",
+      | "fn_expurgar_traco_do_turno_vencido"
       | "fn_limpar_navegador_dos_cliques",
     args: { p_retencao_dias: number; p_limite: number },
   ): Promise<{ data: number | null; error: { message: string } | null }>;
@@ -338,7 +338,7 @@ async function drenar(
     | "fn_expurgar_ritmo_de_envio_vencido"
     | "fn_expurgar_copias_enviadas_vencidas"
     | "fn_expurgar_checkpoints_superados"
-    | "fn_expurgar_traco_do_turno_vencido",
+    | "fn_expurgar_traco_do_turno_vencido"
     | "fn_limpar_navegador_dos_cliques",
   dias: number,
 ): Promise<{ apagadas: number; lotes: number; temResto: boolean }> {
