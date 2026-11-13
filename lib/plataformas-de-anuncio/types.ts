@@ -62,6 +62,8 @@ export type NomeDoEvento =
  * Quem monta isto (`lib/conversoes/`) não sabe que campo vira o quê no fio. Quem
  * traduz (o transporte) não sabe de onde veio nem por que foi decidido enviar.
  */
+import type { IdentidadeParaMeta } from "./meta/user-data";
+
 export interface ConversaoOffline {
   organizationId: string;
   /** Nulo apenas no LeadSubmitted por clique quando nenhum card foi criado. */
@@ -124,6 +126,12 @@ export interface ConversaoOffline {
    * `LeadSubmitted`…), enquanto o livro-razão guarda `MetaEtapa:<uuid>`.
    */
   eventoNaPlataforma?: string | null;
+  /**
+   * O que mais o CRM sabe da pessoa (e-mail, nome, local, navegador, clique),
+   * EM CLARO — só a Meta lê, e o hash é do transporte dela. Ausente = só o
+   * telefone, como antes.
+   */
+  identidade?: IdentidadeParaMeta;
 }
 
 /**

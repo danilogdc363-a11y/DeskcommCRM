@@ -6,7 +6,7 @@
 name: Memoria
 on:
   push:
-    branches: [acelera/1.84.0]
+    branches: [acelera/1.100.0]
 permissions: {}
 jobs:
   registrar:

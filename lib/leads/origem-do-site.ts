@@ -230,6 +230,23 @@ export async function estamparOrigemDaPagina(
 }
 
 /**
+ * (Acelera) A origem que um formulário externo trouxe no próprio envio.
+ *
+ * O formulário já tem o telefone de quem preencheu e manda as UTMs junto. Com
+ * isto o contato fica carimbado como `site` na entrada do webhook, e a conversa
+ * que chega depois pelo mesmo número herda a origem sem depender do `[ref:]` no
+ * texto. Devolve `null` quando o envio não trouxe UTM nenhuma.
+ */
+export function origemDoFormulario(
+  sourceMetadata: Record<string, unknown>,
+  agora: Date = new Date(),
+): OrigemDaPagina | null {
+  const utm = normalizarUtm(sourceMetadata);
+  if (Object.keys(utm).length === 0) return null;
+  return { utm, capturadaEm: agora.toISOString() };
+}
+
+/**
  * A origem só vale na PRIMEIRA mensagem do contato.
  *
  * ─── Por que isto existe, se o banco já guarda o primeiro toque ──────────────
