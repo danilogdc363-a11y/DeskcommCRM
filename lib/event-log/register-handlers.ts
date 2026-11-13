@@ -26,6 +26,7 @@ import { CONSUMIDORES_DOS_CANAIS } from "@/lib/channels/consumidores";
 import { webPushInboundHandler } from "@/lib/notifications/push.handler";
 import { conversaoDeQualificacaoHandler } from "@/lib/conversoes/qualificacao.handler";
 import { conversaoDeEtapaMetaHandler } from "@/lib/conversoes/etapa-meta.handler";
+import { conversaoDeCliqueMetaHandler } from "@/lib/conversoes/clique-meta.handler";
 import { conversaoDeVendaHandler } from "@/lib/conversoes/envio.handler";
 import { avisoDeEtapaHandler } from "@/lib/leads/aviso-de-etapa.handler";
 import { avisoAoDonoDaCarteira } from "@/lib/carteira/aviso-ao-dono";
@@ -99,5 +100,7 @@ export function ensureHandlersRegistered(): void {
   registerHandler(conversaoDeVendaHandler);
   registerHandler(conversaoDeQualificacaoHandler);
   registerHandler(conversaoDeEtapaMetaHandler);
+  // (Acelera) LeadSubmitted por clique CTWA: o banco registra o clique (0805); isto envia.
+  registerHandler(conversaoDeCliqueMetaHandler);
   _registered = true;
 }

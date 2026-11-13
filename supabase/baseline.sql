@@ -54854,6 +54854,96 @@ end; $$;
 revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,anon,authenticated;
 grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to service_role;
 
+-- ---- funções da Acelera (migrations acelera_0001 e acelera_0007) ----
+-- ⚠️ ENTRA ANTES DO BLOCO DA VARREDURA anon: cria função. Os gatilhos que as usam
+-- ficam nos apêndices de cada migration, depois da varredura, porque dependem de
+-- colunas criadas lá. Corpo idêntico ao das migrations.
+create or replace function public.fn_mensagem_da_equipe_vira_evento()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+as $fn$
+begin
+  -- Grupo não é atendimento de um contato (mesma regra da 0482).
+  if exists (select 1 from public.conversations c
+             where c.id = new.conversation_id
+               and c.organization_id = new.organization_id
+               and c.is_group) then
+    return new;
+  end if;
+
+  perform public.fn_log_event(
+    new.organization_id, 'message.team_sent',
+    jsonb_build_object(
+      'message_id', new.id, 'conversation_id', new.conversation_id,
+      'contact_id', new.contact_id, 'direction', new.direction,
+      'type', new.type, 'status', new.status, 'external_id', new.external_id,
+      'channel_session_id', new.channel_session_id, 'sent_via', new.sent_via,
+      'sent_by_user_id', new.sent_by_user_id,
+      'body_preview', "left"(new.body, 280)
+    )
+  );
+  return new;
+end$fn$;
+
+comment on function public.fn_mensagem_da_equipe_vira_evento() is
+  'Acelera: emite `message.team_sent` para a fala humana de saída (sent_via user/crm/external_device, sem reação/sistema/grupo/histórico importado). É o gatilho "quando a equipe enviar mensagem" das automações — a frase-código do vendedor move o card.';
+
+revoke execute on function public.fn_mensagem_da_equipe_vira_evento() from public, anon, authenticated;
+grant execute on function public.fn_mensagem_da_equipe_vira_evento() to service_role;
+
+create or replace function public.fn_limpar_navegador_dos_cliques(
+  p_retencao_dias integer,
+  p_limite integer
+) returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_dias integer := greatest(coalesce(p_retencao_dias, 30), 30);
+  v_limite integer := least(greatest(coalesce(p_limite, 1000), 1), 10000);
+  v_n integer;
+begin
+  with alvo as (
+    select id
+      from public.meta_ads_click_refs
+     where created_at < now() - make_interval(days => v_dias)
+       and (client_ip_address is not null or client_user_agent is not null or fbp is not null)
+     limit v_limite
+     for update skip locked
+  )
+  update public.meta_ads_click_refs r
+     set client_ip_address = null, client_user_agent = null, fbp = null
+    from alvo
+   where r.id = alvo.id;
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+revoke execute on function public.fn_limpar_navegador_dos_cliques(integer, integer) from public, anon, authenticated;
+grant execute on function public.fn_limpar_navegador_dos_cliques(integer, integer) to service_role;
+
+create or replace function public.fn_limpar_navegador_de_contato_anonimizado()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.meta_ads_click_refs
+     set client_ip_address = null, client_user_agent = null, fbp = null
+   where organization_id = new.organization_id
+     and contact_id = new.id
+     and (client_ip_address is not null or client_user_agent is not null or fbp is not null);
+  return new;
+end;
+$$;
+
+revoke execute on function public.fn_limpar_navegador_de_contato_anonimizado() from public, anon, authenticated;
+
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
 --
 -- ⚠️ DE PROPÓSITO, NENHUMA FUNÇÃO É CRIADA DEPOIS DESTE BLOCO. Apêndice que cria
@@ -57637,40 +57727,7 @@ notify pgrst, 'reload schema';
 --      digitada no CRM emitiria `message.sending`, nunca `message.sent`.
 -- Por isso um evento próprio, com o recorte de "humano" que o produto já usa na
 -- 0686 (Inbox do CRM e celular conectado).
-create or replace function public.fn_mensagem_da_equipe_vira_evento()
-returns trigger
-language plpgsql
-security definer
-set search_path to 'public', 'pg_temp'
-as $fn$
-begin
-  -- Grupo não é atendimento de um contato (mesma regra da 0482).
-  if exists (select 1 from public.conversations c
-             where c.id = new.conversation_id
-               and c.organization_id = new.organization_id
-               and c.is_group) then
-    return new;
-  end if;
-
-  perform public.fn_log_event(
-    new.organization_id, 'message.team_sent',
-    jsonb_build_object(
-      'message_id', new.id, 'conversation_id', new.conversation_id,
-      'contact_id', new.contact_id, 'direction', new.direction,
-      'type', new.type, 'status', new.status, 'external_id', new.external_id,
-      'channel_session_id', new.channel_session_id, 'sent_via', new.sent_via,
-      'sent_by_user_id', new.sent_by_user_id,
-      'body_preview', "left"(new.body, 280)
-    )
-  );
-  return new;
-end$fn$;
-
-comment on function public.fn_mensagem_da_equipe_vira_evento() is
-  'Acelera: emite `message.team_sent` para a fala humana de saída (sent_via user/crm/external_device, sem reação/sistema/grupo/histórico importado). É o gatilho "quando a equipe enviar mensagem" das automações — a frase-código do vendedor move o card.';
-
-revoke execute on function public.fn_mensagem_da_equipe_vira_evento() from public, anon, authenticated;
-grant execute on function public.fn_mensagem_da_equipe_vira_evento() to service_role;
+-- A função `fn_mensagem_da_equipe_vira_evento` fica acima da VARREDURA anon (bloco "funções da Acelera").
 
 drop trigger if exists trg_mensagem_da_equipe_vira_evento on public.messages;
 create trigger trg_mensagem_da_equipe_vira_evento
@@ -57712,5 +57769,31 @@ create trigger trg_reply_inbound_revision
   for each row
   when (coalesce(new.metadata ->> 'historico_importado', '') <> 'true')
   execute function public.fn_reply_inbound_revision();
+
+-- ---- navegador no clique do link (migration acelera_0006) ----
+alter table public.meta_ads_click_refs add column if not exists client_ip_address text;
+alter table public.meta_ads_click_refs add column if not exists client_user_agent text;
+alter table public.meta_ads_click_refs add column if not exists fbp text;
+
+comment on column public.meta_ads_click_refs.client_ip_address is
+  'IP de quem clicou no link (acelera_0006). Vai à Meta como client_ip_address.';
+comment on column public.meta_ads_click_refs.client_user_agent is
+  'User agent de quem clicou no link (acelera_0006). Vai à Meta como client_user_agent.';
+comment on column public.meta_ads_click_refs.fbp is
+  'Cookie _fbp repassado pela página na query (acelera_0006). Vai à Meta como fbp.';
+
+notify pgrst, 'reload schema';
+
+-- ---- retenção do navegador do clique (migration acelera_0007) ----
+-- A função `fn_limpar_navegador_dos_cliques` fica acima da VARREDURA anon (bloco "funções da Acelera").
+
+-- A função `fn_limpar_navegador_de_contato_anonimizado` fica acima da VARREDURA anon (bloco "funções da Acelera").
+
+drop trigger if exists trg_limpar_navegador_de_contato_anonimizado on public.contacts;
+create trigger trg_limpar_navegador_de_contato_anonimizado
+  after update of is_anonymized on public.contacts
+  for each row
+  when (new.is_anonymized and not coalesce(old.is_anonymized, false))
+  execute function public.fn_limpar_navegador_de_contato_anonimizado();
 
 notify pgrst, 'reload schema';

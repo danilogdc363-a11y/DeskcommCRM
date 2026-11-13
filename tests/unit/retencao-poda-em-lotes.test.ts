@@ -361,7 +361,7 @@ describe("podarHistorico — o laço de lotes", () => {
     expect(chamadas.some((c) => c.nome === "fn_expurgar_espelho_da_agenda")).toBe(true);
   });
 
-  it("erro em TODOS os drenos: as 14 do rpc + mídia + rascunhos entram nomeadas, sem lançar", async () => {
+  it("erro em TODOS os drenos: as 15 do rpc (14 + o navegador do clique, Acelera) + mídia + rascunhos entram nomeadas, sem lançar", async () => {
     const db: PodaDb = {
       async rpc(nome) {
         return { data: null, error: { message: `permission denied for function ${nome}` } };
@@ -375,8 +375,8 @@ describe("podarHistorico — o laço de lotes", () => {
     };
     const r = await podarHistorico(db, {});
 
-    // 16 drenos: 14 pelo rpc + a mídia + a décima poda (o DELETE do admin).
-    expect(r.falhas).toHaveLength(16);
+    // 17 drenos: 15 pelo rpc + a mídia + a décima poda (o DELETE do admin).
+    expect(r.falhas).toHaveLength(17);
     expect(r.falhas.some((f) => f.includes("conversation_drafts"))).toBe(true);
     expect(r.falhas.some((f) => f.includes("fn_enfileirar_midia_vencida"))).toBe(true);
     expect(r.jobs_apagados).toBe(0);
@@ -430,8 +430,8 @@ describe("podarHistorico — o laço de lotes", () => {
     };
     const r = await podarHistorico(db, {});
 
-    // Só os 14 drenos do rpc falham nesta rodada (mídia e rascunhos vão bem).
-    expect(r.falhas).toHaveLength(14);
+    // Só os 15 drenos do rpc falham nesta rodada (mídia e rascunhos vão bem).
+    expect(r.falhas).toHaveLength(15);
     for (const f of r.falhas) expect(f.length).toBeLessThanOrEqual(300);
   });
 });

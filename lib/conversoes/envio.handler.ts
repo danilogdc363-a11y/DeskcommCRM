@@ -52,6 +52,7 @@ import type {
 } from "@/lib/plataformas-de-anuncio/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lerAtribuicao } from "./leitura-da-atribuicao";
+import { lerIdentidadeParaMeta } from "./identidade-para-meta";
 import { lerValorDaConversa } from "./valor-da-conversa";
 import { lerVendaPeloCanal } from "./venda-pelo-canal";
 import { ehEventoDeEtapa } from "./regras-google";
@@ -452,6 +453,18 @@ export async function processarConversao(
     eventoNaPlataforma: qualificacao?.eventoMeta
       ? (registro?.meta_event_name ?? qualificacao.eventoMeta)
       : null,
+    // A qualidade de correspondência (EMQ): só para a Meta, e só lida aqui,
+    // depois de todas as recusas — nenhuma leitura a mais para evento que não sai.
+    ...(plataforma === "meta_ads"
+      ? {
+          identidade: await lerIdentidadeParaMeta(
+            admin,
+            row.organization_id,
+            lead.id,
+            lead.contact_id,
+          ),
+        }
+      : {}),
   };
 
   // Protocolo já recebido: consultar é a única operação permitida até concluir.

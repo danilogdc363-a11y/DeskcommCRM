@@ -56,6 +56,7 @@ export type PlataformaDeAnuncio = "meta_ads" | "google_ads";
 export type NomeDoEvento =
   | "Purchase"
   | "QualifiedLead"
+  | "LeadSubmitted"
   | `Etapa:${string}`
   | `MetaEtapa:${string}`;
 
@@ -65,9 +66,12 @@ export type NomeDoEvento =
  * Quem monta isto (`lib/conversoes/`) não sabe que campo vira o quê no fio. Quem
  * traduz (o transporte) não sabe de onde veio nem por que foi decidido enviar.
  */
+import type { IdentidadeParaMeta } from "./meta/user-data";
+
 export interface ConversaoOffline {
   organizationId: string;
-  leadId: string;
+  /** `null` no LeadSubmitted por clique CTWA: o evento nasce do clique, sem card. */
+  leadId: string | null;
   evento: NomeDoEvento;
   /**
    * Deduplicação, determinística: `<leadId>:<evento>`.
@@ -115,6 +119,12 @@ export interface ConversaoOffline {
    * `LeadSubmitted`…), enquanto o livro-razão guarda `MetaEtapa:<uuid>`.
    */
   eventoNaPlataforma?: string | null;
+  /**
+   * O que mais o CRM sabe da pessoa (e-mail, nome, local, navegador, clique),
+   * EM CLARO — só a Meta lê, e o hash é do transporte dela. Ausente = só o
+   * telefone, como antes.
+   */
+  identidade?: IdentidadeParaMeta;
 }
 
 /**
