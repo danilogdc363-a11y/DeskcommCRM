@@ -944,6 +944,19 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // Acelera: o funil no período ao lado do que o Meta registrou. Responde
+    // "o CRM está avisando o Meta de cada etapa?" sem abrir o Gerenciador de
+    // Eventos. `manager` pelo mesmo motivo de Meta Ads.
+    href: "/app/resultados-funil",
+    label: "Resultados do funil",
+    description: "Entradas por etapa no período, o que foi enviado ao Meta e o que o Meta registrou.",
+    icon: "ChartBar",
+    group: "analise",
+    section: "Os números do período",
+    minRole: "manager",
+    sidebar: true,
+  },
+  {
     // Irmã de "Desempenho", não a mesma coisa: lá é DESFECHO (funil agora,
     // ganho/perdido por atendente); aqui é o TRABALHO que aconteceu no
     // período, com quem fez cada coisa. Um mês inteiro atendido pela IA e um
