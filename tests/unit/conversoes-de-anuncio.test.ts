@@ -565,6 +565,30 @@ describe("a identidade que a Meta exige em business_messaging (#2098)", () => {
     expect(ev.action_source).toBe("business_messaging");
   });
 
+  it("(Acelera) evento de conversa vai para o conjunto de dados de mensagens", async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      fakeAdmin({
+        ...base,
+        organizations: {
+          settings: {
+            conversions: {
+              meta_page_id: "123456789012345",
+              meta_messaging_dataset_id: "1990922581572129",
+            },
+          },
+        },
+      }) as never,
+    );
+    let url = "";
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (u) => {
+      url = String(u);
+      return new Response('{"events_received":1}', { status: 200 });
+    });
+    expect((await conversaoDeVendaHandler.handle(evento("lead.won"))).status).toBe("ok");
+    // No conjunto do site a Meta recusa: "nenhuma Página associada ao conjunto de dados".
+    expect(url).toContain("/1990922581572129/events");
+  });
+
   it("sem Página, a conta do WhatsApp Business entra no lugar dela", async () => {
     const ev = await vendaEnviada({
       ...base,
@@ -625,7 +649,15 @@ describe("a identidade que a Meta exige em business_messaging (#2098)", () => {
       identidadeDaMeta({
         conversions: { meta_page_id: "12ab", meta_whatsapp_business_account_id: " 104987654321098 " },
       }),
-    ).toEqual({ pageId: null, whatsappBusinessAccountId: "104987654321098" });
+    ).toEqual({
+      pageId: null,
+      whatsappBusinessAccountId: "104987654321098",
+      messagingDatasetId: null,
+    });
+    expect(
+      identidadeDaMeta({ conversions: { meta_messaging_dataset_id: "1990922581572129" } })
+        .messagingDatasetId,
+    ).toBe("1990922581572129");
     expect(identidadeDaMeta(null)).toEqual(SEM_IDENTIDADE);
     expect(identidadeDaMeta({})).toEqual(SEM_IDENTIDADE);
     expect(identidadeDaMeta({ conversions: { report_via_channel: true } })).toEqual(SEM_IDENTIDADE);
