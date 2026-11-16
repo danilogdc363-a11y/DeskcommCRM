@@ -176,6 +176,8 @@ export interface CredencialDeConversao {
   meta?: {
     pageId: string | null;
     whatsappBusinessAccountId: string | null;
+    /** (Acelera) Conjunto de dados de mensagens; ausente = `datasetId`. */
+    messagingDatasetId?: string | null;
   };
   google?: {
     api?: ApiDeConversaoGoogle;
