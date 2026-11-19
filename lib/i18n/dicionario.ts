@@ -10927,6 +10927,8 @@ export const DICIONARIO: Traducoes = {
   "Marcar como ganho": { es: "Marcar como ganado" },
   "Marcar como perdido": { es: "Marcar como perdido" },
   "Marcar como perdido…": { es: "Marcar como perdido…" },
+  "ganho": { es: "ganado" },
+  "perdido": { es: "perdido" },
   "Unificar fichas…": { es: "Unificar fichas…" },
   "Unificar fichas": { es: "Unificar fichas" },
   "Fichas unificadas em": { es: "Fichas unificadas en" },

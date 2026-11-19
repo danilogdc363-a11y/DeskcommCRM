@@ -31,3 +31,10 @@ export function formatarReais(centavos: number | null): string {
   if (centavos == null) return "sem valor";
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+/** Status do negócio em texto de tela (nunca o valor cru do banco). */
+export function rotuloDoStatus(status: string): string {
+  if (status === "won") return "ganho";
+  if (status === "lost") return "perdido";
+  return "aberto";
+}

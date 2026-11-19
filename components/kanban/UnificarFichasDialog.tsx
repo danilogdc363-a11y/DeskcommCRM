@@ -24,7 +24,7 @@ import { apiClient } from "@/lib/api/client";
 import { useT } from "@/hooks/i18n/useT";
 import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 import { usePreviaDaUnificacao, useUnificarFichas } from "@/hooks/kanban/useUnificarFichas";
-import { formatarReais, rotuloDoRepontado, sugerirPrincipal } from "@/lib/kanban/unificar-fichas";
+import { formatarReais, rotuloDoRepontado, rotuloDoStatus, sugerirPrincipal } from "@/lib/kanban/unificar-fichas";
 
 interface LeadResumo {
   id: string;
@@ -118,7 +118,7 @@ export function UnificarFichasDialog({ open, onOpenChange, leadIds, onDone }: Pr
                   <span className="font-medium">{l.title || t("sem título")}</span>
                   <span className="block text-xs text-muted-foreground">
                     {formatarReais(l.value_cents)} · {t("criado em")}{" "}
-                    {new Date(l.created_at).toLocaleDateString(idioma)} · {l.status}
+                    {new Date(l.created_at).toLocaleDateString(idioma)} · {t(rotuloDoStatus(l.status))}
                   </span>
                 </span>
                 {principalId === l.id && <span className="text-xs font-semibold">{t("Fica")}</span>}

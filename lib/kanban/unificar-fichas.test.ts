@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatarReais, rotuloDoRepontado, sugerirPrincipal } from "./unificar-fichas";
+import { formatarReais, rotuloDoRepontado, rotuloDoStatus, sugerirPrincipal } from "./unificar-fichas";
 
 describe("sugerirPrincipal", () => {
   it("prefere o ganho mais antigo (caso Bizzio: @bizziopizza de julho, não o Jeferson de hoje)", () => {
@@ -36,5 +36,13 @@ describe("rótulos", () => {
   it("valor em reais", () => {
     expect(formatarReais(250000)).toMatch(/2\.500,00/);
     expect(formatarReais(null)).toBe("sem valor");
+  });
+});
+
+describe("rotuloDoStatus", () => {
+  it("traduz o status do banco", () => {
+    expect(rotuloDoStatus("won")).toBe("ganho");
+    expect(rotuloDoStatus("lost")).toBe("perdido");
+    expect(rotuloDoStatus("open")).toBe("aberto");
   });
 });
