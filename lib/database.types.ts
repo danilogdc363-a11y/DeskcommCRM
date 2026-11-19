@@ -6940,6 +6940,9 @@ export type Database = {
           last_activity_at: string | null;
           lost_from_stage_id: string | null;
           lost_reason: string | null;
+          merged_at: string | null;
+          merged_by_user_id: string | null;
+          merged_into_lead_id: string | null;
           organization_id: string;
           owner_agent_id: string | null;
           owner_kind: string | null;
@@ -6978,6 +6981,9 @@ export type Database = {
           last_activity_at?: string | null;
           lost_from_stage_id?: string | null;
           lost_reason?: string | null;
+          merged_at?: string | null;
+          merged_by_user_id?: string | null;
+          merged_into_lead_id?: string | null;
           organization_id: string;
           owner_agent_id?: string | null;
           owner_kind?: string | null;
@@ -7015,6 +7021,9 @@ export type Database = {
           last_activity_at?: string | null;
           lost_from_stage_id?: string | null;
           lost_reason?: string | null;
+          merged_at?: string | null;
+          merged_by_user_id?: string | null;
+          merged_into_lead_id?: string | null;
           organization_id?: string;
           owner_agent_id?: string | null;
           owner_kind?: string | null;
@@ -15791,6 +15800,15 @@ export type Database = {
           p_contato_principal: string;
           p_contatos_secundarios: string[];
           p_organization_id: string;
+        };
+        Returns: Json;
+      };
+      fn_mesclar_negocios: {
+        Args: {
+          p_negocio_principal: string;
+          p_negocios_secundarios: string[];
+          p_organization_id: string;
+          p_previa?: boolean;
         };
         Returns: Json;
       };

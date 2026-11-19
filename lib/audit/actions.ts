@@ -72,6 +72,8 @@ export const AUDIT_ACTIONS = [
   "contact.anonymized",
   "contact.merge_pending",
   "contact.merged",
+  // "Unificar fichas" de negócio (acelera 0008): quem juntou quais negócios em qual.
+  "lead.merged",
   "contact.aniversario_emitido",
   /**
    * A varredura de data do funil (#989) emitiu o aviso de "faltam N dias". A

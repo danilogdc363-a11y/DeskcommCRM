@@ -261,6 +261,16 @@ const AUTHENTICATED_PERMITIDO: readonly Excecao[] = [
       "Mesmo desenho de fn_conversation_assign, acima.",
   },
   {
+    fn: "fn_mesclar_negocios(uuid,uuid,uuid[],boolean)",
+    razao:
+      "ACELERA (acelera_0008, 'Unificar fichas'). A rota POST /api/v1/leads/merge " +
+      "(app/api/v1/leads/merge/route.ts) chama com a sessão do usuário, de " +
+      "propósito: é `auth.uid()` que faz a função reconferir o papel (piso " +
+      "`manager`), gravar `merged_by_user_id` e assinar a atividade da timeline; " +
+      "ela também chama fn_mesclar_contatos, que precisa do mesmo auth.uid(). " +
+      "Mesmo desenho de fn_mesclar_contatos, acima.",
+  },
+  {
     fn: "fn_log_event(uuid,text,jsonb)",
     razao:
       "Chamada de dentro dos triggers de domínio; o grant a authenticated foi " +
