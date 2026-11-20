@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   // UUID público identifica o link; a organização só vem da linha persistida.
   const { data, error } = await admin
     .from("ad_tracking_links")
-    .select("id,organization_id,name,whatsapp_e164,message_template,use_case,utm,enabled")
+    .select("id,organization_id,name,whatsapp_e164,message_template,use_case,utm,enabled,include_ref")
     .eq("id", id.data)
     .eq("enabled", true)
     .maybeSingle();

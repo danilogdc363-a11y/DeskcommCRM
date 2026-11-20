@@ -9,7 +9,7 @@ import { textoSemRef, whatsAppUrl } from "../pagina-de-captura";
 export async function listarLinks(admin: SupabaseClient, org: string): Promise<LinkRastreavel[]> {
   const { data, error } = await admin
     .from("ad_tracking_links")
-    .select("id,organization_id,name,whatsapp_e164,message_template,use_case,utm,enabled")
+    .select("id,organization_id,name,whatsapp_e164,message_template,use_case,utm,enabled,include_ref")
     .eq("organization_id", org)
     .order("created_at", { ascending: false });
   if (error) throw new Error("Não foi possível ler os links.");
@@ -54,7 +54,7 @@ export async function destinoDoLink(
   }
   return whatsAppUrl(
     link.whatsapp_e164,
-    ref
+    ref && link.include_ref !== false
       ? mensagemComRef(link.message_template).replaceAll("{token}", ref.token)
       : textoSemRef(mensagemComRef(link.message_template)),
   );

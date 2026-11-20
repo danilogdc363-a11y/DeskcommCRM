@@ -27,6 +27,7 @@ const initial: LinkInput = {
   use_case: "site",
   utm: {},
   enabled: true,
+  include_ref: true,
 };
 const escapeAttr = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -272,9 +273,19 @@ export function LinksRastreaveis({
           />
           {t("Link ativo")}
         </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={form.include_ref}
+            onChange={(e) => setForm({ ...form, include_ref: e.target.checked })}
+          />
+          {t("Incluir o código [ref] na mensagem")}
+        </label>
         <p className="text-sm break-words">
           {t("Prévia da mensagem")}:{" "}
-          {mensagemComRef(form.message_template).replace("{token}", "ABC234")}
+          {form.include_ref
+            ? mensagemComRef(form.message_template).replace("{token}", "ABC234")
+            : form.message_template}
         </p>
         <div className="flex gap-2">
           <Button type="submit" disabled={pending}>

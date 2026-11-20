@@ -10131,6 +10131,7 @@ export type Database = {
           use_case: string
           utm: Json
           enabled: boolean
+          include_ref: boolean
           created_at: string
           updated_at: string
         }
@@ -10143,6 +10144,7 @@ export type Database = {
           use_case: string
           utm?: Json
           enabled?: boolean
+          include_ref?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -10155,6 +10157,7 @@ export type Database = {
           use_case?: string
           utm?: Json
           enabled?: boolean
+          include_ref?: boolean
           created_at?: string
           updated_at?: string
         }

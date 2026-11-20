@@ -13,6 +13,8 @@ export const linkSchema = z.object({
   use_case: z.enum(["site", "anuncio", "organico"]),
   utm: z.record(z.string(), z.string().max(200)).refine((v) => Object.keys(v).length <= 10),
   enabled: z.boolean(),
+  /** (Acelera) Sem o `[ref:]` quando a origem chega pelo telefone (formulário). */
+  include_ref: z.boolean().default(true),
 });
 export type LinkInput = z.infer<typeof linkSchema>;
 export type LinkRastreavel = LinkInput & { id: string; organization_id: string };
