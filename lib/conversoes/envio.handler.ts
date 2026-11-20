@@ -60,6 +60,7 @@ import {
   ehEventoDeEtapaMeta,
   rotuloDoEventoDaMeta,
 } from "./regras-meta";
+import { ehEventoDePosVenda } from "./pos-venda";
 import { lerRegistro, registraEnvio } from "./registro-de-envio";
 
 const CONSUMER_KEY = "conversoes.venda";
@@ -83,6 +84,17 @@ export interface EventoDeEtapa {
   evento?: NomeDoEvento;
   googleActionId?: string;
   eventoMeta?: string;
+  /**
+   * Pós-venda (`pos-venda.ts`): o valor que o evento leva. Só o `ClienteAtivo`
+   * tem valor — a mensalidade —, e pende `sem_valor` quando ele falta. Ausente
+   * nos eventos de etapa e no cancelamento, que nunca levam valor.
+   */
+  valorCentavos?: number | null;
+  /**
+   * O negócio, quando o evento é de OUTRA entidade (o `appointment.completed`
+   * do `ClienteAtivo` é do compromisso). Ausente = `row.entity_id`.
+   */
+  leadId?: string;
 }
 
 export async function processarConversao(
@@ -95,18 +107,20 @@ export async function processarConversao(
     row.event_type === "ad_conversion.retry_requested" &&
     (ehEventoDeEtapa(row.payload.event_name) ||
       ehEventoDeEtapaMeta(row.payload.event_name) ||
+      ehEventoDePosVenda(row.payload.event_name) ||
       row.payload.event_name === "LeadSubmitted")
   )
     return ok("skipped", "outro_evento");
-  if (!row.entity_id) return ok("skipped", "sem_entidade");
+  const leadId = qualificacao?.leadId ?? row.entity_id;
+  if (!leadId) return ok("skipped", "sem_entidade");
 
   const admin = createAdminClient();
 
   // ⚠️ Filtro de organização junto do id: o client é service-role e bypassa RLS.
   const { data, error } = await admin
     .from("crm_leads")
-    .select("id, status, value_cents, currency, closed_at, contact_id")
-    .eq("id", row.entity_id)
+    .select("id, status, value_cents, currency, closed_at, contact_id, pipeline_id")
+    .eq("id", leadId)
     .eq("organization_id", row.organization_id)
     .maybeSingle();
 
@@ -129,6 +143,7 @@ export async function processarConversao(
     currency: string | null;
     closed_at: string | null;
     contact_id: string | null;
+    pipeline_id: string | null;
   };
 
   // O filtro que faz `lead.stage_changed` valer a pena escutar: a grande maioria
@@ -140,6 +155,12 @@ export async function processarConversao(
   if (registro?.status === "sent") {
     return ok("skipped", "ja_enviada");
   }
+  // O ganho no funil de CLIENTES não é venda nova: o negócio ali é o clone de
+  // uma venda que já saiu como `Purchase` no funil de vendas. Mandar de novo
+  // contaria o mesmo dinheiro duas vezes; o que o cliente paga depois sai como
+  // renovação (`pos-venda.handler.ts`). Protocolo pendente segue: já foi enviado.
+  if (!qualificacao && !registro?.remote_request_id && (await ehFunilDeClientes(admin, row.organization_id, lead.pipeline_id)))
+    return ok("skipped", "funil_de_clientes");
 
   const leitura =
     registro?.remote_request_id && ehPlataformaConhecida(registro.platform)
@@ -167,9 +188,16 @@ export async function processarConversao(
   if (qualificacao?.eventoMeta && plataforma !== "meta_ads")
     return ok("skipped", "etapa_sem_origem_meta");
 
+  /** Pós-venda que é compra (a renovação): leva valor e o exige. */
+  const posVendaComValor = qualificacao?.valorCentavos !== undefined;
   /** O valor que a compra leva — `null` quando sai sem valor (0436). */
-  let valorDaVenda: number | null =
-    lead.value_cents !== null && lead.value_cents > 0 ? lead.value_cents : null;
+  let valorDaVenda: number | null = posVendaComValor
+    ? (qualificacao?.valorCentavos ?? null)
+    : lead.value_cents !== null && lead.value_cents > 0
+      ? lead.value_cents
+      : null;
+  /** O valor que ESTE evento leva: a compra, a renovação, ou nada (etapa). */
+  const valorDoEvento = () => (!qualificacao || posVendaComValor ? valorDaVenda : null);
   let moedaDaVenda: string | null = lead.currency;
   /** De onde veio o valor (ou por que faltou), quando ele foi lido da conversa. */
   let detalheDoValor: string | null = null;
@@ -189,11 +217,7 @@ export async function processarConversao(
       status,
       motivo,
       eventoId: `${lead.id}:${EVENTO}`,
-      valorCentavos: qualificacao
-        ? null
-        : registro?.remote_request_id
-          ? registro.value_cents
-          : valorDaVenda,
+      valorCentavos: registro?.remote_request_id ? registro.value_cents : valorDoEvento(),
       ...(qualificacao
         ? {
             ocorridoEm: registro?.event_occurred_at ?? qualificacao.ocorridoEm,
@@ -241,7 +265,8 @@ export async function processarConversao(
     !registro?.remote_request_id &&
     valorDaVenda === null &&
     plataforma === "meta_ads";
-  let semValor = !qualificacao && !registro?.remote_request_id && valorDaVenda === null;
+  let semValor =
+    (!qualificacao || posVendaComValor) && !registro?.remote_request_id && valorDaVenda === null;
   const lerOValorNaConversa = async () => {
     const lido = await lerValorDaConversa(
       admin,
@@ -304,7 +329,7 @@ export async function processarConversao(
       plataforma === "meta_ads" &&
       eventoNoCanal !== null &&
       !registro?.remote_request_id &&
-      (qualificacao !== undefined || valorDaVenda !== null || valorPodeVirDaConversa)
+      (valorDoEvento() !== null || (qualificacao !== undefined && !posVendaComValor) || valorPodeVirDaConversa)
     ) {
       // A chave vem ANTES de tudo (doc 76): desligada — o padrão —, nem as
       // conversas são lidas, e nada sai para o provedor.
@@ -323,7 +348,7 @@ export async function processarConversao(
         };
       }
       if (canal && valorPodeVirDaConversa) await lerOValorNaConversa();
-      if (canal && (qualificacao !== undefined || valorDaVenda !== null)) {
+      if (canal && (valorDoEvento() !== null || (qualificacao !== undefined && !posVendaComValor))) {
         const pelo = await canal.reportar({
           event: eventoNoCanal,
           eventId: `${lead.id}:${EVENTO}`,
@@ -333,7 +358,7 @@ export async function processarConversao(
               : (lead.closed_at ?? row.created_at ?? Date.now()),
           ),
           phone: telefone,
-          valueCents: qualificacao ? null : valorDaVenda,
+          valueCents: valorDoEvento(),
           currency: moedaDaVenda ?? "BRL",
         });
         return desfecho(doCanal(pelo), false);
@@ -404,7 +429,11 @@ export async function processarConversao(
     if (qualificacao.eventoMeta) {
       if (!salvo?.event_occurred_at || !salvo.meta_event_name)
         throw new Error("Snapshot do evento de etapa ausente.");
-      qualificacao = { ocorridoEm: salvo.event_occurred_at, eventoMeta: salvo.meta_event_name };
+      qualificacao = {
+        ocorridoEm: salvo.event_occurred_at,
+        eventoMeta: salvo.meta_event_name,
+        ...(posVendaComValor ? { valorCentavos: valorDaVenda } : {}),
+      };
     } else {
       if (!salvo?.event_occurred_at || !salvo.google_action_id)
         throw new Error("Snapshot da qualificação ausente.");
@@ -438,7 +467,7 @@ export async function processarConversao(
     // A coluna tem `DEFAULT 'BRL'` e um CHECK de ISO-4217; o fallback só cobre a
     // linha que teve a moeda apagada à mão.
     moeda: moedaDaVenda ?? "BRL",
-    valorCentavos: qualificacao ? null : valorDaVenda,
+    valorCentavos: valorDoEvento(),
     // O nome no fio do evento de etapa da Meta: o retrato, e só na falta dele a
     // regra — mudar a regra depois não rebatiza uma conversão já registrada.
     eventoNaPlataforma: qualificacao?.eventoMeta
@@ -523,6 +552,27 @@ export async function processarConversao(
     );
     return ok("skipped", "recusado_pela_plataforma");
   }
+}
+
+/**
+ * O negócio está no funil de quem JÁ é cliente (`is_client_pipeline`, 0262)?
+ * Lança em falha de leitura: o consumidor reagenda, e decidir "não é" no escuro
+ * mandaria a mesma venda duas vezes.
+ */
+export async function ehFunilDeClientes(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  pipelineId: string | null,
+): Promise<boolean> {
+  if (!pipelineId) return false;
+  const { data, error } = await admin
+    .from("crm_pipelines")
+    .select("is_client_pipeline")
+    .eq("organization_id", organizationId)
+    .eq("id", pipelineId)
+    .maybeSingle();
+  if (error) throw new Error(`leitura do funil falhou: ${error.message}`);
+  return (data as { is_client_pipeline?: boolean } | null)?.is_client_pipeline === true;
 }
 
 /**

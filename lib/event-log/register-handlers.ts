@@ -27,6 +27,7 @@ import { CONSUMIDORES_DOS_CANAIS } from "@/lib/channels/consumidores";
 import { webPushInboundHandler } from "@/lib/notifications/push.handler";
 import { conversaoDeQualificacaoHandler } from "@/lib/conversoes/qualificacao.handler";
 import { conversaoDeEtapaMetaHandler } from "@/lib/conversoes/etapa-meta.handler";
+import { conversaoDePosVendaHandler } from "@/lib/conversoes/pos-venda.handler";
 import { conversaoDeNascimentoMetaHandler } from "@/lib/conversoes/nascimento-meta.handler";
 import { conversaoDeCliqueMetaHandler } from "@/lib/conversoes/clique-meta.handler";
 import { conversaoDeVendaHandler } from "@/lib/conversoes/envio.handler";
@@ -120,6 +121,7 @@ export function ensureHandlersRegistered(): void {
   registerHandler(conversaoDeVendaHandler);
   registerHandler(conversaoDeQualificacaoHandler);
   registerHandler(conversaoDeEtapaMetaHandler);
+  registerHandler(conversaoDePosVendaHandler);
   registerHandler(conversaoDeNascimentoMetaHandler);
   registerHandler(conversaoDeCliqueMetaHandler);
   _registered = true;

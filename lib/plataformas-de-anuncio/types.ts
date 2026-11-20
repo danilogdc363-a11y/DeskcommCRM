@@ -54,7 +54,14 @@ export type PlataformaDeAnuncio = "meta_ads" | "google_ads";
  * (0436) e `MetaEtapa:<uuid>` das da Meta (0524).
  */
 export type NomeDoEvento =
-  "Purchase" | "LeadSubmitted" | "QualifiedLead" | `Etapa:${string}` | `MetaEtapa:${string}`;
+  | "Purchase"
+  | "LeadSubmitted"
+  | "QualifiedLead"
+  | `Etapa:${string}`
+  | `MetaEtapa:${string}`
+  // Pós-venda (`lib/conversoes/pos-venda.ts`): cliente ativo no mês e cancelamento.
+  | `ClienteAtivo:${string}`
+  | "Cancelamento";
 
 /**
  * Uma conversão pronta para sair — no formato da CASA, não no da plataforma.

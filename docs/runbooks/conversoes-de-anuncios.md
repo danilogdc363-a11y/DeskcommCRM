@@ -36,7 +36,7 @@ Fontes oficiais consultadas em 24/09/2026 UTC:
 
 Correção e evolução da integração já distribuída no núcleo. Reutiliza contatos, funil, eventos e configuração por organização. Não cria outro CRM nem transforma o envio em requisito para o atendimento.
 
-Esta entrega usa a origem capturada no contato, os eventos de venda `Purchase`, as etapas configuradas do Google (`QualifiedLead` e `Etapa:<uuid>`, 0436) e as etapas configuradas da Meta (`MetaEtapa:<uuid>`, 0524 — seção abaixo). Captura web completa para Meta, atribuição por nova jornada de cliente antigo, conversões otimizadas por dados pessoais e painéis de ROAS são evoluções separadas. Não são anunciados como implementados.
+Esta entrega usa a origem capturada no contato, os eventos de venda `Purchase`, as etapas configuradas do Google (`QualifiedLead` e `Etapa:<uuid>`, 0436) as etapas configuradas da Meta (`MetaEtapa:<uuid>`, 0524 — seção abaixo) e o pós-venda do funil de clientes para a Meta (cliente ativo e cancelamento — seção abaixo). Captura web completa para Meta, atribuição por nova jornada de cliente antigo, conversões otimizadas por dados pessoais e painéis de ROAS são evoluções separadas. Não são anunciados como implementados.
 
 ## Captura Google e qualificação por etapa
 
@@ -65,6 +65,18 @@ Fontes do contrato Google: [identificadores e evento Data Manager](https://devel
 Migration 0402 preserva conexões existentes e grants privados, acrescenta identificadores de clique, etapa opcional com FK composta por organização e snapshot de qualificação. A assinatura anterior da RPC de reenvio permanece compatível com compras.
 
 Aceite do piloto: primeiro verificar captura real do identificador e da mensagem; depois mover um negócio elegível à etapa escolhida, conferir o evento de qualificação e seu diagnóstico; por fim ganhar o negócio com valor e conferir a compra. Designar um único emissor por evento durante a comparação com outro rastreador, evitando dupla contagem.
+
+
+## Pós-venda para a Meta: cliente ativo e cancelamento
+
+Para a Meta aprender quem **fica**, não só quem fecha, o cliente ativo continua gerando sinal depois da venda. O contrato é mensal, então não há "renovação" para marcar: o sinal é a interação forte de quem está ativo. Regras puras em `lib/conversoes/pos-venda.ts`; consumidor `conversoes.pos_venda` (`lib/conversoes/pos-venda.handler.ts`), em `appointment.completed` e `lead.lost`.
+
+- **Onde mora o cliente ativo:** num negócio **aberto** do funil marcado como funil de clientes (`crm_pipelines.is_client_pipeline`), com a mensalidade em `crm_leads.recurring_value_cents`.
+- **`ClienteAtivo`:** quando uma reunião do contato é marcada como **realizada** na agenda (`appointment.completed`) e ele tem negócio aberto no funil de clientes, sai o evento personalizado `ClienteAtivo` com valor = a mensalidade. **Um por negócio por mês** (no fuso da organização): chave `ClienteAtivo:<AAAA-MM>`, `event_id = <negócio>:ClienteAtivo:<AAAA-MM>`. Três reuniões no mesmo mês contam uma vez; cada mês ativo soma uma mensalidade. Sem mensalidade, pende `sem_valor` — nunca zero. Reunião agendada, falta ou reunião de quem não está no funil de clientes não contam.
+- **`Cancelamento`:** perder um negócio **do funil de clientes** sai como o evento personalizado `Cancelamento`, sem valor, uma vez por negócio. Perder um orçamento no funil de vendas não é cancelamento e não sai.
+- **Sem dupla contagem:** a venda inicial continua `Purchase` com `event_id = <negócio>:Purchase`. O ganho no funil de clientes **não** manda `Purchase` (motivo `funil_de_clientes`): é o clone de uma venda já reportada.
+- **Travas:** só para contato atribuído à Meta (a mesma leitura de atribuição da venda); o valor e o instante gravados na primeira tentativa valem para as seguintes.
+- **Fora do escopo:** clique em link (não prova engajamento) e NPS (entra como outro gatilho do `ClienteAtivo` quando o formulário existir); reenvio manual pela tela de Histórico (a RPC `fn_solicitar_reenvio_conversao` ainda não aceita `ClienteAtivo:`/`Cancelamento`); pelo canal da conversa os dois eventos ficam na pendência `evento_fora_do_canal`, porque o vocabulário do canal não os tem.
 
 ## Contratos e verificação
 
