@@ -6,8 +6,8 @@
  * (`ad_insights_connections`). Irmã de
  * `app/api/v1/plataformas-de-anuncio/google/callback/route.ts`.
  *
- * É retorno de NAVEGADOR: todo desfecho volta para `/app/settings/meta-ads` com
- * `?erro=<código>` ou `?ok=1`, nunca JSON.
+ * É retorno de NAVEGADOR: todo desfecho volta, por ponte (ver `voltar`), para
+ * `/app/settings/meta-ads` com `?erro=<código>` ou `?ok=1`, nunca JSON.
  *
  * ─── A ORDEM DOS PASSOS É CONTRATO ──────────────────────────────────────────
  * 1. `error` na query ANTES de tudo: "Cancelar" não é falha.
@@ -23,6 +23,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { NOME_DO_VINCULO, vinculoConfere } from "@/lib/agenda/google/vinculo";
 import { audit } from "@/lib/audit";
+import { respostaDePonte } from "@/lib/auth/ponte-de-volta";
+import { marcaDaSaida } from "@/lib/branding/saida";
 import { env } from "@/lib/env";
 import { supportCallbackWriteAllowed } from "@/lib/impersonate/support";
 import { logger } from "@/lib/logger";
@@ -40,11 +42,30 @@ import { encryptWebhookSecret } from "@/lib/webhooks/secrets";
 
 export const dynamic = "force-dynamic";
 
-function voltar(base: string, params: Record<string, string>): NextResponse {
+/**
+ * A volta é por PÁGINA-PONTE, não por redirect.
+ *
+ * O cookie de sessão do CRM é `SameSite=Strict` e não viaja numa navegação cuja
+ * cadeia começou em `facebook.com`. Um 302 daqui para `/app/settings/meta-ads`
+ * ainda pertence a essa cadeia: o `proxy.ts` não via a sessão e mandava a
+ * pessoa para `/login?next=...`, embora a conexão já estivesse gravada. A ponte
+ * devolve um HTML 200 no nosso origin; o `location.replace` de dentro dele é
+ * iniciado por documento nosso (same-site) e o cookie viaja. Mesmo desenho do
+ * Google (`app/api/v1/agenda/google/callback/route.ts`) e de
+ * `lib/auth/ponte-de-volta.ts`. Não se afrouxa o cookie de sessão.
+ */
+async function voltar(base: string, params: Record<string, string>): Promise<NextResponse> {
   const url = new URL("/app/settings/meta-ads", base || "http://localhost:3000");
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const resposta = NextResponse.redirect(url);
+  const marca = await marcaDaSaida(null);
+  const ponte = respostaDePonte(
+    `${url.pathname}${url.search}`,
+    marca.nome,
+    "Voltando para o Meta Ads…",
+  );
+  const resposta = new NextResponse(ponte.body, { status: ponte.status, headers: ponte.headers });
   // Toda saída passa por aqui: o vínculo morre com o fluxo, sucesso ou erro.
+  // `Set-Cookie` vale igual num 200.
   resposta.cookies.set(NOME_DO_VINCULO, "", {
     httpOnly: true,
     sameSite: "lax",
@@ -63,7 +84,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // `meta_recusou`, e a tela explica a causa mais comum (acesso avançado).
   const recusa = url.searchParams.get("error");
   if (recusa) {
-    return voltar(base, { erro: recusa === "access_denied" ? "cancelado" : "meta_recusou" });
+    return await voltar(base, { erro: recusa === "access_denied" ? "cancelado" : "meta_recusou" });
   }
 
   // 2. `state` antes do `code`. Sob `try`: a rota é pública e `verificarEstado`
@@ -78,27 +99,27 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     logger.error("[meta-ads.oauth.callback] state não verificável", {
       motivo: erro instanceof Error ? erro.message : String(erro),
     });
-    return voltar(base, { erro: "estado_invalido" });
+    return await voltar(base, { erro: "estado_invalido" });
   }
-  if (!estado) return voltar(base, { erro: "estado_invalido" });
+  if (!estado) return await voltar(base, { erro: "estado_invalido" });
 
   if (!vinculoConfere(req.cookies.get(NOME_DO_VINCULO)?.value, estado.nonce, env.INTERNAL_SECRET)) {
     logger.warn("[meta-ads.oauth.callback] vínculo do navegador não confere", {
       organizationId: estado.organizationId,
     });
-    return voltar(base, { erro: "estado_invalido" });
+    return await voltar(base, { erro: "estado_invalido" });
   }
 
   const code = url.searchParams.get("code");
-  if (!code) return voltar(base, { erro: "sem_codigo" });
+  if (!code) return await voltar(base, { erro: "sem_codigo" });
 
   if (!(await supportCallbackWriteAllowed(estado.organizationId, estado.userId, estado.authSessionId))) {
-    return voltar(base, { erro: "estado_invalido" });
+    return await voltar(base, { erro: "estado_invalido" });
   }
 
   const admin = createAdminClient();
   const app = appDeLoginDaMeta();
-  if (!app) return voltar(base, { erro: "app_nao_configurado" });
+  if (!app) return await voltar(base, { erro: "app_nao_configurado" });
 
   // O retorno vale UMA vez. A tabela de nonces é a mesma do Google (a chave é o
   // nonce aleatório, não o provedor). Qualquer erro recusa: sem gravar não há
@@ -109,7 +130,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     user_id: estado.userId,
     expira_em: new Date(estado.expiraEmMs).toISOString(),
   });
-  if (erroDoNonce) return voltar(base, { erro: "estado_invalido" });
+  if (erroDoNonce) return await voltar(base, { erro: "estado_invalido" });
 
   // 3. Código → token curto → token de longa duração.
   const agora = new Date();
@@ -119,7 +140,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       organizationId: estado.organizationId,
       motivo: curto.motivo,
     });
-    return voltar(base, { erro: curto.recursoIndisponivel ? "meta_recusou" : "troca_falhou" });
+    return await voltar(base, { erro: curto.recursoIndisponivel ? "meta_recusou" : "troca_falhou" });
   }
   const longo = await trocarPorTokenDeLongaDuracao(app, curto.accessToken, { agora });
   if (!longo.ok) {
@@ -127,12 +148,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       organizationId: estado.organizationId,
       motivo: longo.motivo,
     });
-    return voltar(base, { erro: longo.recursoIndisponivel ? "meta_recusou" : "troca_falhou" });
+    return await voltar(base, { erro: longo.recursoIndisponivel ? "meta_recusou" : "troca_falhou" });
   }
 
   // 4. Cifra antes do upsert.
   const cifrado = await encryptWebhookSecret(admin, longo.accessToken);
-  if (!cifrado) return voltar(base, { erro: "cifra_indisponivel" });
+  if (!cifrado) return await voltar(base, { erro: "cifra_indisponivel" });
 
   // Sem `default_account_id` nos valores: o upsert mantém a conta padrão que a
   // pessoa já tinha escolhido.
@@ -151,7 +172,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       organizationId: estado.organizationId,
       detalhe: error.message,
     });
-    return voltar(base, { erro: "erro_ao_gravar" });
+    return await voltar(base, { erro: "erro_ao_gravar" });
   }
 
   await audit({
@@ -164,5 +185,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     metadata: { platform: "meta_ads", via: "login_com_facebook", token_trocado: true },
   });
 
-  return voltar(base, { ok: "1" });
+  return await voltar(base, { ok: "1" });
 }
