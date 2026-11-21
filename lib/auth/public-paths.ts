@@ -153,6 +153,11 @@ export const PUBLIC_PATHS: RegExp[] = [
   // (Acelera) DOSSIÊ DO LEAD para o Acelera OS: sessão OU Bearer `dsk_…` com
   // `mcp:read`, resolvidos DENTRO da rota (`app/api/v1/leads/[id]/dossie`).
   /^\/api\/v1\/leads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/dossie$/i,
+  // (Acelera) MÍDIA DA MENSAGEM para o Acelera OS transcrever o histórico
+  // comercial: sessão OU Bearer `dsk_…` com `mcp:read`, resolvidos DENTRO da
+  // rota (`app/api/v1/messages/[id]/media`). Só GET existe ali. Id em forma de
+  // UUID e âncora `$`: `/api/v1/messages/[id]` e irmãos seguem só-sessão.
+  /^\/api\/v1\/messages\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/media$/i,
   // MARCAR/REMARCAR/CANCELAR COMPROMISSO SERVER-TO-SERVER. Mesma dualidade dos
   // dois de cima: sessão OU Bearer `dsk_…`, resolvidos por `lib/api/auth-dual.ts`
   // DENTRO da rota (`app/api/v1/agenda/agendamentos/route.ts`, função

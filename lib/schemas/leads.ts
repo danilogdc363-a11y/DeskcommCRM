@@ -351,3 +351,26 @@ export const retomarLeadSchema = z.object({
   stage_id: z.string().uuid().optional(),
 });
 export type RetomarLeadBody = z.infer<typeof retomarLeadSchema>;
+
+/**
+ * leadsMergeSchema → POST /api/v1/leads/merge ("Unificar fichas", acelera 0008).
+ *
+ * `preview: true` só conta o que seria juntado (a tela mostra antes do
+ * Confirmar); sem ele, junta de verdade. Teto de 20 pelo mesmo motivo da fusão
+ * de contatos: a função trava as linhas enquanto reponta.
+ */
+export const leadsMergeSchema = z
+  .object({
+    primary_lead_id: z.string().uuid(),
+    secondary_lead_ids: z.array(z.string().uuid()).min(1).max(20),
+    preview: z.boolean().optional(),
+  })
+  .refine((v) => !v.secondary_lead_ids.includes(v.primary_lead_id), {
+    message: "O negócio principal não pode estar entre os que serão absorvidos.",
+    path: ["secondary_lead_ids"],
+  })
+  .refine((v) => new Set(v.secondary_lead_ids).size === v.secondary_lead_ids.length, {
+    message: "Negócio repetido na seleção.",
+    path: ["secondary_lead_ids"],
+  });
+export type LeadsMergeInput = z.infer<typeof leadsMergeSchema>;

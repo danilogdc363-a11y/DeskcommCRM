@@ -168,6 +168,8 @@ export type ActivityType =
    * timeline cairia no fallback.
    */
   | "contacts_merged"
+  /** ACELERA (fork): "Unificar fichas" — `fn_mesclar_negocios` (acelera 0008) grava o literal `'leads_merged'` no negócio principal. */
+  | "leads_merged"
   /**
    * O negócio nasceu da TROCA DE FUNIL (`POST /api/v1/leads/[id]/clone`).
    *
@@ -333,6 +335,7 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
   // cadastros da mesma pessoa viraram um — e é por isso que este negócio pode
   // ter mudado de contato sem ninguém tê-lo movido.
   contacts_merged: "Contatos duplicados juntados",
+  leads_merged: "Fichas unificadas",
   moved_from_pipeline: "Veio de outro funil",
   proposal_drafted: "Rascunho de proposta criado",
   proposal_sent: "Proposta enviada",
