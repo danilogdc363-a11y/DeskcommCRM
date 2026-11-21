@@ -19836,6 +19836,51 @@ export const DICIONARIO: Traducoes = {
   "cliques": { es: "clics" },
   "com falha": { es: "con error" },
   "pulados": { es: "omitidos" },
+  "Leads novos": { es: "Leads nuevos" },
+  "Reunião marcada": { es: "Reunión agendada" },
+  "Reunião feita": { es: "Reunión realizada" },
+  "Fecharam": { es: "Cerraron" },
+  "Raio-X do período": { es: "Radiografía del período" },
+  "Receita fechada": { es: "Ingresos cerrados" },
+  "novos clientes": { es: "nuevos clientes" },
+  "ticket médio de": { es: "ticket promedio de" },
+  "Retorno sobre o investido": { es: "Retorno sobre lo invertido" },
+  "Receita fechada ÷ investido em anúncios": { es: "Ingresos cerrados ÷ invertido en anuncios" },
+  "Investido": { es: "Invertido" },
+  "Meta Ads, sem imposto": { es: "Meta Ads, sin impuestos" },
+  "Leads gerados": { es: "Leads generados" },
+  "por lead": { es: "por lead" },
+  "Custo por cliente fechado": { es: "Costo por cliente cerrado" },
+  "Considerando o valor como mensalidade": { es: "Considerando el valor como mensualidad" },
+  "O funil": { es: "El embudo" },
+  "cada": { es: "cada uno" },
+  "Leads criados no período e até onde chegaram. A receita conta quem fechou no período, mesmo tendo chegado antes.":
+    {
+      es: "Leads creados en el período y hasta dónde llegaron. Los ingresos cuentan a quien cerró en el período, aunque haya llegado antes.",
+    },
+  "Fechados": { es: "Cerrados" },
+  "Nenhum negócio fechado no período.": { es: "Ningún negocio cerrado en el período." },
+  "Custo por lead, semana a semana": { es: "Costo por lead, semana a semana" },
+  "Sem investimento, retorno, custo por lead, CAC e payback ficam em branco.": {
+    es: "Sin inversión, el retorno, el costo por lead, el CAC y el payback quedan en blanco.",
+  },
+  "Reuniões marcadas": { es: "Reuniones agendadas" },
+  "Reuniões feitas": { es: "Reuniones realizadas" },
+  "A conta de anúncios não está conectada em Meta Ads.": {
+    es: "La cuenta publicitaria no está conectada en Meta Ads.",
+  },
+  "A instalação não consegue abrir o token de Meta Ads.": {
+    es: "La instalación no puede abrir el token de Meta Ads.",
+  },
+  "Escolha a conta de anúncios padrão em Meta Ads.": {
+    es: "Elija la cuenta publicitaria predeterminada en Meta Ads.",
+  },
+  "O Meta recusou a leitura do investimento.": { es: "Meta rechazó la lectura de la inversión." },
+  "Investimento indisponível.": { es: "Inversión no disponible." },
+  "Leads que chegaram no período": { es: "Leads que llegaron en el período" },
+  "Leads criados no período e até onde cada um chegou até hoje, contando quem passou da etapa.": {
+    es: "Leads creados en el período y hasta dónde llegó cada uno hasta hoy, contando a quien pasó la etapa.",
+  },
 };
 
 /**

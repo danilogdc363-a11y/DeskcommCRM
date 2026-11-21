@@ -405,3 +405,74 @@ export function diasCobertosPeloMeta(dias: string[], agora: Date): Set<string> {
   const limite = agora.getTime() - DIAS_GUARDADOS_PELO_META * 86_400_000;
   return new Set(dias.filter((d) => inicioDoDia(d, FUSO_DO_META).getTime() >= limite));
 }
+
+// ─── Funil por coorte ───────────────────────────────────────────────────────
+
+export interface LeadDaCoorte {
+  id: string;
+  /** Etapa atual; pode ser perdida/arquivada (fora de `etapas`). */
+  stageId: string | null;
+}
+
+export interface MudancaDaCoorte {
+  leadId: string;
+  fromStageId: string | null;
+  toStageId: string | null;
+}
+
+export interface LinhaDaCoorte {
+  etapaId: string;
+  nome: string;
+  eventoMeta: string | null;
+  ganha: boolean;
+  /** Leads da coorte que chegaram a esta etapa ou passaram dela. */
+  leads: number;
+  /** Fração dos leads novos (0–1). */
+  taxa: number;
+}
+
+/**
+ * Os leads que CHEGARAM no período, e até onde cada um foi. Um lead conta em
+ * todas as etapas até a mais avançada que já tocou — a atual, ou qualquer
+ * origem/destino de mudança. Quem foi perdido conta até onde chegou antes.
+ * Etapa perdida ou arquivada não está em `etapas` e não avança ninguém.
+ */
+export function funilPorCoorte(input: {
+  etapas: Etapa[];
+  leads: LeadDaCoorte[];
+  mudancas: MudancaDaCoorte[];
+}): LinhaDaCoorte[] {
+  const ordenadas = [...input.etapas].sort((a, b) => a.posicao - b.posicao);
+  const posicao = new Map(ordenadas.map((e, i) => [e.id, i]));
+  const maisLonge = new Map<string, number>();
+  const avancar = (leadId: string, stageId: string | null) => {
+    const p = stageId ? posicao.get(stageId) : undefined;
+    if (p === undefined) return;
+    maisLonge.set(leadId, Math.max(maisLonge.get(leadId) ?? 0, p));
+  };
+
+  const daCoorte = new Set(input.leads.map((l) => l.id));
+  for (const l of input.leads) {
+    maisLonge.set(l.id, 0); // chegou: está no topo do funil
+    avancar(l.id, l.stageId);
+  }
+  for (const m of input.mudancas) {
+    if (!daCoorte.has(m.leadId)) continue;
+    avancar(m.leadId, m.fromStageId);
+    avancar(m.leadId, m.toStageId);
+  }
+
+  const total = input.leads.length;
+  return ordenadas.map((e, i) => {
+    let n = 0;
+    for (const p of maisLonge.values()) if (p >= i) n++;
+    return {
+      etapaId: e.id,
+      nome: e.nome,
+      eventoMeta: e.eventoMeta,
+      ganha: e.ganha,
+      leads: n,
+      taxa: total ? n / total : 0,
+    };
+  });
+}

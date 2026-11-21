@@ -2,13 +2,24 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
-import type { LinhaDeComparacao, LinhaDoFunil, Preset } from "@/lib/reports/funil-meta";
+import type { RaioX } from "@/lib/reports/raio-x";
+import type {
+  LinhaDaCoorte,
+  LinhaDeComparacao,
+  LinhaDoFunil,
+  Preset,
+} from "@/lib/reports/funil-meta";
 
 export type Periodo = { preset: Preset } | { de: string; ate: string };
 
 export interface ResultadoDoFunil {
   janela: { de: string; ate: string; primeiroDia: string; ultimoDia: string };
   funil: { id: string; nome: string; etapas: LinhaDoFunil[] };
+  /** Leads criados no período e até onde cada um chegou. */
+  coorte: { leadsNovos: number; etapas: LinhaDaCoorte[] };
+  raioX: RaioX & {
+    investimento: { ok: true; contaId: string } | { ok: false; motivo: string };
+  };
   meta:
     | { ok: true; datasetId: string; diasSemDados: number; comparacao: LinhaDeComparacao[] }
     | { ok: false; motivo: string; comparacao: LinhaDeComparacao[] };

@@ -21,8 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useT } from "@/hooks/i18n/useT";
+import { RaioX } from "./RaioX";
 import { useFunilMeta, type Periodo } from "@/hooks/reports/useFunilMeta";
-import type { LinhaDoFunil, Preset, Situacao } from "@/lib/reports/funil-meta";
+import type { LinhaDaCoorte, LinhaDoFunil, Preset, Situacao } from "@/lib/reports/funil-meta";
 
 /** Por que o Meta não foi lido, em palavras de quem opera. */
 const MOTIVO_SEM_META: Record<string, string> = {
@@ -120,6 +121,53 @@ function Funil({ etapas }: { etapas: LinhaDoFunil[] }) {
   );
 }
 
+/**
+ * A pergunta de cada linha, pelo evento do Meta da etapa (o mesmo que a
+ * etapa já manda). A primeira é sempre "chegaram"; a ganha, "fecharam".
+ * Etapa sem evento conhecido mostra o próprio nome.
+ */
+const PERGUNTA_POR_EVENTO: Record<string, string> = {
+  Respondidos: "Responderam",
+  Schedule: "Reunião marcada",
+  QualifiedLead: "Reunião feita",
+  InitiateCheckout: "Em negociação",
+};
+
+function perguntaDa(e: LinhaDaCoorte, i: number): string {
+  if (i === 0) return "Leads novos";
+  if (e.ganha) return "Fecharam";
+  return (e.eventoMeta && PERGUNTA_POR_EVENTO[e.eventoMeta]) || e.nome;
+}
+
+function Coorte({ etapas }: { etapas: LinhaDaCoorte[] }) {
+  const t = useT();
+  return (
+    <ol className="flex flex-col gap-2" data-testid="coorte">
+      {etapas.map((e, i) => (
+        <li key={e.etapaId} className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="font-medium">
+              {t(perguntaDa(e, i))}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">{e.nome}</span>
+            </span>
+            <span className="tabular-nums">
+              <span className="text-lg font-semibold">{e.leads}</span>
+              {i > 0 && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {Math.round(e.taxa * 100)}%
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-accent" style={{ width: `${e.taxa * 100}%` }} />
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function ResultadosDoFunilClient() {
   const t = useT();
   const [modo, setModo] = useState<Preset | "livre">("7d");
@@ -182,6 +230,22 @@ export function ResultadosDoFunilClient() {
 
       {r && (
         <>
+          <RaioX dados={r.raioX} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("Leads que chegaram no período")}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  "Leads criados no período e até onde cada um chegou até hoje, contando quem passou da etapa.",
+                )}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Coorte etapas={r.coorte.etapas} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>{t("Funil no período")}</CardTitle>
