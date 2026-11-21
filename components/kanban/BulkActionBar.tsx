@@ -29,6 +29,7 @@ import { useBulkAction } from "@/hooks/kanban/useBulkAction";
 import { resolveVocabulary } from "@/lib/kanban/vocabulary";
 import type { PipelineVocabulary, Stage } from "@/lib/kanban/types";
 import { LoseLeadDialog } from "./LoseLeadDialog";
+import { UnificarFichasDialog } from "./UnificarFichasDialog";
 import { rotuloDoMembro } from "@/lib/users/rotulo-do-atendente";
 
 interface BulkActionBarProps {
@@ -69,6 +70,8 @@ export function BulkActionBar({
   const bulk = useBulkAction(pipelineId);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loseOpen, setLoseOpen] = useState(false);
+  // ACELERA (fork): "Unificar fichas" — gestor, 2+ negócios.
+  const [unificarOpen, setUnificarOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
   // D10: só olha propostas quando a confirmação de excluir abre, e no máximo
   // 50 negócios (o mesmo teto que a rota em lote já aplica por chamada) — um
@@ -348,6 +351,17 @@ export function BulkActionBar({
           </Button>
         )}
 
+        {podeAtribuir && selectedIds.length >= 2 && selectedIds.length <= 21 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setUnificarOpen(true)}
+            disabled={bulk.isPending}
+          >
+            {t("Unificar fichas…")}
+          </Button>
+        )}
+
         <Button
           size="sm"
           variant="destructive"
@@ -393,6 +407,15 @@ export function BulkActionBar({
           `leads/bulk`. Motivo é obrigatório (o diálogo já barra o "Confirmar"
           sem motivo) e a escrita respeita organização/permissão de cada item na
           rota. Só monta quando há etapa de perda (mesmo gate do gatilho). */}
+      {unificarOpen && (
+        <UnificarFichasDialog
+          open={unificarOpen}
+          onOpenChange={setUnificarOpen}
+          leadIds={selectedIds}
+          onDone={onClear}
+        />
+      )}
+
       {etapaDePerda && (
         <LoseLeadDialog
           open={loseOpen}

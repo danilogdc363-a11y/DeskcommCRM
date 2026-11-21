@@ -238,8 +238,12 @@ async function enviar(
   };
   if (credencial.testEventCode) corpo.test_event_code = credencial.testEventCode;
 
-  const url =
-    `${baseDaGraphDeAnuncio()}/${encodeURIComponent(credencial.datasetId)}/events`;
+  // (Acelera) Evento de conversa vai para o conjunto de dados de mensagens da
+  // Página, quando há um: no conjunto do site a Meta recusa com "nenhuma Página
+  // associada ao conjunto de dados". Os demais seguem no conjunto da conexão.
+  const datasetId =
+    (comClique ? credencial.meta?.messagingDatasetId : null) ?? credencial.datasetId;
+  const url = `${baseDaGraphDeAnuncio()}/${encodeURIComponent(datasetId)}/events`;
 
   let resposta: Response;
   try {

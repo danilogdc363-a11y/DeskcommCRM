@@ -35,11 +35,19 @@ export interface IdentidadeDaConversaoMeta {
   pageId: string | null;
   /** ID da conta do WhatsApp Business (WABA) ligada ao conjunto de dados. */
   whatsappBusinessAccountId: string | null;
+  /**
+   * (Acelera) Conjunto de dados de MENSAGENS ligado à Página. A Meta só aceita
+   * evento `business_messaging` em conjunto que tenha a Página do anúncio
+   * associada, e a Página já nasce presa ao conjunto "<página> Event Data" —
+   * não dá para ligá-la ao conjunto do site. `null` = usa o conjunto da conexão.
+   */
+  messagingDatasetId: string | null;
 }
 
 export const SEM_IDENTIDADE: IdentidadeDaConversaoMeta = {
   pageId: null,
   whatsappBusinessAccountId: null,
+  messagingDatasetId: null,
 };
 
 /**
@@ -72,6 +80,7 @@ export function identidadeDaMeta(settings: unknown): IdentidadeDaConversaoMeta {
   return {
     pageId: idValido(cfg.meta_page_id),
     whatsappBusinessAccountId: idValido(cfg.meta_whatsapp_business_account_id),
+    messagingDatasetId: idValido(cfg.meta_messaging_dataset_id),
   };
 }
 

@@ -6,16 +6,26 @@
  * A URL desta rota é usada diretamente como src de <img>/<video>/<audio>
  * (cookie de sessão vai junto por ser same-origin; RLS decide o acesso).
  *
+ * ACELERA (fork): também aceita `Authorization: Bearer dsk_…` com `mcp:read`
+ * (`lib/api/auth-dual.ts`), para o Acelera OS baixar o áudio e transcrever o
+ * histórico comercial. Só leitura: a rota só tem GET. A organização sai da
+ * LINHA DO TOKEN, e a consulta filtra `organization_id` explicitamente (o
+ * modo token usa o cliente admin, sem RLS). O token é conferido por hash
+ * SHA-256 no banco (`validateBearerToken`), nunca comparando o texto.
+ *
  * `?formato=aac` (F2 da ADR-0006): áudio ogg/webm/opus convertido NA HORA para
  * AAC em MP4, para o aparelho que não toca opus (Safari do iPhone antes do
  * 18.4). Os bytes vão direto na resposta, `no-store`, e o aparelho toca em
  * memória: nada é guardado no Storage nem no aparelho.
  */
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
+import { type AuthDual, resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
+import { extractBearer } from "@/lib/mcp/auth";
 import { fail } from "@/lib/api/wrappers";
 import { loadAuthUser } from "@/lib/auth/server";
 import { orgAtivaDaApi } from "@/lib/auth/require-role";
@@ -98,6 +108,60 @@ async function buscarNoCanal(orgId: string, msg: Linha) {
   });
 }
 
+type Identidade =
+  | {
+      ok: true;
+      supabase: SupabaseClient;
+      activeOrg: { orgId: string };
+      /** Chave do teto de conversão: o usuário, ou o token de servidor. */
+      sujeito: string;
+      t: (texto: string) => string;
+      /** Presente só no modo Bearer: é o que o teto de chamadas do token conta. */
+      viaToken?: Extract<AuthDual, { ok: true }>;
+    }
+  | { ok: false; response: Response };
+
+/** Sessão do navegador (como sempre) OU Bearer `dsk_…` com `mcp:read`. */
+async function identificar(req: NextRequest, requestId: string): Promise<Identidade> {
+  if (extractBearer(req.headers.get("authorization"))) {
+    const authz = await resolveAuthDual(req, {
+      requestId,
+      resource: "messages",
+      role: "agent",
+      scope: "mcp:read",
+    });
+    if (!authz.ok) return authz;
+    return {
+      ok: true,
+      supabase: authz.supabase,
+      activeOrg: { orgId: authz.organizationId },
+      sujeito: `token:${authz.apiTokenId ?? authz.organizationId}`,
+      viaToken: authz,
+      t: (texto) => traduzir(texto, "pt-BR"),
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
+  if (authErr || !user) {
+    return { ok: false, response: fail("unauthenticated", "Auth required.", 401, { requestId }) };
+  }
+  const authUser = await loadAuthUser();
+  const t = (texto: string) => traduzir(texto, authUser?.idioma ?? "pt-BR");
+  const ativa = await orgAtivaDaApi(authUser, requestId);
+  if (!ativa.ok) return { ok: false, response: ativa.response };
+  if (!ativa.org) {
+    return {
+      ok: false,
+      response: fail("no_active_org", t("No active organization."), 403, { requestId }),
+    };
+  }
+  return { ok: true, supabase, activeOrg: ativa.org, sujeito: user.id, t };
+}
+
 interface RouteCtx {
   params: Promise<{ id: string }>;
 }
@@ -105,22 +169,15 @@ interface RouteCtx {
 export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const requestId = randomUUID();
   const { id: messageId } = await ctx.params;
-  const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return fail("unauthenticated", "Auth required.", 401, { requestId });
-  }
-  const authUser = await loadAuthUser();
-  const t = (texto: string) => traduzir(texto, authUser?.idioma ?? "pt-BR");
-  const ativa = await orgAtivaDaApi(authUser, requestId);
-  if (!ativa.ok) return ativa.response;
-  const activeOrg = ativa.org;
-  if (!activeOrg) {
-    return fail("no_active_org", t("No active organization."), 403, { requestId });
+  const quem = await identificar(req, requestId);
+  if (!quem.ok) return quem.response;
+  const { supabase, activeOrg, sujeito, t } = quem;
+  const viaToken = quem.viaToken;
+  if (viaToken) {
+    // Rota em PUBLIC_PATHS: nada a montante conta o Bearer, então o teto é aqui.
+    const teto = await tetoDeEscritaDoToken(viaToken, "midia", requestId);
+    if (teto) return teto;
   }
 
   // Validação DEPOIS da autorização: quem não está logado recebe 401, não 422.
@@ -139,7 +196,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const baixar = consulta.data.baixar === "1" && !paraTocar;
   if (paraTocar) {
     const porUsuario = await checkRateLimit(
-      `midia-aac:${user.id}`,
+      `midia-aac:${sujeito}`,
       TETO_CONVERSAO_POR_USUARIO,
       JANELA_CONVERSAO_S,
     );
@@ -162,8 +219,9 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
     }
   }
 
-  // Client de sessão: RLS garante que a mensagem pertence a uma org do usuário.
-  // Filtro explícito de organization_id por doutrina (defense-in-depth).
+  // Sessão: RLS garante que a mensagem pertence a uma org do usuário. Token: o
+  // cliente é admin, e quem garante é ESTE filtro de organization_id (a org
+  // veio da linha do token, nunca do pedido).
   const { data: msg, error } = await supabase
     .from("messages")
     .select("id, media_url, media_mime, media_size_bytes, media_storage_path, metadata, channel_session_id")
