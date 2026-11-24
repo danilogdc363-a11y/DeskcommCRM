@@ -1260,7 +1260,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
       contactId: contactId ?? cardAberto.contact_id,
       outcome: "atualizado",
     });
-    return respondWithLead(cardAberto.id);
+    return respondWithLead(cardAberto.id, "atualizado");
   }
 
   const leadInput: CreateLeadInput & {
