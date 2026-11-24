@@ -234,3 +234,16 @@ Para gerente ou acima, e nunca em funil arquivado (o mesmo corte do renomear que
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
+
+## 5. Análise › Funil do comercial
+
+Página `/app/funil-de-vendas` (menu Análise, piso `manager`): funil padrão em quatro degraus —
+leads novos, qualificados (o contato respondeu no WhatsApp), passaram por "Reunião marcada"
+e fecharam (etapa `is_won`) —, com variação contra o período anterior de mesmo tamanho.
+Dois modos: **criados no período** (coorte, onde estão hoje) e **movidos no período** (quem entrou
+em cada degrau dentro do período). Cartões com o investido no Meta (conexão de leitura,
+`ad_insights_connections`, conta padrão) e custo por lead/reunião/fechamento dos leads do Meta
+(`source = meta_ads` ou webhook com utm/source_name `ig`/`facebook`). Sem migration.
+Arquivos: `lib/reports/funil-de-vendas{,.test}.ts`, `lib/reports/ler-tudo{,.test}.ts`,
+`app/api/v1/reports/funil-de-vendas/route.ts`, `hooks/reports/useFunilDeVendas.ts`,
+`app/app/funil-de-vendas/`, 1 item em `lib/navigation/catalogo.ts`.
