@@ -174,7 +174,19 @@ export async function importarLeadDaMeta(
     throw new Error(`captacao_${entrega.status}`);
   // Recuperação de lead antigo passa `avisar: false`: o comercial não recebe
   // dezenas de avisos de quem preencheu há semanas.
-  if (entrega.ok && deps.avisar !== false) await avisarComercial(lead, deps);
+  if (!entrega.ok || deps.avisar === false) return;
+  // Só avisa o card que nasceu AGORA. Quando a Meta reenvia o lote, a captação
+  // responde 200 com `desfecho: "duplicado"` e o comercial não recebe de novo.
+  if ((await desfechoDaCaptacao(entrega)) === "criado") await avisarComercial(lead, deps);
+}
+
+async function desfechoDaCaptacao(resposta: Response): Promise<string | null> {
+  try {
+    const corpo = (await resposta.json()) as { data?: { desfecho?: unknown } };
+    return typeof corpo.data?.desfecho === "string" ? corpo.data.desfecho : null;
+  } catch {
+    return null;
+  }
 }
 
 interface PaginaDaGraph<T> {
