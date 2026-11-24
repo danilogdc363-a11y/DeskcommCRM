@@ -182,6 +182,38 @@ Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Escopo só `
 - Arquivos: `lib/plataformas-de-anuncio/meta/login/*`, `app/api/v1/meta-ads/oauth/*`, e edições em
   `credenciais-de-leitura.ts`, `/app/settings/meta-ads`, `lib/env.ts` (2 variáveis opcionais), `public-paths.ts` (1 linha).
 
+## Formulário nativo da Meta (lead do anúncio de formulário)
+
+A Meta avisa o id do lead (`leadgen`) em `POST /api/v1/webhooks/lead-ads`; o CRM lê as respostas na Graph e
+entrega à fonte de captação "Leads Inbound" (deduplica por `external_id = meta_lead:<id>`). Código em
+`lib/acelera/lead-ads.ts`.
+
+**Diagnóstico de 24/11/2026:** nenhum lead de formulário tinha entrado. Os anúncios rodam na Página
+**Danilo gestor** (`924300437422209`), e o único app inscrito nela era o **Kommo**. O webhook `Page` do app
+da Meta da Acelera (`723939443513987`) estava sem URL.
+
+Para ligar (tudo fora do código):
+
+1. **Variáveis no `.env` do compose (EasyPanel), e reimplantar:**
+   - `ACELERA_LEADS_VERIFY_TOKEN`: um texto qualquer, inventado na hora; o mesmo vai no passo 2.
+   - `ACELERA_LEADS_PAGE_TOKEN`: token da Página Danilo gestor com `leads_retrieval`,
+     `pages_manage_metadata`, `pages_show_list`, `pages_read_engagement` e `ads_management`. Prefira o de
+     um usuário do sistema do portfólio (não vence).
+   - `ACELERA_LEADS_INBOUND_URL`: a URL da fonte de captação "Leads Inbound" (Configurações do CRM).
+   - `ACELERA_LEADS_APP_SECRET`: opcional; sem ela vale o `META_APP_SECRET` (mesmo app).
+   - Opcional: `ACELERA_LEADS_AVISO_URL` e `ACELERA_LEADS_AVISO_SECRET` (aviso no WhatsApp pelo OS).
+2. **App da Meta → Webhooks → Page:** URL `https://comercial.aceleradelivery.com/api/v1/webhooks/lead-ads`,
+   o verify token do passo 1, "Verificar e salvar", e **Assinar** o campo `leadgen`.
+3. **Inscrever a Página no app:** `POST /924300437422209/subscribed_apps?subscribed_fields=leadgen` com o token
+   da Página (Explorador da Graph API).
+4. **Acesso a leads:** Configurações do portfólio dono da Página → Integrações → Acesso a leads → Página Danilo
+   gestor → CRMs → incluir o app da Acelera. O Kommo pode continuar lá.
+5. **Testar** em developers.facebook.com/tools/lead-ads-testing (Página Danilo gestor): "Criar lead" e
+   "Acompanhar status" mostram se a entrega deu certo; o lead aparece em "Leads recebidos". Apague o lead de teste.
+6. **Trazer os leads antigos:** no console do serviço `worker` (o `app` não tem a pasta `scripts/`):
+   `npx tsx scripts/recuperar-leads-do-formulario.ts --desde 2026-11-01` conta; com `--aplicar`, importa sem
+   avisar o comercial.
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).

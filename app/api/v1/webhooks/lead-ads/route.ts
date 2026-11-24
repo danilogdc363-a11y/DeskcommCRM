@@ -22,9 +22,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const segredo = process.env.ACELERA_LEADS_APP_SECRET;
+  // O formulário usa o mesmo app da Meta do login e do WhatsApp oficial: sem uma
+  // chave própria, vale o `META_APP_SECRET` que o servidor já tem.
+  const segredo = process.env.ACELERA_LEADS_APP_SECRET || process.env.META_APP_SECRET;
   const corpo = await req.text();
-  if (!segredo || !assinaturaDaMetaConfere(corpo, req.headers.get("x-hub-signature-256"), segredo)) {
+  if (
+    !segredo ||
+    !assinaturaDaMetaConfere(corpo, req.headers.get("x-hub-signature-256"), segredo)
+  ) {
     return new NextResponse(null, { status: 401 });
   }
 
@@ -35,13 +40,17 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 400 });
   }
 
-  try {
-    for (const id of idsDeLeadDoAviso(aviso)) await importarLeadDaMeta(id);
-  } catch (erro) {
+  // Cada lead do lote é importado por conta própria e ao mesmo tempo: um lead que
+  // falha não segura os outros, e o lote cabe no tempo do webhook da Meta. Se algum
+  // falhou, 500 faz a Meta reenviar; os que já entraram voltam como "duplicado".
+  const resultados = await Promise.allSettled(
+    idsDeLeadDoAviso(aviso).map((id) => importarLeadDaMeta(id)),
+  );
+  const falhas = resultados.filter((r) => r.status === "rejected");
+  for (const falha of falhas) {
     logger.error("[acelera.lead-ads] importação falhou", {
-      motivo: erro instanceof Error ? erro.message : "desconhecido",
+      motivo: falha.reason instanceof Error ? falha.reason.message : "desconhecido",
     });
-    return new NextResponse(null, { status: 500 });
   }
-  return new NextResponse(null, { status: 200 });
+  return new NextResponse(null, { status: falhas.length > 0 ? 500 : 200 });
 }

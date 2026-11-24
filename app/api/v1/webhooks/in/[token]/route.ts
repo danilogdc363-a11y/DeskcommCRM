@@ -335,11 +335,16 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
         rdStationMapped?.externalId?.slice(0, 255) ??
         null);
 
-  const respondWithLead = (leadId: string): NextResponse => {
+  // (Acelera) `desfecho` diz a quem chamou se o card nasceu agora: o import do
+  // formulário da Meta só avisa o comercial em "criado" (retry não repete aviso).
+  const respondWithLead = (
+    leadId: string,
+    desfecho: "criado" | "duplicado" | "atualizado",
+  ): NextResponse => {
     if (isForm && source.redirect_to) {
       return NextResponse.redirect(source.redirect_to as string, 303);
     }
-    return ok({ lead_id: leadId }, { requestId });
+    return ok({ lead_id: leadId, desfecho }, { requestId });
   };
 
   /**
@@ -543,7 +548,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
         contactId: contactIdDoEnvio ?? lead.contactId,
         outcome: "duplicado",
       });
-      return respondWithLead(lead.id);
+      return respondWithLead(lead.id, "duplicado");
     };
 
     // PORTÃO 1 — a opção é da fonte, e nasce desligada.
@@ -640,7 +645,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
       contactId: contactIdDoEnvio ?? lead.contactId,
       outcome: "atualizado",
     });
-    return respondWithLead(lead.id);
+    return respondWithLead(lead.id, "atualizado");
   };
 
   const deduped = await findLeadByExternalId();
@@ -1255,7 +1260,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
       contactId: contactId ?? cardAberto.contact_id,
       outcome: "atualizado",
     });
-    return respondWithLead(cardAberto.id);
+    return respondWithLead(cardAberto.id, "atualizado");
   }
 
   const leadInput: CreateLeadInput & {
@@ -1461,5 +1466,5 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
       : undefined,
   );
 
-  return respondWithLead(String(lead.id));
+  return respondWithLead(String(lead.id), "criado");
 }

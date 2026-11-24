@@ -108,7 +108,8 @@ export async function avisarComercial(
   const respostas: Record<string, string> = {};
   for (const campo of lead.field_data ?? []) {
     const resposta = campo.name ? valor(campo.name) : null;
-    if (campo.name && resposta && !CAMPOS_DE_CONTATO.has(campo.name)) respostas[campo.name] = resposta;
+    if (campo.name && resposta && !CAMPOS_DE_CONTATO.has(campo.name))
+      respostas[campo.name] = resposta;
   }
   const corpo = JSON.stringify({
     nome: valor("full_name"),
@@ -131,7 +132,8 @@ export async function avisarComercial(
       body: corpo,
       signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
     });
-    if (!resposta.ok) logger.error("[acelera.lead-ads] aviso recusado", { status: resposta.status });
+    if (!resposta.ok)
+      logger.error("[acelera.lead-ads] aviso recusado", { status: resposta.status });
   } catch (erro) {
     logger.error("[acelera.lead-ads] aviso falhou", {
       motivo: erro instanceof Error ? erro.message : "desconhecido",
@@ -142,7 +144,7 @@ export async function avisarComercial(
 /** Busca o lead na Graph e entrega à captação. Lança para a Meta reenviar o aviso. */
 export async function importarLeadDaMeta(
   leadId: string,
-  deps: { fetch?: Fetch; env?: Record<string, string | undefined> } = {},
+  deps: { fetch?: Fetch; env?: Record<string, string | undefined>; avisar?: boolean } = {},
 ): Promise<void> {
   const env = deps.env ?? process.env;
   const buscar = deps.fetch ?? fetch;
@@ -168,6 +170,79 @@ export async function importarLeadDaMeta(
   });
   // 4xx é recusa da captação (ex.: sem telefone) e fica em "Leads recebidos":
   // reenviar não muda o desfecho.
-  if (entrega.status >= 500 || entrega.status === 429) throw new Error(`captacao_${entrega.status}`);
-  if (entrega.ok) await avisarComercial(lead, deps);
+  if (entrega.status >= 500 || entrega.status === 429)
+    throw new Error(`captacao_${entrega.status}`);
+  // Recuperação de lead antigo passa `avisar: false`: o comercial não recebe
+  // dezenas de avisos de quem preencheu há semanas.
+  if (!entrega.ok || deps.avisar === false) return;
+  // Só avisa o card que nasceu AGORA. Quando a Meta reenvia o lote, a captação
+  // responde 200 com `desfecho: "duplicado"` e o comercial não recebe de novo.
+  if ((await desfechoDaCaptacao(entrega)) === "criado") await avisarComercial(lead, deps);
+}
+
+async function desfechoDaCaptacao(resposta: Response): Promise<string | null> {
+  try {
+    const corpo = (await resposta.json()) as { data?: { desfecho?: unknown } };
+    return typeof corpo.data?.desfecho === "string" ? corpo.data.desfecho : null;
+  } catch {
+    return null;
+  }
+}
+
+interface PaginaDaGraph<T> {
+  data?: T[];
+  paging?: { next?: string };
+}
+
+/**
+ * Ids dos leads de TODOS os formulários da página criados a partir de `desde`.
+ * Serve para recuperar quem preencheu antes de o aviso `leadgen` estar ligado;
+ * a captação deduplica por `external_id`, então rodar de novo não duplica.
+ */
+export async function idsDeLeadDosFormulariosDesde(
+  desde: Date,
+  deps: { fetch?: Fetch; env?: Record<string, string | undefined> } = {},
+): Promise<string[]> {
+  const env = deps.env ?? process.env;
+  const buscar = deps.fetch ?? fetch;
+  const token = env.ACELERA_LEADS_PAGE_TOKEN;
+  if (!token) throw new Error("lead_ads_nao_configurado");
+
+  async function todasAsPaginas<T>(primeira: string): Promise<T[]> {
+    const itens: T[] = [];
+    let url: string | undefined = primeira;
+    while (url) {
+      const resposta = await buscar(url, {
+        headers: { authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+      });
+      if (!resposta.ok) throw new Error(`graph_${resposta.status}`);
+      const pagina = (await resposta.json()) as PaginaDaGraph<T>;
+      itens.push(...(pagina.data ?? []));
+      url = pagina.paging?.next;
+    }
+    return itens;
+  }
+
+  const base = baseDaGraphDeAnuncio();
+  const formularios = await todasAsPaginas<{ id: string }>(
+    `${base}/me/leadgen_forms?fields=id&limit=100`,
+  );
+  const filtro = encodeURIComponent(
+    JSON.stringify([
+      {
+        field: "time_created",
+        operator: "GREATER_THAN",
+        value: Math.floor(desde.getTime() / 1000),
+      },
+    ]),
+  );
+  const ids: string[] = [];
+  for (const formulario of formularios) {
+    const leads = await todasAsPaginas<{ id: string }>(
+      `${base}/${formulario.id}/leads?fields=id&limit=100&filtering=${filtro}`,
+    );
+    ids.push(...leads.map((l) => l.id).filter((id) => /^\d+$/.test(id)));
+  }
+  return [...new Set(ids)];
 }
