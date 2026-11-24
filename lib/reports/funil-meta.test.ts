@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   compararComMeta,
+  funilPorCoorte,
   diasCobertosPeloMeta,
   inicioDoDia,
   mudancaDeEtapa,
@@ -306,5 +307,51 @@ describe("horário de verão", () => {
     expect(inicioDoDia("2026-11-02", "America/Los_Angeles").toISOString()).toBe(
       "2026-11-02T08:00:00.000Z",
     );
+  });
+});
+
+describe("funilPorCoorte", () => {
+  const E: Etapa[] = [
+    { id: "novo", nome: "Pedido novo", posicao: 1000, ganha: false, eventoMeta: "Contact" },
+    { id: "atend", nome: "Em atendimento", posicao: 2000, ganha: false, eventoMeta: null },
+    { id: "marc", nome: "Reunião marcada", posicao: 3000, ganha: false, eventoMeta: null },
+    { id: "feita", nome: "Reunião feita", posicao: 4000, ganha: false, eventoMeta: null },
+    { id: "neg", nome: "Negociação / FUP", posicao: 5000, ganha: false, eventoMeta: null },
+    { id: "fechou", nome: "Fechou", posicao: 6000, ganha: true, eventoMeta: "Purchase" },
+  ];
+
+  it("conta quem chegou ou passou de cada etapa, inclusive o perdido até onde foi", () => {
+    const linhas = funilPorCoorte({
+      etapas: E,
+      leads: [
+        { id: "a", stageId: "novo" }, // parado no topo
+        { id: "b", stageId: "fechou" }, // fechou, pulando etapas
+        { id: "c", stageId: "perdido" }, // perdido depois de reunião marcada
+        { id: "d", stageId: "neg" },
+      ],
+      mudancas: [
+        { leadId: "c", fromStageId: "novo", toStageId: "atend" },
+        { leadId: "c", fromStageId: "atend", toStageId: "marc" },
+        { leadId: "c", fromStageId: "marc", toStageId: "perdido" },
+        { leadId: "x", fromStageId: "novo", toStageId: "fechou" }, // fora da coorte
+      ],
+    });
+    expect(linhas.map((l) => [l.etapaId, l.leads])).toEqual([
+      ["novo", 4],
+      ["atend", 3],
+      ["marc", 3],
+      ["feita", 2],
+      ["neg", 2],
+      ["fechou", 1],
+    ]);
+    expect(linhas[5]?.taxa).toBe(0.25);
+  });
+
+  it("sem leads, tudo zero sem dividir por zero", () => {
+    expect(
+      funilPorCoorte({ etapas: E, leads: [], mudancas: [] }).every(
+        (l) => l.leads === 0 && l.taxa === 0,
+      ),
+    ).toBe(true);
   });
 });

@@ -27,11 +27,16 @@ import { requireRole } from "@/lib/auth/require-role";
 import { logger } from "@/lib/logger";
 import { lerTudo } from "@/lib/reports/ler-tudo";
 import { lerEstatisticasDoConjunto } from "@/lib/plataformas-de-anuncio/meta/estatisticas-do-conjunto";
+import { lerInvestimentoPorSemana } from "@/lib/plataformas-de-anuncio/meta/investimento";
+import { montarRaioX, semanasDoPeriodo } from "@/lib/reports/raio-x";
 import {
+  FUSO_DO_FUNIL,
   FUSO_DO_META,
+  diaNoFuso,
   compararComMeta,
   diasCobertosPeloMeta,
   diasEntre,
+  funilPorCoorte,
   inicioDoDia,
   janelaDoPreset,
   janelaLivre,
@@ -101,29 +106,48 @@ export async function GET(req: NextRequest): Promise<Response> {
     const etapas = await lerEtapas(admin, orgId, funil.id);
     const ids = etapas.map((e) => e.id);
 
-    const [abertos, atividades, envios, cliques] = await Promise.all([
-      lerAbertos(admin, orgId, ids),
-      lerAtividades(admin, orgId, funil.id, ids, janela.de.toISOString(), janela.ate.toISOString()),
-      lerTudo<{
-        id: string;
-        event_name: string;
-        meta_event_name: string | null;
-        status: string;
-        created_at: string;
-        attempted_at: string | null;
-      }>((a, b) =>
-        admin
-          .from("ad_conversion_dispatches")
-          .select("id, event_name, meta_event_name, status, created_at, attempted_at")
-          .eq("organization_id", orgId)
-          .eq("platform", "meta_ads")
-          .gte("created_at", deTudo)
-          .lt("created_at", ateTudo)
-          .order("id")
-          .range(a, b),
-      ),
-      lerCliques(admin, orgId, janela.de.toISOString(), janela.ate.toISOString()),
-    ]);
+    const semanas = semanasDoPeriodo(janela.primeiroDia, janela.ultimoDia);
+    const [abertos, atividades, envios, cliques, coorte, fechados, investimento] =
+      await Promise.all([
+        lerAbertos(admin, orgId, ids),
+        lerAtividades(
+          admin,
+          orgId,
+          funil.id,
+          ids,
+          janela.de.toISOString(),
+          janela.ate.toISOString(),
+        ),
+        lerTudo<{
+          id: string;
+          event_name: string;
+          meta_event_name: string | null;
+          status: string;
+          created_at: string;
+          attempted_at: string | null;
+        }>((a, b) =>
+          admin
+            .from("ad_conversion_dispatches")
+            .select("id, event_name, meta_event_name, status, created_at, attempted_at")
+            .eq("organization_id", orgId)
+            .eq("platform", "meta_ads")
+            .gte("created_at", deTudo)
+            .lt("created_at", ateTudo)
+            .order("id")
+            .range(a, b),
+        ),
+        lerCliques(admin, orgId, janela.de.toISOString(), janela.ate.toISOString()),
+        lerCoorte(
+          admin,
+          orgId,
+          funil.id,
+          etapas,
+          janela.de.toISOString(),
+          janela.ate.toISOString(),
+        ),
+        lerFechados(admin, orgId, funil.id, janela.de.toISOString(), janela.ate.toISOString()),
+        lerInvestimentoPorSemana(admin, orgId, semanas),
+      ]);
 
     const todosEnvios: EnvioAoMeta[] = envios.map((e) => ({
       eventName: e.event_name,
@@ -172,6 +196,24 @@ export async function GET(req: NextRequest): Promise<Response> {
           ultimoDia: janela.ultimoDia,
         },
         funil: { id: funil.id, nome: funil.name, etapas: linhasDoFunil },
+        coorte: { leadsNovos: coorte.leadsNovos, etapas: coorte.etapas },
+        raioX: {
+          ...montarRaioX({
+            coorte: coorte.etapas,
+            fechados,
+            investidoCents: investimento.ok
+              ? investimento.porSemana.reduce((a, b) => a + b, 0)
+              : null,
+            semanas: semanas.map((sem, i) => ({
+              ...sem,
+              investidoCents: investimento.ok ? (investimento.porSemana[i] ?? 0) : null,
+              leads: coorte.criadosEm.filter((d) => d >= sem.de && d <= sem.ate).length,
+            })),
+          }),
+          investimento: investimento.ok
+            ? { ok: true as const, contaId: investimento.contaId }
+            : { ok: false as const, motivo: investimento.motivo },
+        },
         meta: stats?.ok
           ? {
               ok: true as const,
@@ -360,4 +402,97 @@ async function lerCliques(
     });
     return null;
   }
+}
+
+/**
+ * Funil por coorte: os leads do funil CRIADOS no período e até onde cada um
+ * chegou até agora. A história de cada um é lida inteira (sem corte de data
+ * no fim), porque quem chegou na segunda e fechou ontem conta como fechado.
+ */
+async function lerCoorte(
+  admin: SupabaseClient,
+  orgId: string,
+  pipelineId: string,
+  etapas: Etapa[],
+  de: string,
+  ate: string,
+) {
+  const leads = await lerTudo<{ id: string; stage_id: string | null; created_at: string }>((a, b) =>
+    admin
+      .from("crm_leads")
+      .select("id, stage_id, created_at")
+      .eq("organization_id", orgId)
+      .eq("pipeline_id", pipelineId)
+      .gte("created_at", de)
+      .lt("created_at", ate)
+      .order("id")
+      .range(a, b),
+  );
+
+  const ids = leads.map((l) => l.id);
+  const mudancas: Array<{ leadId: string; fromStageId: string | null; toStageId: string | null }> =
+    [];
+  for (let i = 0; i < ids.length; i += LOTE_DE_IDS) {
+    const lote = ids.slice(i, i + LOTE_DE_IDS);
+    const linhas = await lerTudo<{
+      id: string;
+      lead_id: string;
+      payload: Record<string, unknown> | null;
+    }>((a, b) =>
+      admin
+        .from("crm_lead_activities")
+        .select("id, lead_id, payload")
+        .eq("organization_id", orgId)
+        .eq("type", "stage_changed")
+        .in("lead_id", lote)
+        .gte("performed_at", de)
+        .order("id")
+        .range(a, b),
+    );
+    for (const l of linhas) mudancas.push({ leadId: l.lead_id, ...mudancaDeEtapa(l.payload) });
+  }
+
+  return {
+    leadsNovos: leads.length,
+    /** Dia (Brasília) em que cada lead chegou, para o custo por lead semanal. */
+    criadosEm: leads.map((l) => diaNoFuso(l.created_at, FUSO_DO_FUNIL)),
+    etapas: funilPorCoorte({
+      etapas,
+      leads: leads.map((l) => ({ id: l.id, stageId: l.stage_id })),
+      mudancas,
+    }),
+  };
+}
+
+/** Negócios do funil GANHOS no período (podem ter chegado antes dele). */
+async function lerFechados(
+  admin: SupabaseClient,
+  orgId: string,
+  pipelineId: string,
+  de: string,
+  ate: string,
+) {
+  const linhas = await lerTudo<{
+    id: string;
+    title: string | null;
+    value_cents: number | null;
+    recurring_value_cents: number | null;
+  }>((a, b) =>
+    admin
+      .from("crm_leads")
+      .select("id, title, value_cents, recurring_value_cents")
+      .eq("organization_id", orgId)
+      .eq("pipeline_id", pipelineId)
+      .eq("status", "won")
+      .gte("closed_at", de)
+      .lt("closed_at", ate)
+      .order("id")
+      .range(a, b),
+  );
+  // A mensalidade, quando o negócio a tem; senão o valor do negócio.
+  return linhas.map((l) => ({
+    id: l.id,
+    titulo: l.title ?? "Sem nome",
+    valorCents: Number(l.recurring_value_cents ?? l.value_cents ?? 0),
+  }));
 }
