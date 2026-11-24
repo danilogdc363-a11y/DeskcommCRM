@@ -855,6 +855,19 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // Acelera (fork): o funil de vendas do período — lead novo, respondeu,
+    // reunião, fechou — com o custo do Meta em cada degrau. `manager` pelo
+    // mesmo motivo de Meta Ads: os números são da empresa inteira.
+    href: "/app/funil-de-vendas",
+    label: "Funil do comercial",
+    description: "Do lead novo à venda no período, com o custo do Meta em cada etapa.",
+    icon: "ChartBar",
+    group: "analise",
+    section: "Os números do período",
+    minRole: "manager",
+    sidebar: true,
+  },
+  {
     // Irmã de "Desempenho", não a mesma coisa: lá é DESFECHO (funil agora,
     // ganho/perdido por atendente); aqui é o TRABALHO que aconteceu no
     // período, com quem fez cada coisa. Um mês inteiro atendido pela IA e um
