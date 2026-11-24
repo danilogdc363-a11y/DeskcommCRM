@@ -8,7 +8,9 @@
  * vezes não duplica. NÃO avisa o comercial no WhatsApp (lead antigo).
  *
  * Precisa das variáveis do CRM: ACELERA_LEADS_PAGE_TOKEN e ACELERA_LEADS_INBOUND_URL.
- * Rodar no servidor do CRM (console do serviço no EasyPanel), onde elas existem.
+ * Rodar no console do serviço `worker` no EasyPanel: ele tem o código inteiro e o
+ * tsx, e lê o mesmo `.env` do `app`. A imagem do `app` só leva o build do Next,
+ * sem a pasta `scripts/`.
  *
  *   # só conta quantos leads a Meta tem desde a data (não grava nada)
  *   npx tsx scripts/recuperar-leads-do-formulario.ts --desde 2026-11-01

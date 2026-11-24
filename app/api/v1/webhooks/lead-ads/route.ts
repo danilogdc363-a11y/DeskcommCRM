@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const segredo = process.env.ACELERA_LEADS_APP_SECRET;
+  // O formulário usa o mesmo app da Meta do login e do WhatsApp oficial: sem uma
+  // chave própria, vale o `META_APP_SECRET` que o servidor já tem.
+  const segredo = process.env.ACELERA_LEADS_APP_SECRET || process.env.META_APP_SECRET;
   const corpo = await req.text();
   if (
     !segredo ||
