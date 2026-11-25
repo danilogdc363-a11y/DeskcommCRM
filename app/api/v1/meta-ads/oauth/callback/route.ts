@@ -161,8 +161,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     resourceType: "ad_insights_connections",
     resourceId: null,
     // O QUE mudou, jamais o token.
-    metadata: { platform: "meta_ads", via: "login_com_facebook", token_trocado: true },
+    metadata: {
+      platform: "meta_ads",
+      via: "login_com_facebook",
+      token_trocado: true,
+      ...(estado.para ? { para: estado.para } : {}),
+    },
   });
 
-  return voltar(base, { ok: "1" });
+  return voltar(base, estado.para === "formularios" ? { ok: "formularios" } : { ok: "1" });
 }

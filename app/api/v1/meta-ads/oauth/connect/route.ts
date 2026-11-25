@@ -48,6 +48,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const app = appDeLoginDaMeta();
   if (!app) return voltarComErro("app_nao_configurado");
 
+  // (Acelera) `?para=formularios`: o botão "Conectar formulários" pede também as
+  // permissões de formulário de anúncio. Qualquer outro valor = login de anúncios.
+  const para = req.nextUrl.searchParams.get("para") === "formularios" ? ("formularios" as const) : undefined;
+
   // O nonce é usado duas vezes: dentro do `state` e na assinatura do cookie de
   // vínculo — o par que o callback confere.
   const nonce = randomBytes(16).toString("base64url");
@@ -55,7 +59,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   let state: string;
   try {
     state = emitirEstado(
-      { organizationId: org.orgId, userId: user.id, authSessionId: await authenticatedSessionId() },
+      { organizationId: org.orgId, userId: user.id, authSessionId: await authenticatedSessionId(), para },
       { segredo: env.INTERNAL_SECRET, agora: new Date(), nonce },
     );
   } catch {
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const base = env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const resposta = NextResponse.redirect(montarUrlDeLogin(app, { state, redirectUri: urlDeRetorno(base) }));
+  const resposta = NextResponse.redirect(montarUrlDeLogin(app, { state, redirectUri: urlDeRetorno(base), para }));
   // `lax`: strict não viaja na volta da Meta. `cookieSecure()` e não `true`
   // literal, para não perder o cookie numa instalação servida por http.
   resposta.cookies.set(NOME_DO_VINCULO, assinarVinculo(nonce, env.INTERNAL_SECRET), {

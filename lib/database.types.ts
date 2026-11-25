@@ -14132,6 +14132,9 @@ export type Database = {
           last_change_actor_kind: string | null;
           last_change_at: string | null;
           last_received_at: string | null;
+          meta_lead_retrieval: boolean;
+          meta_page_id: string | null;
+          meta_page_token_encrypted: string | null;
           name: string;
           organization_id: string;
           path_token: string;
@@ -14156,6 +14159,9 @@ export type Database = {
           last_change_actor_kind?: string | null;
           last_change_at?: string | null;
           last_received_at?: string | null;
+          meta_lead_retrieval?: boolean;
+          meta_page_id?: string | null;
+          meta_page_token_encrypted?: string | null;
           name: string;
           organization_id: string;
           path_token: string;
@@ -14179,6 +14185,9 @@ export type Database = {
           last_change_actor_kind?: string | null;
           last_change_at?: string | null;
           last_received_at?: string | null;
+          meta_lead_retrieval?: boolean;
+          meta_page_id?: string | null;
+          meta_page_token_encrypted?: string | null;
           name?: string;
           organization_id?: string;
           path_token?: string;

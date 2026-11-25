@@ -68128,6 +68128,31 @@ $$;
 
 revoke execute on function public.fn_limpar_navegador_de_contato_anonimizado() from public, anon, authenticated;
 
+-- ---- função da fonte do formulário da Meta (migration acelera_0009; colunas e gatilho ficam no apêndice) ----
+create or replace function public.fn_fonte_do_lead_ads_so_pelo_servidor()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+begin
+  if current_user not in ('authenticated', 'anon') then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    if new.meta_page_id is not null or new.meta_page_token_encrypted is not null
+       or coalesce(new.meta_lead_retrieval, false) then
+      raise exception 'webhook_source_meta_server_only' using errcode = '42501';
+    end if;
+  elsif row(new.meta_page_id, new.meta_page_token_encrypted, new.meta_lead_retrieval)
+        is distinct from row(old.meta_page_id, old.meta_page_token_encrypted, old.meta_lead_retrieval) then
+    raise exception 'webhook_source_meta_server_only' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.fn_fonte_do_lead_ads_so_pelo_servidor() from public, anon;
+
 -- ---- unificar fichas de negócio (migration acelera_0008) ----
 
 alter table public.crm_leads
@@ -73106,5 +73131,43 @@ create trigger trg_limpar_navegador_de_contato_anonimizado
   for each row
   when (new.is_anonymized and not coalesce(old.is_anonymized, false))
   execute function public.fn_limpar_navegador_de_contato_anonimizado();
+
+notify pgrst, 'reload schema';
+
+-- ---- formulário da Meta por empresa: página, token e busca na fonte (migration acelera_0009) ----
+alter table public.webhook_sources
+  add column if not exists meta_page_id text;
+
+alter table public.webhook_sources
+  add column if not exists meta_page_token_encrypted bytea;
+
+alter table public.webhook_sources
+  add column if not exists meta_lead_retrieval boolean not null default false;
+
+comment on column public.webhook_sources.meta_page_id is
+  'A página da Meta que esta fonte representa. Chave de ROTEAMENTO do aviso de formulário (entry[].id): a mesma URL recebe leads de todas as páginas e quem é dono do lead é esta coluna. NULL = a fonte não reivindica página.';
+
+comment on column public.webhook_sources.meta_page_token_encrypted is
+  'Token de PÁGINA com permissão de leitura de leads, cifrado por fn_encrypt_oauth. Write-only: nenhuma leitura da API o devolve. Nunca gravado em claro.';
+
+comment on column public.webhook_sources.meta_lead_retrieval is
+  'Quando o aviso chega sem as respostas (é o que a Meta manda), buscar as respostas na Graph com o token da página. Ligado pelo servidor ao conectar a Página.';
+
+create unique index if not exists uniq_webhook_sources_meta_page
+  on public.webhook_sources (meta_page_id)
+  where meta_page_id is not null;
+
+-- A página, o token e a busca só mudam pelo SERVIDOR. A policy
+-- `webhook_sources_manager_write` deixa o manager escrever a linha inteira pela
+-- sessão, e a página decide para qual empresa vai o lead: gravada sem a
+-- conferência da rota, desviaria avisos de quem é dono. Pela sessão
+-- (`authenticated`/`anon`) estas colunas não nascem preenchidas nem mudam.
+do $fonte_do_lead_ads$
+begin
+  drop trigger if exists trg_fonte_do_lead_ads_so_pelo_servidor on public.webhook_sources;
+  create trigger trg_fonte_do_lead_ads_so_pelo_servidor
+    before insert or update on public.webhook_sources
+    for each row execute function public.fn_fonte_do_lead_ads_so_pelo_servidor();
+end $fonte_do_lead_ads$;
 
 notify pgrst, 'reload schema';

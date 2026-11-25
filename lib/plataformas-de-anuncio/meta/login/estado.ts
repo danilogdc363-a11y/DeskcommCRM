@@ -20,7 +20,13 @@ export interface EstadoDoLoginMetaAds {
   expiraEmMs: number;
   /** Sessão de quem iniciou: a régua de suporte do callback confere por ela. */
   authSessionId?: string;
+  /** (Acelera) Para que o login foi pedido. Ausente = só anúncios (`ads_read`). */
+  para?: PropositoDoLogin;
 }
+
+/** (Acelera) `formularios` pede também as permissões de formulário de anúncio. */
+export type PropositoDoLogin = "formularios";
+const PROPOSITOS: ReadonlySet<string> = new Set<PropositoDoLogin>(["formularios"]);
 
 function assinar(carga: string, segredo: string): Buffer {
   return createHmac("sha256", segredo).update(`${ROTULO}|${carga}`, "utf8").digest();
@@ -35,7 +41,7 @@ function conferirSegredo(segredo: string): string {
 }
 
 export function emitirEstado(
-  dados: { organizationId: string; userId: string; authSessionId?: string },
+  dados: { organizationId: string; userId: string; authSessionId?: string; para?: PropositoDoLogin },
   opcoes: { segredo: string; agora: Date; nonce?: string; validadeMs?: number },
 ): string {
   const segredo = conferirSegredo(opcoes.segredo);
@@ -43,12 +49,15 @@ export function emitirEstado(
   const userId = dados.userId?.trim() ?? "";
   if (!organizationId || !userId) throw new Error("state precisa de organizationId e userId");
   const sessao = dados.authSessionId ?? "";
-  for (const campo of [organizationId, userId, sessao]) {
+  for (const campo of [organizationId, userId, sessao, dados.para ?? ""]) {
     if (campo.includes(".")) throw new Error("campo com ponto: o separador do state não sobreviveria");
   }
   const nonce = opcoes.nonce?.trim() || randomBytes(16).toString("hex");
   const expira = opcoes.agora.getTime() + (opcoes.validadeMs ?? VALIDADE_DO_ESTADO_MS);
-  const carga = `${organizationId}.${userId}.${nonce}.${expira}${sessao ? `.${sessao}` : ""}`;
+  const para = dados.para ?? "";
+  // O 5º campo é a sessão e o 6º o propósito: sem propósito o formato é o de
+  // sempre (estados já emitidos continuam válidos).
+  const carga = `${organizationId}.${userId}.${nonce}.${expira}${sessao || para ? `.${sessao}` : ""}${para ? `.${para}` : ""}`;
   const assinatura = assinar(carga, segredo).toString("hex");
   return `${Buffer.from(carga, "utf8").toString("base64url")}.${assinatura}`;
 }
@@ -71,10 +80,18 @@ export function verificarEstado(
   if (recebida.length !== esperada.length || !timingSafeEqual(recebida, esperada)) return null;
 
   const campos = carga.split(".");
-  if (campos.length < 4 || campos.length > 5) return null;
-  const [organizationId, userId, nonce, expiraTexto, authSessionId] = campos;
+  if (campos.length < 4 || campos.length > 6) return null;
+  const [organizationId, userId, nonce, expiraTexto, authSessionId, paraTexto] = campos;
+  if (paraTexto !== undefined && !PROPOSITOS.has(paraTexto)) return null;
   const expiraEmMs = Number(expiraTexto);
   if (!organizationId || !userId || !nonce || !Number.isFinite(expiraEmMs)) return null;
   if (opcoes.agora.getTime() > expiraEmMs) return null;
-  return { organizationId, userId, nonce, expiraEmMs, ...(authSessionId ? { authSessionId } : {}) };
+  return {
+    organizationId,
+    userId,
+    nonce,
+    expiraEmMs,
+    ...(authSessionId ? { authSessionId } : {}),
+    ...(paraTexto ? { para: paraTexto as PropositoDoLogin } : {}),
+  };
 }

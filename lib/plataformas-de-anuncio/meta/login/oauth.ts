@@ -17,6 +17,19 @@ import type { AppDeLoginDaMeta } from "./app";
 
 export const CAMINHO_DO_CALLBACK = "/api/v1/meta-ads/oauth/callback";
 export const ESCOPO_DE_LEITURA = "ads_read";
+/**
+ * (Acelera) Formulário de anúncio por empresa: ler os leads, listar as Páginas
+ * da pessoa e ligar a Página ao app. É pedido em botão PRÓPRIO ("Conectar
+ * formulários"): enquanto a Meta não aprova estas permissões para todos, só
+ * quem tem função no app consegue, e pedi-las no login de anúncios poderia
+ * derrubar o que já funciona. As permissões já concedidas acumulam no token.
+ */
+export const ESCOPO_DE_FORMULARIOS = [
+  "leads_retrieval",
+  "pages_show_list",
+  "pages_manage_metadata",
+  "pages_read_engagement",
+] as const;
 const TIMEOUT_MS = 10_000;
 /** Renova quando falta menos que isto para vencer. */
 export const RENOVAR_QUANDO_FALTAR_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,12 +40,18 @@ export function urlDeRetorno(baseDoApp: string): string {
   return new URL(CAMINHO_DO_CALLBACK, baseDoApp).toString();
 }
 
-export function montarUrlDeLogin(app: AppDeLoginDaMeta, opcoes: { state: string; redirectUri: string }): string {
+export function montarUrlDeLogin(
+  app: AppDeLoginDaMeta,
+  opcoes: { state: string; redirectUri: string; para?: "formularios" },
+): string {
   const url = new URL(`https://www.facebook.com/${VERSAO_PADRAO_DA_GRAPH}/dialog/oauth`);
   url.searchParams.set("client_id", app.appId);
   url.searchParams.set("redirect_uri", opcoes.redirectUri);
   url.searchParams.set("state", opcoes.state);
-  url.searchParams.set("scope", ESCOPO_DE_LEITURA);
+  url.searchParams.set(
+    "scope",
+    opcoes.para === "formularios" ? [ESCOPO_DE_LEITURA, ...ESCOPO_DE_FORMULARIOS].join(",") : ESCOPO_DE_LEITURA,
+  );
   url.searchParams.set("response_type", "code");
   return url.toString();
 }
