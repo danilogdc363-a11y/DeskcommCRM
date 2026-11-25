@@ -1075,6 +1075,8 @@ export async function updateLeadHandler(
     patch.expected_close_date = input.expected_close_date;
   }
   if (input.tags !== undefined) patch.tags = input.tags;
+  // ACELERA (fork): temperatura marcada à mão (`null` volta ao automático).
+  if (input.temperatura_manual !== undefined) patch.temperatura_manual = input.temperatura_manual;
   // ⛔ `custom_fields` NÃO ENTRA NO `patch`, e a ausência é o conserto.
   //
   // Isto era `patch.custom_fields = { ...prev, ...input.custom_fields }`, com

@@ -62,7 +62,8 @@ export type FiltroForaDaLista =
   | "motivo"
   | "categoria"
   | "periodo"
-  | "ordem";
+  | "ordem"
+  | "temperatura";
 
 /**
  * Quais filtros ATIVOS a Lista está ignorando. Lista vazia = o que a tela mostra
@@ -78,6 +79,7 @@ export function filtrosForaDaLista(f: LeadFilters): FiltroForaDaLista[] {
   // ACELERA (fork): período e ordem também só valem no quadro.
   if (f.de || f.ate) fora.push("periodo");
   if (f.ordem) fora.push("ordem");
+  if (f.temperatura) fora.push("temperatura");
   return fora;
 }
 

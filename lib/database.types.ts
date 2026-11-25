@@ -6959,6 +6959,7 @@ export type Database = {
           stage_id: string;
           status: string;
           tags: string[];
+          temperatura_manual: string | null;
           title: string;
           updated_at: string;
           value_cents: number | null;
@@ -7000,6 +7001,7 @@ export type Database = {
           stage_id: string;
           status?: string;
           tags?: string[];
+          temperatura_manual?: string | null;
           title: string;
           updated_at?: string;
           value_cents?: number | null;
@@ -7040,6 +7042,7 @@ export type Database = {
           stage_id?: string;
           status?: string;
           tags?: string[];
+          temperatura_manual?: string | null;
           title?: string;
           updated_at?: string;
           value_cents?: number | null;

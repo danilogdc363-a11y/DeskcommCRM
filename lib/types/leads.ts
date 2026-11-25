@@ -185,6 +185,12 @@ export interface Lead {
    * Ver `lib/kanban/qualificacao.ts`.
    */
   qualificacao?: QualificacaoNoCard;
+  /**
+   * ACELERA (fork). Coluna `crm_leads.temperatura_manual`: a temperatura que o
+   * operador marcou à mão; `null`/ausente = automático. Vence a faixa da IA —
+   * ver `lib/kanban/temperatura.ts`.
+   */
+  temperatura_manual?: ScoreBand | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;

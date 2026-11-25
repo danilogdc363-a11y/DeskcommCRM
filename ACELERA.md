@@ -309,6 +309,23 @@ Sem migration: as perguntas são campos do funil e as respostas já moram em `cr
   (a rota anexa `qualificacao: {marcados, total}`).
 - Limite: na conversa do Inbox o painel lateral pode não trazer a marca nas definições; o bloco só aparece onde ela vem.
 
+## Temperatura do lead marcada à mão
+
+**Tem migration** (`acelera_0010_temperatura_manual_do_lead`, já aplicada no banco da Acelera em 25/11/2026 com o
+ok do Davy; também no apêndice do `baseline.sql`): `crm_leads.temperatura_manual text` (`frio|morno|quente`, CHECK;
+`NULL` = automático).
+
+- Mora em `crm_leads` e NÃO em `crm_lead_scores` de propósito: o score da IA é telemetria (migration 0075) e não
+  pode pulsar card; a marcação à mão é edição humana, então pulsa e bumpa `updated_at` como qualquer edição. A IA
+  nunca a escreve.
+- Regra (`lib/kanban/temperatura.ts`): a marcada à mão vence a faixa da IA; sem marcação vale a da IA, se houver.
+- **Dossiê**: seletor "Temperatura: automática / Quente / Morno / Frio" (agent+; grava por `PATCH /api/v1/leads/:id`
+  com `temperatura_manual`, `null` volta ao automático). **Card**: linha com a temperatura marcada (a da IA já tem o
+  medidor). **Funil**: filtro "Temperatura" na barra (`temperatura` na URL), por temperatura efetiva; a aba Lista avisa
+  que ele só vale no quadro.
+- Na Acelera, hoje 0 leads têm temperatura da IA (`crm_lead_scores` vazia), então só a manual aparece.
+- Ao atualizar o upstream: se ele criar coluna/recurso parecido, conferir antes de reaplicar esta migration.
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).

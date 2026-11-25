@@ -294,6 +294,11 @@ export const updateLeadSchema = z.object({
     .optional(),
   tags: z.array(z.string()).optional(),
   custom_fields: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * ACELERA (fork): temperatura marcada à mão. `null` = voltar ao automático (vale a
+   * faixa da IA). O mesmo vocabulário do CHECK da migration acelera_0010.
+   */
+  temperatura_manual: z.enum(["frio", "morno", "quente"]).nullable().optional(),
 });
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 

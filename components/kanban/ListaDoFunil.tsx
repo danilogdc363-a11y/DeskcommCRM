@@ -114,6 +114,7 @@ export function ListaDoFunil({ pipelineId, pipeline: funil, stages, filtros = SE
       categoria: t("Categoria"),
       periodo: t("Período"),
       ordem: t("Ordenar"),
+      temperatura: t("Temperatura"),
     })[f];
 
   const leads = data?.leads ?? [];

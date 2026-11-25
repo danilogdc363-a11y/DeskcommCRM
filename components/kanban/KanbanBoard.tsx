@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { chaveDoQuadro, useBoard } from "@/hooks/kanban/useBoard";
 import { useMoveCard, type MoveArgs, type RecusaDeCampos, type RetomadaPendente } from "@/hooks/kanban/useMoveCard";
+import { useEditLead } from "@/hooks/kanban/useUpdateLead";
 import { useRenameStage } from "@/hooks/kanban/useRenameStage";
 import { useStageColor } from "@/hooks/kanban/useStageColor";
 import { CamposObrigatoriosDialog } from "./CamposObrigatoriosDialog";
@@ -143,6 +144,7 @@ export function KanbanBoard({
   const [recusaDeCampos, setRecusaDeCampos] = useState<RecusaDeCampos | null>(null);
   const [retomada, setRetomada] = useState<RetomadaPendente | null>(null);
   const [perdaPendente, setPerdaPendente] = useState<MoveArgs | null>(null);
+  const editarNegocio = useEditLead(pipelineId);
   const moveCard = useMoveCard(pipelineId, {
     onCamposFaltando: setRecusaDeCampos,
     onRetomada: setRetomada,
@@ -456,6 +458,10 @@ export function KanbanBoard({
           ownerNames={ownerNames}
           etapas={data.stages}
           onMudarEtapa={(stageId) => aoMoverPelaLista(leadDoDossie, stageId)}
+          // (Acelera) Temperatura marcada à mão: PATCH do negócio, mesmo caminho da edição.
+          onMudarTemperatura={(temperatura_manual) =>
+            editarNegocio.mutate({ leadId: leadDoDossie.id, patch: { temperatura_manual } })
+          }
           // Os atalhos do card (#3487) saem do `settings` do funil que este
           // quadro já carregou — nenhuma chamada nova.
           atalhos={atalhosDoFunil(data.pipeline.settings ?? null)}

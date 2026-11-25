@@ -2,12 +2,15 @@
 
 import { useT } from "@/hooks/i18n/useT";
 import { diaEMes, diasDesde } from "@/lib/kanban/resumo-do-card";
+import { bandLabel } from "@/lib/kanban/score-band";
+import { ehTemperatura } from "@/lib/kanban/temperatura";
+import { classeDaTemperatura } from "./TemperaturaNoDossie";
 import type { Lead } from "@/lib/types/leads";
 import { CalendarBlank } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  lead: Pick<Lead, "created_at" | "conversa" | "tarefas" | "campos_no_card" | "qualificacao">;
+  lead: Pick<Lead, "created_at" | "conversa" | "tarefas" | "campos_no_card" | "qualificacao" | "temperatura_manual">;
   /** Relógio injetável — o teste fixa o "hoje"; o card usa o de agora. */
   agora?: Date;
 }
@@ -45,14 +48,24 @@ export function ResumoNoCard({ lead, agora }: Props) {
   }
 
   const qualificacao = lead.qualificacao;
+  // Só a temperatura MARCADA À MÃO: a da IA já tem o medidor do próprio card.
+  const temperaturaMarcada = ehTemperatura(lead.temperatura_manual) ? lead.temperatura_manual : null;
 
-  if (partes.length === 0 && !proxima && campos.length === 0 && !qualificacao) return null;
+  if (partes.length === 0 && !proxima && campos.length === 0 && !qualificacao && !temperaturaMarcada) {
+    return null;
+  }
 
   return (
     <div className="mt-1 space-y-0.5 text-[11px] text-text-muted" data-testid="resumo-no-card">
       {partes.length > 0 && (
         <p className="truncate tabular-nums" data-testid="resumo-dias">
           {partes.join(" · ")}
+        </p>
+      )}
+
+      {temperaturaMarcada && (
+        <p className={cn("font-semibold", classeDaTemperatura(temperaturaMarcada))} data-testid="resumo-temperatura">
+          {bandLabel(temperaturaMarcada, t)}
         </p>
       )}
 
