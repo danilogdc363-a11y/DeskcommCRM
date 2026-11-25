@@ -276,6 +276,23 @@ Para gerente ou acima, e nunca em funil arquivado (o mesmo corte do renomear que
 - No upstream, a 1.119 traz arrastar a coluna para reordenar. Ao atualizar, confira se este menu ainda faz
   sentido ou se vira só o "Arquivar".
 
+## Resumo no card, ordem das colunas e período do funil
+
+Tudo sem migration: o que precisa ser guardado vive em `pipeline.settings.fields` (jsonb) e na URL.
+
+- **Resumo no card** (`components/kanban/ResumoNoCard.tsx`): "Chegou há Nd · Contato há Nd" (último contato = última
+  mensagem da conversa mais recente do contato, em qualquer direção) e a próxima tarefa em aberto com a data
+  (`lib/kanban/resumo-do-card.ts`; a rota do quadro passou a ler o `title` de `crm_tasks`).
+- **"Mostrar no card"** por campo do funil (`no_card` em `customFieldSchema`, caixa no editor de campos). Só campo do
+  NEGÓCIO e de tipo que cabe em uma linha; a rota anexa `campos_no_card` ao lead (`lib/kanban/campos-no-card.ts`).
+  Empresa e cidade não são fixas: a empresa cria o campo e marca a caixa.
+- **Ordenar** (`ordem` na URL, `lib/kanban/ordenacao.ts`): só apresentação, a `position_in_stage` não é tocada. Com
+  ordem escolhida, arrastar dentro da coluna não reordena; para outra coluna move e o card entra no topo.
+- **Período** (`de`/`ate` na URL, `lib/kanban/periodo.ts`): negócio criado OU que entrou na etapa atual no período
+  (usa `stage_changed_at`, então só vale a ÚLTIMA mudança de etapa). A aba Lista avisa que os dois só valem no quadro.
+- Edições em `filters.ts`, `FilterBar.tsx`, `KanbanBoard.tsx`, `KanbanCard.tsx`, `ListaDoFunil.tsx` e
+  `lib/i18n/dicionario.ts`.
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
