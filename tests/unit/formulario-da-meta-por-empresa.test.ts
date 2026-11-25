@@ -12,7 +12,7 @@
 import { createHmac } from "node:crypto";
 
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const SEGREDO_DO_APP = "segredo-do-app-da-meta-com-tamanho-ok";
 const ORG_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -128,6 +128,38 @@ describe("login de formulários, à parte do de anúncios", () => {
     const [carga, assinatura] = s.split(".");
     const adulterada = Buffer.from(Buffer.from(carga!, "base64url").toString("utf8").replace("formularios", "outracoisa")).toString("base64url");
     expect(verificarEstado(`${adulterada}.${assinatura}`, { segredo, agora })).toBeNull();
+  });
+});
+
+describe("segredo do ambiente diferente do segredo gravado no banco (tela Admin)", () => {
+  const DO_AMBIENTE = "segredo-do-app-do-login-no-ambiente-ok";
+
+  beforeEach(() => vi.stubEnv("META_APP_SECRET", DO_AMBIENTE));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("o aviso assinado com o segredo do ambiente (app do login) entra, mesmo o banco guardando outro", async () => {
+    const r = await postar(aviso({ pagina: PAGINA_A, leadgen: "1001" }), DO_AMBIENTE);
+    expect(r.status).toBe(200);
+    expect(recebidos.map((x) => x.leadgen)).toEqual(["1001"]);
+  });
+
+  it("o assinado com o segredo do banco continua entrando", async () => {
+    const r = await postar(aviso({ pagina: PAGINA_A, leadgen: "1002" }), SEGREDO_DO_APP);
+    expect(r.status).toBe(200);
+    expect(recebidos.map((x) => x.leadgen)).toEqual(["1002"]);
+  });
+
+  it("segredo de qualquer outro app continua recusado", async () => {
+    expect((await postar(aviso({ pagina: PAGINA_A, leadgen: "1003" }), "segredo-de-um-terceiro-qualquer-12345")).status).toBe(401);
+    expect(recebidos).toHaveLength(0);
+  });
+
+  it("a conferência da URL pela Meta aceita a senha derivada de qualquer um dos dois segredos", async () => {
+    const consulta = (token: string) =>
+      GET(new NextRequest(`${URL_DO_AVISO}?hub.mode=subscribe&hub.verify_token=${token}&hub.challenge=abc`));
+    expect((await consulta(verifyTokenDoFormulario(DO_AMBIENTE))).status).toBe(200);
+    expect((await consulta(verifyTokenDoFormulario(SEGREDO_DO_APP))).status).toBe(200);
+    expect((await consulta(verifyTokenDoFormulario("outro-segredo-qualquer-do-mundo-12345"))).status).toBe(403);
   });
 });
 

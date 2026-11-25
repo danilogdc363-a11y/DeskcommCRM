@@ -214,9 +214,10 @@ rota por `[token]` do upstream NÃO foram portadas (lá se cola o token da Pági
 
 ### Como o lead chega
 - **Uma URL só para todas as empresas:** `POST /api/v1/webhooks/lead-ads`. A empresa dona vem da Página
-  (`entry[].id` → `webhook_sources.meta_page_id`), nunca do corpo. Assinatura `x-hub-signature-256` com o
-  segredo do app (`appDaMeta()`: o da tela Admin → Meta, senão `META_APP_SECRET`), em falha fechada e ANTES de
-  qualquer leitura de banco. Página que ninguém ligou → 200 e só log. Lead que não entra (fonte pausada,
+  (`entry[].id` → `webhook_sources.meta_page_id`), nunca do corpo. Assinatura `x-hub-signature-256` aceita com o
+  `META_APP_SECRET` do ambiente (o app do login, que cadastra e assina este webhook) OU com o `appDaMeta()` (o da
+  tela Admin → Meta, banco primeiro): se alguém gravou na tela o segredo de OUTRO app, aceitar só o do banco recusava
+  toda entrega e a conferência da URL. Falha fechada e ANTES de qualquer leitura de banco. Página que ninguém ligou → 200 e só log. Lead que não entra (fonte pausada,
   Meta recusou a leitura) → 200 e uma linha em **Leads recebidos** com o motivo. Só falha NOSSA → 500 (a Meta
   reenvia; seguro, porque `leadgen_id` é único por empresa).
 - O CRM lê o lead na Graph (token da Página no cabeçalho; com os **nomes** de campanha/conjunto/anúncio) e cria
@@ -235,6 +236,9 @@ Na primeira Página ligada de qualquer empresa o CRM cadastra sozinho o webhook 
 É idempotente. A Meta confere a URL na hora, então só funciona com o CRM implantado e acessível.
 **Único passo manual, se a Meta recusar o cadastro:** painel do app → Webhooks → objeto **Página** → colar a
 URL acima e a senha de verificação e assinar o campo `leadgen` (a tela da empresa avisa quando isso acontece).
+**Verificar** (botão da Página) confere as DUAS metades: a Página inscrita no app (`subscribed_apps`) e o app
+apontando para este CRM (`GET /{app-id}/subscriptions`: endereço, campo `leadgen`, ativo) — e mostra o endereço atual
+que a Meta tem quando não bate.
 
 ### O que é preciso no EasyPanel / na Meta (uma vez)
 - Variáveis já existentes: `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_APP_URL`, `INTERNAL_SECRET`. Nenhuma nova.

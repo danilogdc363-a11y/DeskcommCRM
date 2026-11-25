@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { traduzirErroDaMeta } from "./erros-da-meta";
 import { chamarGraph, listarTudo } from "./graph";
-import { garantirInscricaoDoApp, inscreverPagina, listarPaginasDoUsuario, urlDoWebhookDeFormulario } from "./paginas";
+import { garantirInscricaoDoApp, inscreverPagina, lerInscricaoDoApp, listarPaginasDoUsuario, urlDoWebhookDeFormulario } from "./paginas";
 import { verifyTokenConfere, verifyTokenDoFormulario } from "./verificacao";
 
 const SEGREDO = "segredo-do-app-da-meta-com-tamanho-ok";
@@ -167,5 +167,32 @@ describe("Páginas e inscrição", () => {
     );
     const r = await garantirInscricaoDoApp({ appId: "777", appSecret: SEGREDO }, "https://comercial.exemplo.com.br", { fetchImpl: fetch });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe("lerInscricaoDoApp — o que a Meta tem como destino do app", () => {
+  const BASE = "https://comercial.exemplo.com.br";
+  const app = { appId: "777", appSecret: SEGREDO };
+  const com = (assinatura: unknown) => fetchRoteado(() => ({ corpo: { data: assinatura ? [assinatura] : [] } })).fetch;
+  const nossa = { object: "page", callback_url: urlDoWebhookDeFormulario(BASE), active: true, fields: [{ name: "leadgen" }] };
+
+  it("cada estado tem o seu nome, e o endereço atual vai junto", async () => {
+    expect(await lerInscricaoDoApp(app, BASE, { fetchImpl: com(nossa) })).toMatchObject({ ok: true, estado: "ok" });
+    expect(await lerInscricaoDoApp(app, BASE, { fetchImpl: com(null) })).toMatchObject({ ok: true, estado: "sem_inscricao", urlAtual: null });
+    expect(await lerInscricaoDoApp(app, BASE, { fetchImpl: com({ ...nossa, callback_url: "https://outro.exemplo/x" }) })).toMatchObject({
+      estado: "url_diferente",
+      urlAtual: "https://outro.exemplo/x",
+    });
+    expect(await lerInscricaoDoApp(app, BASE, { fetchImpl: com({ ...nossa, fields: [{ name: "feed" }] }) })).toMatchObject({ estado: "sem_campo" });
+    expect(await lerInscricaoDoApp(app, BASE, { fetchImpl: com({ ...nossa, active: false }) })).toMatchObject({ estado: "inativa" });
+  });
+
+  it("só lê (GET) e o token do app vai no cabeçalho, nunca na URL", async () => {
+    const { espiao, fetch } = fetchRoteado(() => ({ corpo: { data: [] } }));
+    await lerInscricaoDoApp(app, BASE, { fetchImpl: fetch });
+    const [url, init] = espiao.mock.calls[0]! as unknown as [string, RequestInit];
+    expect(init.method).toBe("GET");
+    expect(url).not.toContain(SEGREDO);
+    expect((init.headers as Record<string, string>).authorization).toBe(`Bearer 777|${SEGREDO}`);
   });
 });

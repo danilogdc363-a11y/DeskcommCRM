@@ -43,10 +43,26 @@ const LIMITE_DO_CORPO = 1_048_576;
 /** Teto por minuto para a instalação inteira (todas as empresas dividem a URL). */
 const ENTREGAS_POR_MINUTO = 600;
 
+/**
+ * Os segredos de app em que esta rota confia: o do AMBIENTE (`META_APP_SECRET`,
+ * o app do login, que é quem cadastra e assina este webhook) e o `appDaMeta()`
+ * (banco primeiro: o da tela Admin → Meta, do canal oficial). Quando são o mesmo
+ * app, são iguais; se alguém gravou na tela o segredo de OUTRO app, aceitar só o
+ * do banco recusaria toda entrega e a conferência da URL pela Meta.
+ */
+async function segredosDoApp(): Promise<string[]> {
+  const { appSecret } = await appDaMeta();
+  const doAmbiente = process.env.META_APP_SECRET?.trim();
+  return [...new Set([doAmbiente, appSecret].filter((s): s is string => Boolean(s)))];
+}
+
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
-  const { appSecret } = await appDaMeta();
-  if (q.get("hub.mode") === "subscribe" && verifyTokenConfere(q.get("hub.verify_token"), appSecret)) {
+  const segredos = await segredosDoApp();
+  if (
+    q.get("hub.mode") === "subscribe" &&
+    segredos.some((segredo) => verifyTokenConfere(q.get("hub.verify_token"), segredo))
+  ) {
     return new NextResponse(q.get("hub.challenge") ?? "", {
       status: 200,
       headers: { "content-type": "text/plain" },
@@ -67,10 +83,13 @@ export async function POST(req: NextRequest) {
   // A assinatura vem PRIMEIRO, sobre o corpo CRU: corpo de quem não se
   // autenticou não é lido nem interpretado. O segredo é o do app (banco, senão
   // META_APP_SECRET).
-  const { appSecret } = await appDaMeta();
-  const recusa = assinaturaDaMetaConfere(corpo, req.headers.get(CABECALHO_DA_ASSINATURA_DA_META), appSecret ?? null);
-  if (recusa !== null) {
-    logger.warn("[lead-ads] entrega recusada na assinatura", { request_id: requestId, motivo: recusa });
+  const segredos = await segredosDoApp();
+  const cabecalho = req.headers.get(CABECALHO_DA_ASSINATURA_DA_META);
+  const recusas = (segredos.length > 0 ? segredos : [null]).map((segredo) =>
+    assinaturaDaMetaConfere(corpo, cabecalho, segredo),
+  );
+  if (!recusas.some((r) => r === null)) {
+    logger.warn("[lead-ads] entrega recusada na assinatura", { request_id: requestId, motivo: recusas[0] });
     return new NextResponse(null, { status: 401 });
   }
 

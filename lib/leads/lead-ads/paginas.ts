@@ -122,6 +122,29 @@ export function urlDoWebhookDeFormulario(baseDoApp: string): string {
   return new URL("/api/v1/webhooks/lead-ads", baseDoApp).toString();
 }
 
+export type EstadoDaInscricaoDoApp = "ok" | "sem_inscricao" | "url_diferente" | "sem_campo" | "inativa";
+
+/** O que a Meta tem hoje como destino dos avisos de formulário do app (só lê). */
+export async function lerInscricaoDoApp(
+  app: { appId: string; appSecret: string },
+  baseDoApp: string,
+  opcoes: { fetchImpl?: typeof fetch } = {},
+): Promise<
+  { ok: true; estado: EstadoDaInscricaoDoApp; urlAtual: string | null } | Extract<RespostaDaGraph<never>, { ok: false }>
+> {
+  const r = await chamarGraph<{
+    data?: { object?: unknown; callback_url?: unknown; active?: unknown; fields?: { name?: unknown }[] }[];
+  }>({ caminho: `${app.appId}/subscriptions`, token: `${app.appId}|${app.appSecret}`, fetchImpl: opcoes.fetchImpl });
+  if (!r.ok) return r;
+  const pagina = (r.dados.data ?? []).find((s) => s.object === "page");
+  if (!pagina) return { ok: true, estado: "sem_inscricao", urlAtual: null };
+  const urlAtual = typeof pagina.callback_url === "string" ? pagina.callback_url : null;
+  if (urlAtual !== urlDoWebhookDeFormulario(baseDoApp)) return { ok: true, estado: "url_diferente", urlAtual };
+  if (!(pagina.fields ?? []).some((f) => f.name === CAMPO_DO_FORMULARIO)) return { ok: true, estado: "sem_campo", urlAtual };
+  if (pagina.active === false) return { ok: true, estado: "inativa", urlAtual };
+  return { ok: true, estado: "ok", urlAtual };
+}
+
 /**
  * Garante que o app da Meta recebe os avisos de formulário em NOSSA URL.
  *
