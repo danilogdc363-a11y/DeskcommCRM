@@ -197,7 +197,8 @@ rota por `[token]` do upstream NÃO foram portadas (lá se cola o token da Pági
 ### Como a empresa liga
 1. **Conectar formulários** (botão próprio, ao lado do "Conectar com o Facebook" de anúncios): mesmo login,
    mesma URL de retorno já cadastrada (`.../api/v1/meta-ads/oauth/callback`), mas pede `ads_read` +
-   `leads_retrieval`, `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement`
+   `leads_retrieval`, `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement` e
+   `pages_manage_ads` (a Meta exige esta última para listar os formulários no "Trazer leads antigos")
    (`?para=formularios` no `connect`, propósito dentro do `state` assinado). É um botão à parte de propósito:
    enquanto a Meta não aprova essas permissões para todos, pedi-las no login de anúncios podia derrubar o que
    funciona. As permissões já concedidas acumulam no token. Para juntar num botão só depois da aprovação:
@@ -245,8 +246,9 @@ URL acima e a senha de verificação e assinar o campo `leadgen` (a tela da empr
   função no app (administrador, desenvolvedor, testador) consegue ligar.
 - Teste: developers.facebook.com/tools/lead-ads-testing (Página "Danilo gestor", `924300437422209`; app
   `723939443513987`): "Criar lead"; ele aparece no CRM e em "Leads recebidos". Apague o lead de teste.
-- **Trazer leads antigos** pode exigir também `pages_manage_ads` na Meta (listar formulários). Se a Meta
-  recusar, a tela explica; o conserto é incluir essa permissão em `ESCOPO_DE_FORMULARIOS`.
+- **`pages_manage_ads` é obrigatória** no login de formulários (confirmado em produção em 25/11: a Meta recusa
+  listar os formulários com erro 200 citando essa permissão). Ela precisa estar no app da Meta (casos de uso /
+  permissões) e entrar na revisão do app junto das outras. Quem conectou sem ela vê o aviso para reconectar.
 
 ### Aviso no WhatsApp do comercial (legado, transitório)
 `ACELERA_LEADS_AVISO_URL` + `ACELERA_LEADS_AVISO_SECRET` (aviso pelo OS) continuam funcionando para o lead que

@@ -63,7 +63,7 @@ vi.mock("@/lib/webhooks/secrets", () => ({
 }));
 vi.mock("@/lib/leads/lead-ads/paginas", () => ({
   listarPaginasDoUsuario: vi.fn(async () => cenario.paginas),
-  permissoesConcedidas: vi.fn(async () => ({ ok: true, concedidas: ["ads_read", "leads_retrieval", "pages_show_list", "pages_manage_metadata", "pages_read_engagement"] })),
+  permissoesConcedidas: vi.fn(async () => ({ ok: true, concedidas: ["ads_read", "leads_retrieval", "pages_show_list", "pages_manage_metadata", "pages_read_engagement", "pages_manage_ads"] })),
   inscreverPagina: vi.fn(async () => cenario.inscricaoDaPagina),
   desinscreverPagina: vi.fn(async (id: string) => (desinscritas.push(id), { ok: true, dados: {} })),
   paginaEstaInscrita: vi.fn(async () => ({ ok: true, inscrita: true })),
@@ -198,6 +198,18 @@ describe("desconectarPagina", () => {
 });
 
 describe("listarPaginasDaEmpresa", () => {
+  it("login sem pages_manage_ads (conexão antiga): pede para reconectar, não finge que está tudo certo", async () => {
+    const mod = await import("@/lib/leads/lead-ads/paginas");
+    vi.mocked(mod.permissoesConcedidas).mockResolvedValueOnce({
+      ok: true,
+      concedidas: ["ads_read", "leads_retrieval", "pages_show_list", "pages_manage_metadata", "pages_read_engagement"],
+    });
+    const r = await listarPaginasDaEmpresa(admin, ORG);
+    expect(r.loginFeito).toBe(false);
+    expect(r.permissoesFaltando).toEqual(["pages_manage_ads"]);
+    expect(r.aviso).toContain("Conectar formulários");
+  });
+
   it("sem login de formulários: não chama a Meta e diz o que fazer", async () => {
     cenario.credencial = { ok: false, motivo: "sem_conexao" };
     const r = await listarPaginasDaEmpresa(admin, ORG);

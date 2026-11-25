@@ -29,6 +29,10 @@ export const ESCOPO_DE_FORMULARIOS = [
   "pages_show_list",
   "pages_manage_metadata",
   "pages_read_engagement",
+  // A Meta exige esta para LISTAR os formulários da Página (o "Trazer leads
+  // antigos"): confirmado em produção em 25/11, erro 200 citando-a. É
+  // obrigatória como as outras: quem conectou sem ela precisa reconectar.
+  "pages_manage_ads",
 ] as const;
 const TIMEOUT_MS = 10_000;
 /** Renova quando falta menos que isto para vencer. */

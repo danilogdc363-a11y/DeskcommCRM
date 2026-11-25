@@ -97,10 +97,10 @@ describe("login de formulários, à parte do de anúncios", () => {
     expect(scope).toBe(ESCOPO_DE_LEITURA);
   });
 
-  it("com propósito `formularios` pede também as quatro permissões de formulário", () => {
+  it("com propósito `formularios` pede também as cinco permissões de formulário (inclui pages_manage_ads, que a Meta exige para listar os formulários)", () => {
     const scope = new URL(montarUrlDeLogin(app, { ...opcoes, para: "formularios" })).searchParams.get("scope")!;
-    expect(scope.split(",")).toEqual(["ads_read", "leads_retrieval", "pages_show_list", "pages_manage_metadata", "pages_read_engagement"]);
-    expect(ESCOPO_DE_FORMULARIOS).toHaveLength(4);
+    expect(scope.split(",")).toEqual(["ads_read", "leads_retrieval", "pages_show_list", "pages_manage_metadata", "pages_read_engagement", "pages_manage_ads"]);
+    expect(ESCOPO_DE_FORMULARIOS).toHaveLength(5);
   });
 
   const segredo = "segredo-interno-de-teste-bem-comprido";
