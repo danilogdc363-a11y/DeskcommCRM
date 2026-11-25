@@ -46,7 +46,7 @@ function permissoesCitadas(texto: string): string[] {
   return [...new Set(texto.match(/\b(?:pages|leads|ads|business|instagram)_[a-z_]+\b/g) ?? [])];
 }
 
-function traduzir(falha: Falha): Omit<ErroEmPortugues, "detalheTecnico"> {
+function fraseDoErro(falha: Falha): Omit<ErroEmPortugues, "detalheTecnico"> {
   if (falha.motivo === "rede") {
     return {
       codigo: "meta_fora_do_ar",
@@ -123,5 +123,5 @@ function traduzir(falha: Falha): Omit<ErroEmPortugues, "detalheTecnico"> {
 }
 
 export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
-  return { ...traduzir(falha), detalheTecnico: falha.erro?.mensagem ?? null };
+  return { ...fraseDoErro(falha), detalheTecnico: falha.erro?.mensagem ?? null };
 }
