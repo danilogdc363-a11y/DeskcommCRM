@@ -1516,6 +1516,27 @@ function PipelineEditor({
                 cujo valor mora em `contacts.custom_fields`. A chave só é
                 gravada quando vale `contato` — um funil sem ela continua
                 idêntico ao de antes. */}
+            {/* ACELERA (fork): "Mostrar no card". Só para campo do NEGÓCIO e de tipo que
+                cabe em uma linha (o arquivo tem bloco próprio; o texto longo não cabe).
+                A chave só é gravada quando LIGADA — um funil sem ela fica idêntico. */}
+            {escopoDoCampo(f) === "negocio" && f.type !== "file" && f.type !== "textarea" && (
+              <label className="flex items-center gap-2 text-xs lg:col-span-4">
+                <input
+                  type="checkbox"
+                  aria-label={`${t("Mostrar no card")} — ${f.label || i + 1}`}
+                  checked={f.no_card === true}
+                  onChange={(ev) => {
+                    const next = [...fields];
+                    const copia = { ...next[i] } as CustomFieldDef;
+                    if (ev.target.checked) copia.no_card = true;
+                    else delete (copia as { no_card?: unknown }).no_card;
+                    next[i] = copia;
+                    setFields(next);
+                  }}
+                />
+                {t("Mostrar no card")}
+              </label>
+            )}
             {/* Fora do funil padrão o seletor só aparece para DESFAZER uma marca
                 "Contato" que já exista (gravada quando este era o padrão). */}
             {(ehFunilPadrao || escopoDoCampo(f) === "contato") && (

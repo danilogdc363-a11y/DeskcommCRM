@@ -29,7 +29,8 @@ import {
   anexarAnexosAosNegocios,
   type LinhaDoAnexoNoQuadro,
 } from "@/lib/kanban/anexos-no-card";
-import { camposDeArquivoDoNegocio } from "@/lib/leads/campos-do-funil";
+import { camposDeArquivoDoNegocio, camposDoFunil } from "@/lib/leads/campos-do-funil";
+import { anexarCamposNoCard } from "@/lib/kanban/campos-no-card";
 import { diasDeRecorte, recortaEncerradosAntigos } from "@/lib/kanban/recorte-de-encerrados";
 import { anexarTarefasAosNegocios, type LinhaDaTarefaNoQuadro } from "@/lib/kanban/tarefas-no-quadro";
 import { buscaEmLotes } from "@/lib/supabase/em-lotes";
@@ -469,7 +470,7 @@ async function withTarefas(
   const { data, error } = await buscaEmLotes(leadIds, (lote) =>
     supabase
       .from("crm_tasks")
-      .select("lead_id, due_date, status")
+      .select("lead_id, due_date, status, title")
       .eq("organization_id", organizationId)
       .in("lead_id", lote)
       .in("status", ["pending", "in_progress"]),
@@ -675,10 +676,17 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
     return fail("internal_error", leadsComAnexos.error, 500, { requestId });
   }
 
+  // ACELERA (fork): os campos que o operador marcou "mostrar no card". Passo PURO
+  // (o `custom_fields` já vem no negócio), então não há leitura nem erro novos.
+  const leadsComCampos = anexarCamposNoCard(
+    leadsComAnexos.leads,
+    camposDoFunil((pipeline as Pipeline).settings),
+  ) as Lead[];
+
   const leadsComConversa = await withConversas(
     supabase,
     (pipeline as Pipeline).organization_id,
-    leadsComAnexos.leads,
+    leadsComCampos,
   );
   if (leadsComConversa.error) {
     return fail("internal_error", leadsComConversa.error, 500, { requestId });

@@ -276,6 +276,36 @@ Para gerente ou acima, e nunca em funil arquivado (o mesmo corte do renomear que
 - No upstream, a 1.119 traz arrastar a coluna para reordenar. Ao atualizar, confira se este menu ainda faz
   sentido ou se vira só o "Arquivar".
 
+## Resumo no card, ordem das colunas e período do funil
+
+Tudo sem migration: o que precisa ser guardado vive em `pipeline.settings.fields` (jsonb) e na URL.
+
+- **Resumo no card** (`components/kanban/ResumoNoCard.tsx`): "Chegou há Nd · Contato há Nd" (último contato = última
+  mensagem da conversa mais recente do contato, em qualquer direção) e a próxima tarefa em aberto com a data
+  (`lib/kanban/resumo-do-card.ts`; a rota do quadro passou a ler o `title` de `crm_tasks`).
+- **"Mostrar no card"** por campo do funil (`no_card` em `customFieldSchema`, caixa no editor de campos). Só campo do
+  NEGÓCIO e de tipo que cabe em uma linha; a rota anexa `campos_no_card` ao lead (`lib/kanban/campos-no-card.ts`).
+  Empresa e cidade não são fixas: a empresa cria o campo e marca a caixa.
+- **Ordenar** (`ordem` na URL, `lib/kanban/ordenacao.ts`): só apresentação, a `position_in_stage` não é tocada. Com
+  ordem escolhida, arrastar dentro da coluna não reordena; para outra coluna move e o card entra no topo.
+- **Período** (`de`/`ate` na URL, `lib/kanban/periodo.ts`): negócio criado OU que entrou na etapa atual no período
+  (usa `stage_changed_at`, então só vale a ÚLTIMA mudança de etapa). A aba Lista avisa que os dois só valem no quadro.
+- Edições em `filters.ts`, `FilterBar.tsx`, `KanbanBoard.tsx`, `KanbanCard.tsx`, `ListaDoFunil.tsx` e
+  `lib/i18n/dicionario.ts`.
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
+
+## 5. Análise › Funil do comercial
+
+Página `/app/funil-de-vendas` (menu Análise, piso `manager`): funil padrão em quatro degraus —
+leads novos, qualificados (o contato respondeu no WhatsApp), passaram por "Reunião marcada"
+e fecharam (etapa `is_won`) —, com variação contra o período anterior de mesmo tamanho.
+Dois modos: **criados no período** (coorte, onde estão hoje) e **movidos no período** (quem entrou
+em cada degrau dentro do período). Cartões com o investido no Meta (conexão de leitura,
+`ad_insights_connections`, conta padrão) e custo por lead/reunião/fechamento dos leads do Meta
+(`source = meta_ads` ou webhook com utm/source_name `ig`/`facebook`). Sem migration.
+Arquivos: `lib/reports/funil-de-vendas{,.test}.ts`, `lib/reports/ler-tudo{,.test}.ts`,
+`app/api/v1/reports/funil-de-vendas/route.ts`, `hooks/reports/useFunilDeVendas.ts`,
+`app/app/funil-de-vendas/`, 1 item em `lib/navigation/catalogo.ts`.

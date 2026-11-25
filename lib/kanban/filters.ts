@@ -1,4 +1,6 @@
 import type { Lead } from "@/lib/types/leads";
+import { ehOrdemDoQuadro, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
+import { ehDiaValido, negocioNoPeriodo } from "@/lib/kanban/periodo";
 import { diaDeHojeLocal } from "@/lib/ai/pacing-knobs";
 import { cardTemMarcador, cardTemTodasNaMesmaCaixa } from "@/lib/kanban/marcadores-do-card";
 import {
@@ -67,6 +69,19 @@ export interface LeadFilters {
   lostReason?: string;
   /** A categoria do motivo de perda (issue #1537), resolvida no funil. */
   lostCategory?: string;
+  /**
+   * ACELERA (fork): a ordem dos cards dentro de cada coluna. Ausente = a ordem
+   * do quadro (a que o operador montou arrastando). Só apresentação: não é
+   * filtro e não esconde card nenhum — mora aqui para ir na URL junto com o resto.
+   */
+  ordem?: OrdemDoQuadro;
+  /**
+   * ACELERA (fork): PERÍODO, `AAAA-MM-DD`, extremos inclusivos e abertos. Pega o
+   * negócio CRIADO no período ou que ENTROU na etapa atual nele (ver
+   * `negocioNoPeriodo`).
+   */
+  de?: string;
+  ate?: string;
 }
 
 /**
@@ -126,6 +141,10 @@ export function filtersFromParams(
     overdueOnly: sp.get("overdue") === "1" || undefined,
     lostReason: sp.get("motivo") ?? undefined,
     lostCategory: sp.get("categoria") ?? undefined,
+    // Valor desconhecido na URL some (deep-link colado à mão não quebra a tela).
+    ...(ehOrdemDoQuadro(sp.get("ordem")) ? { ordem: sp.get("ordem") as OrdemDoQuadro } : {}),
+    ...(ehDiaValido(sp.get("de")) ? { de: sp.get("de") as string } : {}),
+    ...(ehDiaValido(sp.get("ate")) ? { ate: sp.get("ate") as string } : {}),
   };
 }
 
@@ -141,6 +160,9 @@ export function filtersToParams(f: LeadFilters): string {
   if (f.overdueOnly) p.set("overdue", "1");
   if (f.lostReason) p.set("motivo", f.lostReason);
   if (f.lostCategory) p.set("categoria", f.lostCategory);
+  if (f.ordem) p.set("ordem", f.ordem);
+  if (f.de) p.set("de", f.de);
+  if (f.ate) p.set("ate", f.ate);
   return p.toString();
 }
 
@@ -243,6 +265,7 @@ export function applyFilters(
       if (typeof f.valueCentsMin === "number" && valor < f.valueCentsMin) return false;
       if (typeof f.valueCentsMax === "number" && valor > f.valueCentsMax) return false;
     }
+    if ((f.de || f.ate) && !negocioNoPeriodo(l, f.de, f.ate)) return false;
     if (f.overdueOnly) {
       if (l.status !== "open") return false;
       if (!l.expected_close_date || l.expected_close_date >= today) return false;

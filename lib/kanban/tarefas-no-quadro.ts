@@ -1,11 +1,15 @@
-import { resumoDasTarefas, type SituacaoDaTarefa, type Tarefa } from "@/lib/tarefas/tipos";
+import { estaEncerrada, resumoDasTarefas, type SituacaoDaTarefa, type Tarefa } from "@/lib/tarefas/tipos";
 import type { Lead } from "@/lib/types/leads";
+
+import { escolherProximaTarefa } from "./resumo-do-card";
 
 /** A linha de `crm_tasks` como o quadro a lê — só as colunas que esta regra usa. */
 export interface LinhaDaTarefaNoQuadro {
   lead_id: string | null;
   due_date: string | null;
   status: SituacaoDaTarefa;
+  /** ACELERA (fork): o título, para o card citar a próxima tarefa. Opcional. */
+  title?: string | null;
 }
 
 /**
@@ -31,7 +35,7 @@ export function anexarTarefasAosNegocios(
   linhas: readonly LinhaDaTarefaNoQuadro[],
   agora: Date = new Date(),
 ): Lead[] {
-  const porNegocio = new Map<string, Array<Pick<Tarefa, "due_date" | "status">>>();
+  const porNegocio = new Map<string, Array<Pick<Tarefa, "due_date" | "status"> & { title?: string | null }>>();
   for (const linha of linhas) {
     if (!linha.lead_id) continue;
     const doNegocio = porNegocio.get(linha.lead_id);
@@ -44,6 +48,10 @@ export function anexarTarefasAosNegocios(
     const tarefas = porNegocio.get(lead.id);
     if (!tarefas) return lead;
     const resumo = resumoDasTarefas(tarefas, agora);
-    return resumo.abertas > 0 ? { ...lead, tarefas: resumo } : lead;
+    if (resumo.abertas === 0) return lead;
+    // ACELERA (fork): a próxima tarefa só entra entre as EM ABERTO (a mesma
+    // régua do selo) e só quando a linha trouxe o título.
+    const proxima = escolherProximaTarefa(tarefas.filter((t) => !estaEncerrada(t)));
+    return { ...lead, tarefas: proxima ? { ...resumo, proxima } : resumo };
   });
 }
