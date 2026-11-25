@@ -540,6 +540,7 @@ export function PipelinePageClient({
           podeRenomearEtapa={!arquivado && ROLE_RANK[role] >= ROLE_RANK.manager}
           denso={cardsCompactos}
           somenteLeitura={arquivado}
+          ordem={filters.ordem}
         />
       )}
       {!arquivado && (
