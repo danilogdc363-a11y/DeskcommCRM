@@ -30,6 +30,13 @@ import {
 import { categoriaDoMotivo } from "@/lib/leads/motivos-de-perda-do-funil";
 import { rotuloDoMotivoDePerda } from "@/lib/schemas/leads";
 import { ehOrdemDoQuadro, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
+import {
+  ATALHOS_DE_PERIODO,
+  atalhoAtivoDoPeriodo,
+  ehModoDoPeriodo,
+  periodoDoAtalho,
+  type AtalhoDePeriodo,
+} from "@/lib/kanban/periodo";
 import { bandLabel } from "@/lib/kanban/score-band";
 import { TEMPERATURAS, ehTemperatura } from "@/lib/kanban/temperatura";
 import { cn } from "@/lib/utils";
@@ -56,6 +63,7 @@ const STATUS_OPTIONS: Array<{ value: NonNullable<LeadFilters["status"]>; label: 
 
 export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps) {
   const t = useT();
+  const atalhoAtivo = atalhoAtivoDoPeriodo(filters.de, filters.ate);
   const user = useUser();
   const { data: members } = useAssignableMembers(true);
   const { data: agents } = useAssignableAgents(true);
@@ -405,6 +413,41 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         title={t("Negócios criados ou movidos de etapa neste período")}
       >
         <span className="text-text-muted">{t("Período")}:</span>
+        {/* Atalhos: só PREENCHEM de/até (as datas aparecem nos campos). */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label={t("Atalhos de período")}
+              className={cn(
+                "h-7 rounded border border-border px-2 text-xs hover:bg-accent/10",
+                atalhoAtivo && "border-accent bg-accent/10 font-medium",
+              )}
+            >
+              {atalhoAtivo ? rotuloDoAtalho(atalhoAtivo, t) : t("Atalhos")}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuRadioGroup
+              value={atalhoAtivo ?? "nenhum"}
+              onValueChange={(valor) => {
+                const escolhido = ATALHOS_DE_PERIODO.find((a) => a === valor);
+                if (!escolhido) {
+                  onChange({ ...filters, de: undefined, ate: undefined });
+                  return;
+                }
+                onChange({ ...filters, ...periodoDoAtalho(escolhido) });
+              }}
+            >
+              <DropdownMenuRadioItem value="nenhum">{t("Qualquer data")}</DropdownMenuRadioItem>
+              {ATALHOS_DE_PERIODO.map((a) => (
+                <DropdownMenuRadioItem key={a} value={a}>
+                  {rotuloDoAtalho(a, t)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <input
           type="date"
           aria-label={t("De")}
@@ -422,6 +465,21 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
           onChange={(e) => onChange({ ...filters, ate: e.target.value || undefined })}
           className="h-7 rounded border border-border bg-surface px-1 text-xs"
         />
+        {/* O QUE o período olha. O padrão é o de sempre (criados ou movidos). */}
+        <select
+          aria-label={t("O que o período considera")}
+          value={filters.periodoModo ?? "criados_ou_movidos"}
+          onChange={(e) =>
+            onChange({
+              ...filters,
+              periodoModo: ehModoDoPeriodo(e.target.value) && e.target.value === "criados" ? "criados" : undefined,
+            })
+          }
+          className="h-7 rounded border border-border bg-surface px-1 text-xs"
+        >
+          <option value="criados_ou_movidos">{t("Criados ou movidos")}</option>
+          <option value="criados">{t("Só criados")}</option>
+        </select>
       </div>
 
       {/* ACELERA (fork): temperatura (a marcada à mão ou, sem marcação, a da IA). */}
@@ -471,6 +529,7 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         filters.ordem ||
         filters.de ||
         filters.ate ||
+        filters.periodoModo ||
         filters.temperatura ||
         (filters.status && filters.status !== "all")) && (
         <Button
@@ -514,5 +573,26 @@ function rotuloDaOrdem(ordem: OrdemDoQuadro, t: (texto: string) => string): stri
       return t("Nome: A a Z");
     case "nome_za":
       return t("Nome: Z a A");
+  }
+}
+
+function rotuloDoAtalho(atalho: AtalhoDePeriodo, t: (texto: string) => string): string {
+  switch (atalho) {
+    case "hoje":
+      return t("Hoje");
+    case "ontem":
+      return t("Ontem");
+    case "esta_semana":
+      return t("Esta semana");
+    case "semana_passada":
+      return t("Semana passada");
+    case "ultimos_7":
+      return t("Últimos 7 dias");
+    case "este_mes":
+      return t("Este mês");
+    case "mes_passado":
+      return t("Mês passado");
+    case "ultimos_30":
+      return t("Últimos 30 dias");
   }
 }

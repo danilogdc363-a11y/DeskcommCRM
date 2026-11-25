@@ -2,7 +2,7 @@ import type { Lead } from "@/lib/types/leads";
 import { ehOrdemDoQuadro, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
 import type { ScoreBand } from "@/lib/kanban/score-band";
 import { ehTemperatura, temperaturaEfetiva } from "@/lib/kanban/temperatura";
-import { ehDiaValido, negocioNoPeriodo } from "@/lib/kanban/periodo";
+import { ehDiaValido, negocioNoPeriodo, type ModoDoPeriodo } from "@/lib/kanban/periodo";
 import { diaDeHojeLocal } from "@/lib/ai/pacing-knobs";
 import { cardTemMarcador, cardTemTodasNaMesmaCaixa } from "@/lib/kanban/marcadores-do-card";
 import {
@@ -85,6 +85,11 @@ export interface LeadFilters {
   de?: string;
   ate?: string;
   /**
+   * ACELERA (fork): o que o período olha. Ausente = `criados_ou_movidos` (o
+   * comportamento de antes); `criados` = só quem chegou no período.
+   */
+  periodoModo?: ModoDoPeriodo;
+  /**
    * ACELERA (fork): só os leads desta TEMPERATURA — a marcada à mão ou, sem
    * marcação, a faixa da IA (`temperaturaEfetiva`). Lead sem temperatura nenhuma
    * fica de fora quando o filtro está ligado.
@@ -153,6 +158,7 @@ export function filtersFromParams(
     ...(ehOrdemDoQuadro(sp.get("ordem")) ? { ordem: sp.get("ordem") as OrdemDoQuadro } : {}),
     ...(ehDiaValido(sp.get("de")) ? { de: sp.get("de") as string } : {}),
     ...(ehDiaValido(sp.get("ate")) ? { ate: sp.get("ate") as string } : {}),
+    ...(sp.get("pmodo") === "criados" ? { periodoModo: "criados" as const } : {}),
     ...(ehTemperatura(sp.get("temperatura")) ? { temperatura: sp.get("temperatura") as ScoreBand } : {}),
   };
 }
@@ -172,6 +178,7 @@ export function filtersToParams(f: LeadFilters): string {
   if (f.ordem) p.set("ordem", f.ordem);
   if (f.de) p.set("de", f.de);
   if (f.ate) p.set("ate", f.ate);
+  if (f.periodoModo === "criados") p.set("pmodo", "criados");
   if (f.temperatura) p.set("temperatura", f.temperatura);
   return p.toString();
 }
@@ -275,7 +282,7 @@ export function applyFilters(
       if (typeof f.valueCentsMin === "number" && valor < f.valueCentsMin) return false;
       if (typeof f.valueCentsMax === "number" && valor > f.valueCentsMax) return false;
     }
-    if ((f.de || f.ate) && !negocioNoPeriodo(l, f.de, f.ate)) return false;
+    if ((f.de || f.ate) && !negocioNoPeriodo(l, f.de, f.ate, f.periodoModo)) return false;
     if (f.temperatura && temperaturaEfetiva(l)?.band !== f.temperatura) return false;
     if (f.overdueOnly) {
       if (l.status !== "open") return false;

@@ -295,6 +295,19 @@ Tudo sem migration: o que precisa ser guardado vive em `pipeline.settings.fields
 - Edições em `filters.ts`, `FilterBar.tsx`, `KanbanBoard.tsx`, `KanbanCard.tsx`, `ListaDoFunil.tsx` e
   `lib/i18n/dicionario.ts`.
 
+## Atalhos do filtro de período e "criados × criados ou movidos"
+
+Sem migration; só a barra do funil (`FilterBar.tsx`) e `lib/kanban/periodo.ts`.
+
+- Menu **"Atalhos"** ao lado das datas: Hoje, Ontem, Esta semana, Semana passada, Últimos 7 dias, Este mês, Mês passado,
+  Últimos 30 dias e "Qualquer data" (limpa). Só PREENCHEM de/até — as datas aparecem nos campos, então a conta nunca
+  fica escondida. O menu mostra o atalho ativo quando as datas são exatamente as dele; datas à mão = personalizado.
+- Semana é **segunda a domingo**; "últimos N dias" conta hoje (7 dias = hoje e os 6 anteriores); mês é do dia 1 ao
+  último. Tudo no relógio de quem olha (`periodoDoAtalho`, `atalhoAtivoDoPeriodo`).
+- Seletor **"Criados ou movidos" (padrão) / "Só criados"** (`periodoModo`, URL `pmodo=criados`; o padrão não escreve nada
+  na URL, então links antigos funcionam igual). "Movidos" continua sendo só a ÚLTIMA mudança de etapa (`stage_changed_at`).
+- "Limpar filtros" já existia e zera tudo (busca, dono, status, etiquetas, motivo, ordem, período, modo, temperatura).
+
 ## Qualificação X/Y no dossiê e no card
 
 Sem migration: as perguntas são campos do funil e as respostas já moram em `crm_leads.custom_fields`.

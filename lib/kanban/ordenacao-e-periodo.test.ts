@@ -3,7 +3,16 @@ import { describe, expect, it } from "vitest";
 import { applyFilters, filtersFromParams, filtersToParams } from "./filters";
 import { filtrosForaDaLista } from "./filtros-da-lista";
 import { comparadorDaOrdem, ehOrdemDoQuadro } from "./ordenacao";
-import { diaLocalDe, ehDiaValido, negocioNoPeriodo } from "./periodo";
+import {
+  ATALHOS_DE_PERIODO,
+  atalhoAtivoDoPeriodo,
+  diaLocalDe,
+  ehDiaValido,
+  ehModoDoPeriodo,
+  negocioNoPeriodo,
+  periodoDoAtalho,
+  ultimosDias,
+} from "./periodo";
 import type { Lead } from "@/lib/types/leads";
 
 const lead = (id: string, resto: Partial<Lead> = {}): Lead =>
@@ -113,5 +122,98 @@ describe("filtros: URL e aplicação", () => {
   });
   it("a aba Lista avisa que período e ordem só valem no quadro", () => {
     expect(filtrosForaDaLista({ de: "2026-11-01", ordem: "edicao" })).toEqual(["periodo", "ordem"]);
+  });
+});
+
+describe("ultimosDias", () => {
+  const HOJE = new Date(2026, 10, 25, 15, 30); // 25/11/2026, 15h30 locais
+  it("7 dias = hoje e os 6 anteriores (7 dias do calendário)", () => {
+    expect(ultimosDias(7, HOJE)).toEqual({ de: "2026-11-19", ate: "2026-11-25" });
+  });
+  it("30 dias atravessa o mês", () => {
+    expect(ultimosDias(30, HOJE)).toEqual({ de: "2026-10-27", ate: "2026-11-25" });
+  });
+  it("atravessa o ano e o fevereiro bissexto", () => {
+    expect(ultimosDias(7, new Date(2027, 0, 3))).toEqual({ de: "2026-12-28", ate: "2027-01-03" });
+    expect(ultimosDias(3, new Date(2028, 2, 1))).toEqual({ de: "2028-02-28", ate: "2028-03-01" });
+  });
+  it("número inválido vira 1 dia (só hoje)", () => {
+    expect(ultimosDias(0, HOJE)).toEqual({ de: "2026-11-25", ate: "2026-11-25" });
+  });
+  it("o resultado é sempre um dia válido para o filtro", () => {
+    const r = ultimosDias(30, HOJE);
+    expect(ehDiaValido(r.de) && ehDiaValido(r.ate)).toBe(true);
+  });
+});
+
+describe("modo do período: criados × criados ou movidos", () => {
+  const movido = { created_at: "2026-09-01T12:00:00", stage_changed_at: "2026-11-22T12:00:00" };
+  const criado = { created_at: "2026-11-22T12:00:00", stage_changed_at: null };
+
+  it("o padrão (criados ou movidos) pega o movido; 'criados' NÃO pega", () => {
+    expect(negocioNoPeriodo(movido, "2026-11-20", "2026-11-24")).toBe(true);
+    expect(negocioNoPeriodo(movido, "2026-11-20", "2026-11-24", "criados_ou_movidos")).toBe(true);
+    expect(negocioNoPeriodo(movido, "2026-11-20", "2026-11-24", "criados")).toBe(false);
+  });
+  it("'criados' continua pegando o criado no período", () => {
+    expect(negocioNoPeriodo(criado, "2026-11-20", "2026-11-24", "criados")).toBe(true);
+  });
+  it("valida o valor", () => {
+    expect(ehModoDoPeriodo("criados")).toBe(true);
+    expect(ehModoDoPeriodo("movidos")).toBe(false);
+  });
+  it("applyFilters respeita o modo", () => {
+    const m = lead("m", { created_at: "2026-09-01T12:00:00", stage_changed_at: "2026-11-22T12:00:00" });
+    expect(ids(applyFilters([m], { de: "2026-11-20", ate: "2026-11-24" }))).toEqual(["m"]);
+    expect(ids(applyFilters([m], { de: "2026-11-20", ate: "2026-11-24", periodoModo: "criados" }))).toEqual([]);
+  });
+  it("o modo vai e volta pela URL; só 'criados' é escrito (o padrão fica limpo)", () => {
+    expect(filtersToParams({ de: "2026-11-01", periodoModo: "criados" })).toContain("pmodo=criados");
+    expect(filtersToParams({ de: "2026-11-01" })).not.toContain("pmodo");
+    expect(filtersFromParams(new URLSearchParams("pmodo=criados")).periodoModo).toBe("criados");
+    expect(filtersFromParams(new URLSearchParams("pmodo=xx")).periodoModo).toBeUndefined();
+  });
+});
+
+describe("periodoDoAtalho (hoje é quarta, 25/11/2026)", () => {
+  const QUARTA = new Date(2026, 10, 25, 15, 30);
+  const casos: Array<[(typeof ATALHOS_DE_PERIODO)[number], string, string]> = [
+    ["hoje", "2026-11-25", "2026-11-25"],
+    ["ontem", "2026-11-24", "2026-11-24"],
+    ["esta_semana", "2026-11-23", "2026-11-29"], // segunda a domingo
+    ["semana_passada", "2026-11-16", "2026-11-22"],
+    ["ultimos_7", "2026-11-19", "2026-11-25"],
+    ["este_mes", "2026-11-01", "2026-11-30"],
+    ["mes_passado", "2026-10-01", "2026-10-31"],
+    ["ultimos_30", "2026-10-27", "2026-11-25"],
+  ];
+  it.each(casos)("%s", (atalho, de, ate) => {
+    expect(periodoDoAtalho(atalho, QUARTA)).toEqual({ de, ate });
+  });
+
+  it("domingo ainda é da semana que começou na segunda anterior", () => {
+    expect(periodoDoAtalho("esta_semana", new Date(2026, 10, 29))).toEqual({ de: "2026-11-23", ate: "2026-11-29" });
+  });
+  it("segunda abre uma semana nova", () => {
+    expect(periodoDoAtalho("esta_semana", new Date(2026, 10, 30))).toEqual({ de: "2026-11-30", ate: "2026-12-06" });
+    expect(periodoDoAtalho("semana_passada", new Date(2026, 10, 30))).toEqual({ de: "2026-11-23", ate: "2026-11-29" });
+  });
+  it("janeiro: o mês passado é dezembro do ano anterior", () => {
+    expect(periodoDoAtalho("mes_passado", new Date(2027, 0, 10))).toEqual({ de: "2026-12-01", ate: "2026-12-31" });
+  });
+  it("fevereiro bissexto fecha no dia 29", () => {
+    expect(periodoDoAtalho("este_mes", new Date(2028, 1, 10))).toEqual({ de: "2028-02-01", ate: "2028-02-29" });
+  });
+  it("todo atalho devolve dias válidos, de ≤ até", () => {
+    for (const a of ATALHOS_DE_PERIODO) {
+      const p = periodoDoAtalho(a, QUARTA);
+      expect(ehDiaValido(p.de) && ehDiaValido(p.ate) && p.de <= p.ate).toBe(true);
+    }
+  });
+  it("reconhece o atalho ativo pelas datas; personalizado devolve null", () => {
+    expect(atalhoAtivoDoPeriodo("2026-11-24", "2026-11-24", QUARTA)).toBe("ontem");
+    expect(atalhoAtivoDoPeriodo("2026-11-19", "2026-11-25", QUARTA)).toBe("ultimos_7");
+    expect(atalhoAtivoDoPeriodo("2026-11-01", "2026-11-10", QUARTA)).toBeNull();
+    expect(atalhoAtivoDoPeriodo(undefined, undefined, QUARTA)).toBeNull();
   });
 });
