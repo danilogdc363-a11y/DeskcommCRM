@@ -195,6 +195,12 @@ export const customFieldSchema = z.object({
    */
   no_card: z.boolean().optional(),
   /**
+   * ACELERA (fork): CONTA NA QUALIFICAÇÃO. Opt-in, só para campo `boolean` do
+   * negócio: as perguntas marcadas formam o "Qualificação 3/4" do dossiê e do card
+   * (`lib/kanban/qualificacao.ts`). Ausente = não conta, e o funil fica como era.
+   */
+  qualificacao: z.boolean().optional(),
+  /**
    * A QUE PERTENCE O CAMPO (issue #2791): ao NEGÓCIO (`negocio`) ou ao CONTATO
    * (`contato`).
    *

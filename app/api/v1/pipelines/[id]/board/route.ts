@@ -31,6 +31,7 @@ import {
 } from "@/lib/kanban/anexos-no-card";
 import { camposDeArquivoDoNegocio, camposDoFunil } from "@/lib/leads/campos-do-funil";
 import { anexarCamposNoCard } from "@/lib/kanban/campos-no-card";
+import { anexarQualificacao } from "@/lib/kanban/qualificacao";
 import { diasDeRecorte, recortaEncerradosAntigos } from "@/lib/kanban/recorte-de-encerrados";
 import { anexarTarefasAosNegocios, type LinhaDaTarefaNoQuadro } from "@/lib/kanban/tarefas-no-quadro";
 import { buscaEmLotes } from "@/lib/supabase/em-lotes";
@@ -678,9 +679,10 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
 
   // ACELERA (fork): os campos que o operador marcou "mostrar no card". Passo PURO
   // (o `custom_fields` já vem no negócio), então não há leitura nem erro novos.
-  const leadsComCampos = anexarCamposNoCard(
-    leadsComAnexos.leads,
-    camposDoFunil((pipeline as Pipeline).settings),
+  const camposDesteFunil = camposDoFunil((pipeline as Pipeline).settings);
+  const leadsComCampos = anexarQualificacao(
+    anexarCamposNoCard(leadsComAnexos.leads, camposDesteFunil),
+    camposDesteFunil,
   ) as Lead[];
 
   const leadsComConversa = await withConversas(

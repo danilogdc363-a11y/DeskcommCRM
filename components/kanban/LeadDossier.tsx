@@ -15,6 +15,7 @@ import { AtalhosDoNegocio } from "./AtalhosDoCard";
 import { ConversaNoDossie } from "./ConversaNoDossie";
 import { LeadFieldsForm, type ControleDosCamposDoNegocio } from "./LeadFieldsForm";
 import { RevisaoDoDocumento } from "./RevisaoDoDocumento";
+import { QualificacaoNoDossie } from "./QualificacaoNoDossie";
 import { ScoreSlot } from "./ScoreSlot";
 import { LeadTimeline } from "./LeadTimeline";
 import { PropostasDoNegocio } from "./PropostasDoNegocio";
@@ -251,6 +252,9 @@ export function LeadDossier({
             {new Date(score.at).toLocaleString(tagDoIdioma)}
           </p>
         )}
+
+        {/* ACELERA (fork): "Qualificação 3/4" — só leitura; se edita em Dados do negócio. */}
+        <QualificacaoNoDossie campos={fieldDefs} valores={lead.custom_fields} />
 
         {/* OS ATALHOS DO CARD (#3487) — logo abaixo do cabeçalho, ANTES de
             tudo que rola. A entrega inteira existe para o atendente não sair do

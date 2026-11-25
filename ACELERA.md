@@ -295,6 +295,20 @@ Tudo sem migration: o que precisa ser guardado vive em `pipeline.settings.fields
 - Edições em `filters.ts`, `FilterBar.tsx`, `KanbanBoard.tsx`, `KanbanCard.tsx`, `ListaDoFunil.tsx` e
   `lib/i18n/dicionario.ts`.
 
+## Qualificação X/Y no dossiê e no card
+
+Sem migration: as perguntas são campos do funil e as respostas já moram em `crm_leads.custom_fields`.
+
+- Na empresa: Configurações › Funis, campo de tipo Sim/Não do negócio ganha a caixa **"Conta na qualificação"**
+  (`qualificacao: true` em `customFieldSchema`). As perguntas (decisor, orçamento, solução, momento) são da empresa,
+  nada fixo no código.
+- Regra pura em `lib/kanban/qualificacao.ts`: conta só `true` (não respondido e "não" valem igual). Funil sem
+  pergunta marcada não desenha nada e a rota devolve os mesmos objetos.
+- **Dossiê** (`components/kanban/QualificacaoNoDossie.tsx`): "Qualificação 3/4" com barra e a resposta de cada
+  pergunta, só leitura (edita-se em Dados do negócio). **Card**: linha "Qualificação 3/4" em `ResumoNoCard`
+  (a rota anexa `qualificacao: {marcados, total}`).
+- Limite: na conversa do Inbox o painel lateral pode não trazer a marca nas definições; o bloco só aparece onde ela vem.
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).

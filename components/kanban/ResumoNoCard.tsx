@@ -7,7 +7,7 @@ import { CalendarBlank } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  lead: Pick<Lead, "created_at" | "conversa" | "tarefas" | "campos_no_card">;
+  lead: Pick<Lead, "created_at" | "conversa" | "tarefas" | "campos_no_card" | "qualificacao">;
   /** Relógio injetável — o teste fixa o "hoje"; o card usa o de agora. */
   agora?: Date;
 }
@@ -44,13 +44,27 @@ export function ResumoNoCard({ lead, agora }: Props) {
     partes.push(diasSemContato === 0 ? t("Contato hoje") : `${t("Contato há")} ${diasSemContato}d`);
   }
 
-  if (partes.length === 0 && !proxima && campos.length === 0) return null;
+  const qualificacao = lead.qualificacao;
+
+  if (partes.length === 0 && !proxima && campos.length === 0 && !qualificacao) return null;
 
   return (
     <div className="mt-1 space-y-0.5 text-[11px] text-text-muted" data-testid="resumo-no-card">
       {partes.length > 0 && (
         <p className="truncate tabular-nums" data-testid="resumo-dias">
           {partes.join(" · ")}
+        </p>
+      )}
+
+      {qualificacao && (
+        <p
+          className={cn(
+            "tabular-nums",
+            qualificacao.marcados === qualificacao.total && "font-semibold text-success-fg",
+          )}
+          data-testid="resumo-qualificacao"
+        >
+          {t("Qualificação")} {qualificacao.marcados}/{qualificacao.total}
         </p>
       )}
 

@@ -78,6 +78,8 @@ export interface CustomFieldDef {
    * tornava o `multiselect` inviável com listas longas.
    */
   multiple?: boolean;
+  /** ACELERA (fork): a pergunta conta no "Qualificação X/Y" — ver `lib/kanban/qualificacao.ts`. */
+  qualificacao?: boolean;
 }
 
 interface Props {

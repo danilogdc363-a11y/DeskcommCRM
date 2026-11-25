@@ -1,5 +1,6 @@
 import type { AnexosDoCampoNoCard } from "@/lib/kanban/anexos-no-card";
 import type { CampoNoCard } from "@/lib/kanban/campos-no-card";
+import type { QualificacaoNoCard } from "@/lib/kanban/qualificacao";
 import type { ScoreBand } from "@/lib/kanban/score-band";
 import type { ResumoDasTarefas } from "@/lib/tarefas/tipos";
 
@@ -178,6 +179,12 @@ export interface Lead {
    * marcado ou todos vazios. Ver `lib/kanban/campos-no-card.ts`.
    */
   campos_no_card?: CampoNoCard[];
+  /**
+   * ACELERA (fork). Derivado: quantas das perguntas de qualificação do funil estão
+   * marcadas neste negócio ("3 de 4"). Ausente = o funil não definiu perguntas.
+   * Ver `lib/kanban/qualificacao.ts`.
+   */
+  qualificacao?: QualificacaoNoCard;
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;
