@@ -21,6 +21,7 @@ import { decideMotivoDaPerda } from "@/lib/leads/motivo-da-perda";
 import type { Lead } from "@/lib/types/leads";
 import type { BoardData, Pipeline, Stage } from "@/lib/kanban/types";
 import { StageColumn } from "./StageColumn";
+import { NovaEtapaNoQuadro } from "./NovaEtapaNoQuadro";
 import { LeadDossier } from "./LeadDossier";
 import { RetomarComoNovoNegocioDialog } from "./RetomarComoNovoNegocioDialog";
 import { atalhosDoFunil } from "@/lib/leads/atalhos-do-card";
@@ -412,6 +413,11 @@ export function KanbanBoard({
               somenteLeitura={somenteLeitura}
             />
           ))}
+          {/* (Acelera) Criar etapa sem sair do quadro: mesmo corte de papel do
+              renomear, e nunca em funil arquivado. */}
+          {podeRenomearEtapa && !somenteLeitura && (
+            <NovaEtapaNoQuadro pipelineId={pipelineId} etapas={data.stages} />
+          )}
         </div>
       </div>
       {leadDoDossie && (

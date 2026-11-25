@@ -10,6 +10,7 @@ import { intervaloDaColuna } from "@/lib/kanban/selecao";
 import { formatSomaPorMoeda, formatValorDoNegocio, MOEDA_PADRAO, somaPorMoeda } from "@/lib/money";
 import { KanbanCard, type GestoDeSelecao } from "./KanbanCard";
 import { SeletorDeCorDaEtapa } from "./SeletorDeCorDaEtapa";
+import { MenuDaEtapaNoQuadro } from "./MenuDaEtapaNoQuadro";
 import { corDaEtapa } from "@/lib/kanban/cores-de-etapa";
 
 interface StageColumnProps {
@@ -272,6 +273,11 @@ export function StageColumn({
             >
               {selecionadosAqui > 0 ? `${selecionadosAqui}/${leads.length}` : leads.length}
             </span>
+            {/* (Acelera) Mover e arquivar a etapa sem sair do quadro: mesmo corte
+                de papel do renomear, e nunca em funil arquivado. */}
+            {podeRenomear && !somenteLeitura && etapas && (
+              <MenuDaEtapaNoQuadro pipelineId={pipelineId} etapa={stage} etapas={etapas} />
+            )}
           </div>
 
           {temTotal && (

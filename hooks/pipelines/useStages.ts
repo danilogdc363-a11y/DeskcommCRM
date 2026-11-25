@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
 
+import { chaveDoQuadro } from "@/hooks/kanban/useBoard";
+
 import { chaveDoFunil } from "./useAgentMapping";
 
 /**
@@ -56,6 +58,9 @@ function useReler(pipelineId: string) {
   const qc = useQueryClient();
   return () => {
     void qc.invalidateQueries({ queryKey: chaveDoFunil(pipelineId) });
+    // (Acelera) O quadro também edita etapa (criar, mover, arquivar): sem reler a
+    // chave dele, a coluna nova só aparecia depois de recarregar a página.
+    void qc.invalidateQueries({ queryKey: chaveDoQuadro(pipelineId) });
   };
 }
 

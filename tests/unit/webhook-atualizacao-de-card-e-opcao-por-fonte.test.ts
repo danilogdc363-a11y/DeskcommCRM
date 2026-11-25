@@ -162,7 +162,7 @@ describe("a opção da fonte decide se o reenvio escreve no card (#2316)", () =>
     expect(h.moverLead).not.toHaveBeenCalled();
     expect(desfecho()).toBe("duplicado");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: "lead-1" } });
+    expect(await res.json()).toEqual({ data: { lead_id: "lead-1", desfecho: "duplicado" } });
   });
 
   it("coluna AUSENTE (instalação sem a migration aplicada) é desligada, não ligada", async () => {

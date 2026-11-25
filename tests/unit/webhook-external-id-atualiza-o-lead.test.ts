@@ -157,7 +157,7 @@ describe("external_id que já existe com dado DIFERENTE (#2316)", () => {
     );
     expect(res).toBeInstanceOf(Response);
     expect((res as Response).status).toBe(200);
-    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1" } });
+    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1", desfecho: "atualizado" } });
   });
 
   it("external_id e stage NUNCA viram campo personalizado no card", async () => {
@@ -243,7 +243,7 @@ describe("external_id que já existe com dado DIFERENTE (#2316)", () => {
 
     expect(res).toBeInstanceOf(Response);
     expect((res as Response).status).toBe(200);
-    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1" } });
+    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1", desfecho: "atualizado" } });
     expect(h.registrar).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ outcome: "atualizado", leadId: "lead-1" }),
@@ -273,7 +273,7 @@ describe("external_id que já existe com payload IDÊNTICO (#2316)", () => {
       expect.objectContaining({ outcome: "duplicado", leadId: "lead-1", contactId: "contato-1" }),
     );
     expect((res as Response).status).toBe(200);
-    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1" } });
+    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1", desfecho: "duplicado" } });
   });
 
   it("mesmo valor com outro tipo (100 gravado, '100' reenviado) é o MESMO dado", async () => {
@@ -329,7 +329,7 @@ describe("corrida do retry: o índice único derruba o segundo INSERT (#2316)", 
       expect.objectContaining({ outcome: "atualizado", leadId: "lead-1" }),
     );
     expect((res as Response).status).toBe(200);
-    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1" } });
+    expect(await (res as Response).json()).toEqual({ data: { lead_id: "lead-1", desfecho: "atualizado" } });
   });
 
   it("corrida com payload IDÊNTICO continua idempotente", async () => {

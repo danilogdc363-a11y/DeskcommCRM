@@ -253,7 +253,7 @@ describe("primeiro envio com external_id inédito adota o card aberto (#3357)", 
       "com a opção ligada o contato ficou com DOIS cards abertos no mesmo funil — o defeito da issue",
     ).not.toHaveBeenCalled();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA } });
+    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA, desfecho: "atualizado" } });
 
     // O id do envio passa a apontar para o card que a equipe já está tocando.
     const feitos = carimbos();
@@ -369,7 +369,7 @@ describe("regressões do caminho com external_id (#3357)", () => {
     expect(leadInput.pipeline_id).toBe("pipe-1");
     expect(leadInput.stage_id).toBe("stage-1");
     expect(desfecho()).toBe("criado");
-    expect(await res.json()).toEqual({ data: { lead_id: "lead-novo" } });
+    expect(await res.json()).toEqual({ data: { lead_id: "lead-novo", desfecho: "criado" } });
   });
 
   it("⭐ segundo id DISTINTO do mesmo contato cria o card do segundo id — dois ids, dois cards (#3366)", async () => {
@@ -496,7 +496,7 @@ describe("as bordas do portão 3 (#3366)", () => {
     const res = await enviar(ENVIO_DO_TRIAL);
 
     expect(h.criarLead, "a corrida de dois primeiros envios abriu um segundo card").not.toHaveBeenCalled();
-    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA } });
+    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA, desfecho: "atualizado" } });
   });
 
   it("⭐ segundo envio do mesmo id com \"Atualizar o card existente\" DESLIGADA: sucesso e card intocado (o que o fragmento afirma)", async () => {
@@ -506,7 +506,7 @@ describe("as bordas do portão 3 (#3366)", () => {
     const res = await enviar({ ...ENVIO_DO_TRIAL, evento: "trial_ativado" });
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA } });
+    expect(await res.json()).toEqual({ data: { lead_id: CARD_DA_CONVERSA, desfecho: "duplicado" } });
     expect(h.criarLead).not.toHaveBeenCalled();
     expect(h.atualizarLead).not.toHaveBeenCalled();
     expect(h.moverLead).not.toHaveBeenCalled();

@@ -259,6 +259,23 @@ Arquivos: `lib/leads/lead-ads/*`, `app/api/v1/webhooks/lead-ads/route.ts`,
 `login/{estado,oauth}.ts`, `meta-ads/oauth/{connect,callback}/route.ts`, `lib/webhooks/captacao.ts` (3 motivos),
 `lib/audit/actions.ts` (2 ações), `lib/database.types.ts`, `lib/i18n/*`.
 
+## Editar etapas direto no quadro do funil
+
+Para gerente ou acima, e nunca em funil arquivado (o mesmo corte do renomear que o upstream já tinha):
+
+- **"+ Nova etapa"** no fim do quadro. A rota cria no fim do funil; logo depois a etapa é levada para antes das
+  colunas de fechamento e perda (`depoisDeParaEtapaNova`). Se esse segundo passo falhar, ela fica no fim e um
+  aviso diz para movê-la pelo menu.
+- **Menu "⋯" da coluna:** mover para a esquerda/direita (`depois_de`), arquivar (pergunta para onde vão os
+  negócios quando o servidor responde `precisa_destino`) e atalho para Configurações › Funis.
+- Sem rota nem migration nova: usa `POST/PATCH/DELETE /api/v1/pipelines/:id/stages` e os hooks de
+  `hooks/pipelines/useStages.ts`, que agora também releem o quadro (`chaveDoQuadro`).
+- Arquivos: `components/kanban/MenuDaEtapaNoQuadro.tsx`, `components/kanban/NovaEtapaNoQuadro.tsx`,
+  `lib/kanban/edicao-de-etapas.ts` (+ teste), e edições em `StageColumn.tsx`, `KanbanBoard.tsx`,
+  `useStages.ts` e `lib/i18n/dicionario.ts` (15 frases em espanhol).
+- No upstream, a 1.119 traz arrastar a coluna para reordenar. Ao atualizar, confira se este menu ainda faz
+  sentido ou se vira só o "Arquivar".
+
 ## Botões do comercial na conversa
 
 No topo da conversa (no celular, no menu "Mais opções"): **+ Criar lead** (funil de Orçamentos, senão o padrão), **Disparar evento** (move o card para a etapa cuja regra envia o evento; o consumidor do `event_log` envia em até cerca de 1 minuto) e **Agendar mensagem** (tabela `mensagens_agendadas`, migration `acelera_0004`, cron `api/v1/cron/mensagens-agendadas` a cada minuto no scheduler; envia no máximo uma vez).
