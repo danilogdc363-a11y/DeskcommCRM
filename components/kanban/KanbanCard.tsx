@@ -16,6 +16,7 @@ import { ScoreSlot } from "./ScoreSlot";
 import { OwnerBadge } from "./OwnerBadge";
 import { ContatoNoCard } from "./ContatoNoCard";
 import { ArquivosNoCard } from "./ArquivosNoCard";
+import { ResumoNoCard } from "./ResumoNoCard";
 import { TarefasNoCard } from "./TarefasNoCard";
 
 /** Os dois gestos de seleção que o card sabe relatar. */
@@ -415,6 +416,11 @@ export function KanbanCard({
               dono/tempo. Some por inteiro quando o funil não declara campo de
               arquivo — quem não usa o recurso não vê card diferente. */}
           <ArquivosNoCard lead={lead} />
+
+          {/* ACELERA (fork): dias desde a chegada e desde o último contato, próxima
+              tarefa com data e os campos marcados "mostrar no card". Aparece
+              também no compacto: é o que se lê de relance para decidir. */}
+          <ResumoNoCard lead={lead} />
 
           {/* ④ dono (+ selo de tarefas) · ⑤ tempo no estágio */}
           <div
