@@ -29,6 +29,7 @@ import {
 } from "@/lib/kanban/filters";
 import { categoriaDoMotivo } from "@/lib/leads/motivos-de-perda-do-funil";
 import { rotuloDoMotivoDePerda } from "@/lib/schemas/leads";
+import { ehOrdemDoQuadro, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
 import { cn } from "@/lib/utils";
 import { rotuloDoMembro } from "@/lib/users/rotulo-do-atendente";
 
@@ -365,6 +366,62 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* ACELERA (fork): ordem dos cards dentro das colunas. Só apresentação: nada é
+          gravado, e "Ordem do quadro" devolve a que o operador montou arrastando. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className={cn(filters.ordem && "border-accent bg-accent/10")}>
+            {t("Ordenar")}: {filters.ordem ? rotuloDaOrdem(filters.ordem, t) : t("Ordem do quadro")}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel>{t("Ordenar os cards de cada coluna")}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioGroup
+            value={filters.ordem ?? "manual"}
+            onValueChange={(valor) =>
+              onChange({ ...filters, ordem: ehOrdemDoQuadro(valor) ? valor : undefined })
+            }
+          >
+            <DropdownMenuRadioItem value="manual">{t("Ordem do quadro")}</DropdownMenuRadioItem>
+            {OPCOES_DE_ORDEM.map((opcao) => (
+              <DropdownMenuRadioItem key={opcao} value={opcao}>
+                {rotuloDaOrdem(opcao, t)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* ACELERA (fork): período. Pega o negócio criado nele OU que entrou na etapa
+          atual nele (a última mudança de etapa). Extremos inclusivos e opcionais. */}
+      <div
+        className={cn(
+          "flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-sm",
+          (filters.de || filters.ate) && "border-accent bg-accent/10",
+        )}
+        title={t("Negócios criados ou movidos de etapa neste período")}
+      >
+        <span className="text-text-muted">{t("Período")}:</span>
+        <input
+          type="date"
+          aria-label={t("De")}
+          value={filters.de ?? ""}
+          max={filters.ate || undefined}
+          onChange={(e) => onChange({ ...filters, de: e.target.value || undefined })}
+          className="h-7 rounded border border-border bg-surface px-1 text-xs"
+        />
+        <span className="text-text-muted">{t("até")}</span>
+        <input
+          type="date"
+          aria-label={t("Até")}
+          value={filters.ate ?? ""}
+          min={filters.de || undefined}
+          onChange={(e) => onChange({ ...filters, ate: e.target.value || undefined })}
+          className="h-7 rounded border border-border bg-surface px-1 text-xs"
+        />
+      </div>
+
       <label
         className={cn(
           "flex cursor-pointer select-none items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm",
@@ -385,6 +442,9 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         filters.overdueOnly ||
         filters.lostReason ||
         filters.lostCategory ||
+        filters.ordem ||
+        filters.de ||
+        filters.ate ||
         (filters.status && filters.status !== "all")) && (
         <Button
           variant="ghost"
@@ -399,4 +459,33 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
       )}
     </div>
   );
+}
+
+const OPCOES_DE_ORDEM: readonly OrdemDoQuadro[] = [
+  "criacao_novos",
+  "criacao_antigos",
+  "edicao",
+  "contato_recentes",
+  "contato_antigos",
+  "nome_az",
+  "nome_za",
+];
+
+function rotuloDaOrdem(ordem: OrdemDoQuadro, t: (texto: string) => string): string {
+  switch (ordem) {
+    case "criacao_novos":
+      return t("Criação: mais novos primeiro");
+    case "criacao_antigos":
+      return t("Criação: mais antigos primeiro");
+    case "edicao":
+      return t("Última edição: mais recentes primeiro");
+    case "contato_recentes":
+      return t("Último contato: mais recentes primeiro");
+    case "contato_antigos":
+      return t("Último contato: parados há mais tempo primeiro");
+    case "nome_az":
+      return t("Nome: A a Z");
+    case "nome_za":
+      return t("Nome: Z a A");
+  }
 }

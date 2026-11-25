@@ -17,6 +17,7 @@ import { useReactivations } from "@/hooks/leads/useReactivations";
 import { midpoint } from "@/lib/kanban/fractional-indexing";
 import { posicaoNoFimDaEtapa, proximoNaEtapaInteira } from "@/lib/kanban/vizinho-na-etapa";
 import { compararNaEtapa, posicaoNoTopoDaEtapa } from "@/lib/kanban/entrada-na-etapa";
+import { comparadorDaOrdem, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
 import { decideMotivoDaPerda } from "@/lib/leads/motivo-da-perda";
 import type { Lead } from "@/lib/types/leads";
 import type { BoardData, Pipeline, Stage } from "@/lib/kanban/types";
@@ -61,9 +62,20 @@ interface KanbanBoardProps {
    * É a razão de o funil arquivado ser abrível sem desarquivar.
    */
   somenteLeitura?: boolean;
+  /**
+   * ACELERA (fork): a ordem dos cards dentro das colunas, escolhida na barra de
+   * filtros. Ausente = a que o operador montou arrastando. Com uma ordem
+   * escolhida, arrastar DENTRO da coluna não reordena (a ordem é da regra) —
+   * arrastar PARA OUTRA coluna continua movendo o card.
+   */
+  ordem?: OrdemDoQuadro;
 }
 
-function groupLeadsByStage(stages: Stage[], leads: Lead[]): Map<string, Lead[]> {
+function groupLeadsByStage(
+  stages: Stage[],
+  leads: Lead[],
+  ordem?: OrdemDoQuadro,
+): Map<string, Lead[]> {
   const map = new Map<string, Lead[]>();
   for (const stage of stages) map.set(stage.id, []);
   for (const lead of leads) {
@@ -74,8 +86,11 @@ function groupLeadsByStage(stages: Stage[], leads: Lead[]): Map<string, Lead[]> 
   // (com o desempate por `id`) para a tela não depender da ordem de chegada:
   // sem o desempate, dois cards empatados trocavam de lugar a cada render
   // (#3461).
+  // ACELERA (fork): com uma ordem escolhida na barra, ela manda na coluna; o
+  // desempate dela já é `compararNaEtapa`. "Ordem do quadro" = o de sempre.
+  const comparador = comparadorDaOrdem(ordem) ?? compararNaEtapa;
   for (const list of map.values()) {
-    list.sort(compararNaEtapa);
+    list.sort(comparador);
   }
   return map;
 }
@@ -110,6 +125,7 @@ export function KanbanBoard({
   podeRenomearEtapa = false,
   denso = false,
   somenteLeitura = false,
+  ordem,
 }: KanbanBoardProps) {
   const t = useT();
   const useExternal = stagesProp !== undefined && leadsProp !== undefined;
@@ -199,8 +215,8 @@ export function KanbanBoard({
 
   const grouped = useMemo(() => {
     if (!data) return null;
-    return groupLeadsByStage(data.stages, data.leads);
-  }, [data]);
+    return groupLeadsByStage(data.stages, data.leads, ordem);
+  }, [data, ordem]);
 
   // Um conjunto por vez, e não um card por vez: o board recebe o resultado do
   // gesto já resolvido pela coluna (um card, um intervalo, a etapa inteira). A
@@ -279,6 +295,10 @@ export function KanbanBoard({
       ) {
         return;
       }
+      // ACELERA (fork): com ordem escolhida, soltar dentro da MESMA coluna não
+      // muda nada — o lugar do card é decidido pela regra, não pela mão. Gravar
+      // uma posição aqui seria mexer na ordem manual sem o operador ver efeito.
+      if (ordem && source.droppableId === destination.droppableId) return;
 
       const lead = data.leads.find((l) => l.id === draggableId);
       if (!lead) return;
@@ -309,10 +329,13 @@ export function KanbanBoard({
         draggableId,
       );
 
-      const newPosition = midpoint(
-        before?.position_in_stage ?? null,
-        after?.position_in_stage ?? null,
-      );
+      // ACELERA (fork): com ordem escolhida, o índice em que se soltou é o da
+      // lista ORDENADA — não diz nada sobre a `position_in_stage`. O card que
+      // CHEGA de outra coluna entra no topo da ordem manual, como no menu
+      // "Mover para…".
+      const newPosition = ordem
+        ? posicaoNoTopoDaEtapa(etapaInteira ?? destList, draggableId)
+        : midpoint(before?.position_in_stage ?? null, after?.position_in_stage ?? null);
 
       if (Number.isNaN(newPosition)) {
         // Collision — Wave 8 will handle global rebalance. For now, abort silently.
@@ -326,7 +349,7 @@ export function KanbanBoard({
         expectedUpdatedAt: lead.updated_at,
       });
     },
-    [data, grouped, moverPara, qc, pipelineId, somenteLeitura],
+    [data, grouped, moverPara, qc, pipelineId, somenteLeitura, ordem],
   );
 
   if (isLoading) {

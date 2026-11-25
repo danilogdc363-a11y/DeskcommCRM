@@ -126,6 +126,12 @@ export function estaAtrasada(
 export interface ResumoDasTarefas {
   abertas: number;
   atrasadas: number;
+  /**
+   * ACELERA (fork): a tarefa de prazo mais próximo, para o card dizer "Fazer
+   * follow up 25/11". Só o quadro preenche (`lib/kanban/tarefas-no-quadro.ts`);
+   * `resumoDasTarefas` não a calcula e segue devolvendo só as duas contagens.
+   */
+  proxima?: { titulo: string; due_date: string | null };
 }
 
 /**

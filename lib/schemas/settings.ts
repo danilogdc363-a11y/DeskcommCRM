@@ -187,6 +187,14 @@ export const customFieldSchema = z.object({
   ]),
   required: z.boolean().optional(),
   /**
+   * ACELERA (fork): MOSTRAR NO CARD do quadro. Opt-in por campo — a ausência é
+   * "não mostra", então todo funil existente continua com o card de antes. Só vale
+   * para campo do NEGÓCIO (o do contato mora em outra tabela) e para tipo que cabe
+   * em uma linha (`file` tem o bloco próprio; `textarea` é longo demais).
+   * Quem lê é `lib/kanban/campos-no-card.ts`.
+   */
+  no_card: z.boolean().optional(),
+  /**
    * A QUE PERTENCE O CAMPO (issue #2791): ao NEGÓCIO (`negocio`) ou ao CONTATO
    * (`contato`).
    *

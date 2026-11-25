@@ -1,4 +1,5 @@
 import type { AnexosDoCampoNoCard } from "@/lib/kanban/anexos-no-card";
+import type { CampoNoCard } from "@/lib/kanban/campos-no-card";
 import type { ScoreBand } from "@/lib/kanban/score-band";
 import type { ResumoDasTarefas } from "@/lib/tarefas/tipos";
 
@@ -171,6 +172,12 @@ export interface Lead {
    * `lib/kanban/anexos-no-card.ts`.
    */
   anexos?: AnexosDoCampoNoCard[];
+  /**
+   * ACELERA (fork). Derivado (não é coluna): os campos do funil que o operador
+   * marcou "mostrar no card", com o valor deste negócio. Ausente = nenhum campo
+   * marcado ou todos vazios. Ver `lib/kanban/campos-no-card.ts`.
+   */
+  campos_no_card?: CampoNoCard[];
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;
