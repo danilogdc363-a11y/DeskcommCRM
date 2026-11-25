@@ -30,6 +30,8 @@ import {
 import { categoriaDoMotivo } from "@/lib/leads/motivos-de-perda-do-funil";
 import { rotuloDoMotivoDePerda } from "@/lib/schemas/leads";
 import { ehOrdemDoQuadro, type OrdemDoQuadro } from "@/lib/kanban/ordenacao";
+import { bandLabel } from "@/lib/kanban/score-band";
+import { TEMPERATURAS, ehTemperatura } from "@/lib/kanban/temperatura";
 import { cn } from "@/lib/utils";
 import { rotuloDoMembro } from "@/lib/users/rotulo-do-atendente";
 
@@ -422,6 +424,30 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         />
       </div>
 
+      {/* ACELERA (fork): temperatura (a marcada à mão ou, sem marcação, a da IA). */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className={cn(filters.temperatura && "border-accent bg-accent/10")}>
+            {t("Temperatura")}: {filters.temperatura ? bandLabel(filters.temperatura, t) : t("Todas")}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuRadioGroup
+            value={filters.temperatura ?? "todas"}
+            onValueChange={(valor) =>
+              onChange({ ...filters, temperatura: ehTemperatura(valor) ? valor : undefined })
+            }
+          >
+            <DropdownMenuRadioItem value="todas">{t("Todas")}</DropdownMenuRadioItem>
+            {TEMPERATURAS.map((band) => (
+              <DropdownMenuRadioItem key={band} value={band}>
+                {bandLabel(band, t)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <label
         className={cn(
           "flex cursor-pointer select-none items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm",
@@ -445,6 +471,7 @@ export function FilterBar({ filters, onChange, leads, settings }: FilterBarProps
         filters.ordem ||
         filters.de ||
         filters.ate ||
+        filters.temperatura ||
         (filters.status && filters.status !== "all")) && (
         <Button
           variant="ghost"

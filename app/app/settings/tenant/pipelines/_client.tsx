@@ -1537,6 +1537,27 @@ function PipelineEditor({
                 {t("Mostrar no card")}
               </label>
             )}
+            {/* ACELERA (fork): "Conta na qualificação". Só para pergunta de SIM/NÃO
+                (`boolean`) do negócio: as marcadas formam o "Qualificação 3/4" do dossiê
+                e do card. A chave só é gravada quando LIGADA. */}
+            {escopoDoCampo(f) === "negocio" && f.type === "boolean" && (
+              <label className="flex items-center gap-2 text-xs lg:col-span-4">
+                <input
+                  type="checkbox"
+                  aria-label={`${t("Conta na qualificação")} — ${f.label || i + 1}`}
+                  checked={f.qualificacao === true}
+                  onChange={(ev) => {
+                    const next = [...fields];
+                    const copia = { ...next[i] } as CustomFieldDef;
+                    if (ev.target.checked) copia.qualificacao = true;
+                    else delete (copia as { qualificacao?: unknown }).qualificacao;
+                    next[i] = copia;
+                    setFields(next);
+                  }}
+                />
+                {t("Conta na qualificação")}
+              </label>
+            )}
             {/* Fora do funil padrão o seletor só aparece para DESFAZER uma marca
                 "Contato" que já exista (gravada quando este era o padrão). */}
             {(ehFunilPadrao || escopoDoCampo(f) === "contato") && (

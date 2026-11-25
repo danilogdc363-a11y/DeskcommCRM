@@ -15,6 +15,9 @@ import { AtalhosDoNegocio } from "./AtalhosDoCard";
 import { ConversaNoDossie } from "./ConversaNoDossie";
 import { LeadFieldsForm, type ControleDosCamposDoNegocio } from "./LeadFieldsForm";
 import { RevisaoDoDocumento } from "./RevisaoDoDocumento";
+import { QualificacaoNoDossie } from "./QualificacaoNoDossie";
+import { TemperaturaNoDossie } from "./TemperaturaNoDossie";
+import type { ScoreBand } from "@/lib/kanban/score-band";
 import { ScoreSlot } from "./ScoreSlot";
 import { LeadTimeline } from "./LeadTimeline";
 import { PropostasDoNegocio } from "./PropostasDoNegocio";
@@ -50,6 +53,12 @@ interface Props {
    * Ausente = nenhum botão, que é o comportamento de antes da entrega.
    */
   atalhos?: AtalhoDoCard[];
+  /**
+   * ACELERA (fork): gravar a temperatura marcada à mão (`null` = automática). Quem
+   * monta o dossiê tem o hook de edição do quadro; ausente, o dossiê só MOSTRA a
+   * temperatura marcada (nenhum seletor que não saberia gravar).
+   */
+  onMudarTemperatura?: (temperatura: ScoreBand | null) => void;
 }
 
 function formatValor(cents: number | null, currency: string | null): string {
@@ -108,6 +117,7 @@ export function LeadDossier({
   etapas,
   onMudarEtapa,
   atalhos,
+  onMudarTemperatura,
 }: Props) {
   const tagDoIdioma = useTagDeIdioma();
   const t = useT();
@@ -212,6 +222,11 @@ export function LeadDossier({
             ownerName={owner.name}
             agentVersion={owner.agentVersion}
           />
+          {/* ACELERA (fork): temperatura marcada à mão — agent+ edita, como as tarefas. */}
+          <TemperaturaNoDossie
+            valor={lead.temperatura_manual}
+            onMudar={podeEditarTarefas ? onMudarTemperatura : undefined}
+          />
           {score && (
             // O MESMO componente do card, não uma cópia do medidor.
             // "Superfície nova herda as decisões da antiga" só vale como
@@ -251,6 +266,9 @@ export function LeadDossier({
             {new Date(score.at).toLocaleString(tagDoIdioma)}
           </p>
         )}
+
+        {/* ACELERA (fork): "Qualificação 3/4" — só leitura; se edita em Dados do negócio. */}
+        <QualificacaoNoDossie campos={fieldDefs} valores={lead.custom_fields} />
 
         {/* OS ATALHOS DO CARD (#3487) — logo abaixo do cabeçalho, ANTES de
             tudo que rola. A entrega inteira existe para o atendente não sair do
