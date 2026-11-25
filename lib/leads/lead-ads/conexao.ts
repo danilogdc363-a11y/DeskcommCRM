@@ -27,6 +27,7 @@ import {
   desinscreverPagina,
   garantirInscricaoDoApp,
   inscreverPagina,
+  lerInscricaoDoApp,
   listarPaginasDoUsuario,
   paginaEstaInscrita,
   permissoesConcedidas,
@@ -335,7 +336,7 @@ export async function desconectarPagina(
 
 export async function verificarPagina(
   admin: SupabaseClient,
-  entrada: { organizationId: string; pageId: string },
+  entrada: { organizationId: string; pageId: string; baseDoApp: string },
 ): Promise<{ ok: true; mensagem: string } | Recusa> {
   const app = appDeLoginDaMeta();
   if (!app) return recusa(503, "app_nao_configurado", "O app da Meta ainda não foi configurado no servidor.");
@@ -354,7 +355,22 @@ export async function verificarPagina(
   if (!r.inscrita) {
     return recusa(422, "pagina_nao_inscrita", "A Página não está mais enviando avisos de formulário para o app. Desconecte e conecte de novo.");
   }
-  return { ok: true, mensagem: "Tudo certo: a Meta está enviando os avisos de formulário desta Página para o CRM." };
+  // A outra metade: o app da Meta aponta para ESTE CRM? (Página inscrita não basta.)
+  const noApp = await lerInscricaoDoApp(app, entrada.baseDoApp);
+  if (!noApp.ok) return daMeta(traduzirErroDaMeta(noApp));
+  if (noApp.estado !== "ok") {
+    const motivo: Record<Exclude<typeof noApp.estado, "ok">, string> = {
+      sem_inscricao: "O app da Meta não está cadastrado para receber avisos de formulário de Páginas.",
+      url_diferente: "O app da Meta manda os avisos de formulário para outro endereço, não para este CRM.",
+      sem_campo: "O app da Meta recebe avisos de Página, mas sem o campo de formulário (leadgen).",
+      inativa: "O cadastro dos avisos de formulário no app da Meta está inativo.",
+    };
+    return {
+      ...recusa(422, "app_sem_inscricao", `${motivo[noApp.estado]} Clique em “Salvar destino” nesta Página para o CRM cadastrar de novo e tente “Verificar” outra vez.`),
+      detalhe: `Endereço atual no app: ${noApp.urlAtual ?? "nenhum"}`,
+    };
+  }
+  return { ok: true, mensagem: "Tudo certo: a Página e o app da Meta estão mandando os avisos de formulário para este CRM." };
 }
 
 export interface ResultadoDaImportacao {
