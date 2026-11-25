@@ -192,7 +192,7 @@ describe("a captação por webhook reusa o card aberto do contato (#3101)", () =
     expect(h.criarLead, "a captação deixou de criar o card que sempre criou").toHaveBeenCalledTimes(1);
     expect(desfecho()).toBe("criado");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: "lead-novo" } });
+    expect(await res.json()).toEqual({ data: { lead_id: "lead-novo", desfecho: "criado" } });
   });
 
   it("⭐ CONTROLE 2 — opção LIGADA: ATUALIZA o card aberto (só o que mudou) e MOVE, em vez de criar", async () => {
@@ -218,7 +218,7 @@ describe("a captação por webhook reusa o card aberto do contato (#3101)", () =
     expect(linhaDaCaptacao()?.leadId).toBe("lead-aberto");
     expect(linhaDaCaptacao()?.contactId).toBe("contato-1");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: "lead-aberto" } });
+    expect(await res.json()).toEqual({ data: { lead_id: "lead-aberto", desfecho: "atualizado" } });
   });
 
   it("card aberto JÁ na etapa da fonte: atualiza sem mover (o MOVE é só quando a etapa muda)", async () => {
@@ -305,7 +305,7 @@ describe("a captação por webhook reusa o card aberto do contato (#3101)", () =
     expect(desfecho()).toBe("atualizado");
     expect(linhaDaCaptacao()?.leadId).toBe("lead-do-external-id");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ data: { lead_id: "lead-do-external-id" } });
+    expect(await res.json()).toEqual({ data: { lead_id: "lead-do-external-id", desfecho: "atualizado" } });
   });
 
   it("envio SEM telefone e SEM e-mail: nada a reusar, o card novo continua nascendo", async () => {
