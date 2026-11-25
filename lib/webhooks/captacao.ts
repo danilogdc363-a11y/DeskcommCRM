@@ -45,7 +45,13 @@ export type MotivoDaRecusa =
   | "recusa_da_regra"
   /** Recusa que não é nem do funil nem da etapa da fonte — o rótulo não mente. */
   | "erro_inesperado"
-  | "campo_numerico_invalido";
+  | "campo_numerico_invalido"
+  /** (Acelera) Formulário da Meta: o aviso veio sem as respostas e a busca está desligada. */
+  | "lead_ads_sem_respostas"
+  /** (Acelera) Formulário da Meta: a busca das respostas falhou (acesso, permissão, tempo). */
+  | "lead_ads_busca_falhou"
+  /** (Acelera) Formulário da Meta: a fonte dona da Página está pausada. */
+  | "lead_ads_fonte_pausada";
 
 /** O que a tela mostra para cada motivo, em português de gente. */
 export const MOTIVO_DA_RECUSA_LABEL: Record<MotivoDaRecusa, string> = {
@@ -63,6 +69,12 @@ export const MOTIVO_DA_RECUSA_LABEL: Record<MotivoDaRecusa, string> = {
     "Os dados chegaram, mas a criação do negócio falhou por outro motivo — não é nem o funil nem a etapa da fonte.",
   campo_numerico_invalido:
     "Uma resposta numérica não estava no formato aceito pelo formulário. Confira se o campo contém apenas números e use o formato BRL na pergunta de moeda.",
+  lead_ads_sem_respostas:
+    "O aviso da Meta chegou sem as respostas do formulário e a leitura das respostas está desligada para esta Página. Desconecte e conecte a Página de novo em Configurações → Meta Ads → Formulários de anúncio.",
+  lead_ads_busca_falhou:
+    "A leitura das respostas na Meta não deu certo: o acesso pode ter vencido, a Página pode não ter liberado o acesso a leads para o app, ou a Meta não respondeu. Abra Configurações → Meta Ads → Formulários de anúncio e use “Verificar”.",
+  lead_ads_fonte_pausada:
+    "A Meta avisou um lead desta Página, mas a fonte está pausada. Reative-a para os próximos entrarem.",
 };
 
 /**

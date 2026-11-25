@@ -164,7 +164,7 @@ do fork; conflito só pode aparecer nos dois arquivos alterados.
 
 ## Botão "Conectar com o Facebook" (Configurações → Meta Ads)
 
-Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Escopo só `ads_read`.
+Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Este botão pede só `ads_read`; o das Páginas de formulário é o "Conectar formulários" (seção abaixo).
 
 - **App só no ambiente do servidor (EasyPanel):** `META_APP_ID` (novo) e `META_APP_SECRET` (o mesmo que o
   webhook já usa; é o mesmo app). Sem banco, sem campo em Admin. Sem uma das duas, o botão some e a tela diz
@@ -182,37 +182,82 @@ Usa o MESMO app da Meta do WhatsApp oficial, em vez de colar token. Escopo só `
 - Arquivos: `lib/plataformas-de-anuncio/meta/login/*`, `app/api/v1/meta-ads/oauth/*`, e edições em
   `credenciais-de-leitura.ts`, `/app/settings/meta-ads`, `lib/env.ts` (2 variáveis opcionais), `public-paths.ts` (1 linha).
 
-## Formulário nativo da Meta (lead do anúncio de formulário)
+## Formulário nativo da Meta (lead do anúncio de formulário) — por empresa
 
-A Meta avisa o id do lead (`leadgen`) em `POST /api/v1/webhooks/lead-ads`; o CRM lê as respostas na Graph e
-entrega à fonte de captação "Leads Inbound" (deduplica por `external_id = meta_lead:<id>`). Código em
-`lib/acelera/lead-ads.ts`.
+**Regra do Davy: nada fixo da Acelera.** Qualquer empresa que entra pelo Acelera OS liga as próprias Páginas
+do Facebook na tela **Configurações → Meta Ads → Formulários de anúncio**. O desenho antigo (variáveis
+`ACELERA_LEADS_PAGE_TOKEN`, `ACELERA_LEADS_INBOUND_URL`, `ACELERA_LEADS_VERIFY_TOKEN`,
+`ACELERA_LEADS_APP_SECRET`, o script `recuperar-leads-do-formulario.ts` e `lib/acelera/lead-ads.ts`) **foi
+removido**. As variáveis `ACELERA_LEADS_*` de captação podem ser apagadas do EasyPanel.
 
-**Diagnóstico de 24/11/2026:** nenhum lead de formulário tinha entrado. Os anúncios rodam na Página
-**Danilo gestor** (`924300437422209`), e o único app inscrito nela era o **Kommo**. O webhook `Page` do app
-da Meta da Acelera (`723939443513987`) estava sem URL.
+**Base:** portada do upstream `v1.108.0` (PR #3768/#3838) — mesmos nomes em `lib/leads/lead-ads/*`
+(`payload`, `assinatura`, `respostas-na-meta`, `entrada`) e a migration 9320 como `acelera_0009`. A tela e a
+rota por `[token]` do upstream NÃO foram portadas (lá se cola o token da Página; aqui é login com o Facebook).
 
-Para ligar (tudo fora do código):
+### Como a empresa liga
+1. **Conectar formulários** (botão próprio, ao lado do "Conectar com o Facebook" de anúncios): mesmo login,
+   mesma URL de retorno já cadastrada (`.../api/v1/meta-ads/oauth/callback`), mas pede `ads_read` +
+   `leads_retrieval`, `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement`
+   (`?para=formularios` no `connect`, propósito dentro do `state` assinado). É um botão à parte de propósito:
+   enquanto a Meta não aprova essas permissões para todos, pedi-las no login de anúncios podia derrubar o que
+   funciona. As permissões já concedidas acumulam no token. Para juntar num botão só depois da aprovação:
+   `ESCOPO_DE_FORMULARIOS` em `lib/plataformas-de-anuncio/meta/login/oauth.ts`.
+2. O bloco lista as Páginas da pessoa (`/me/accounts`). Para cada uma: funil + etapa de entrada, **Ligar esta
+   Página**, **Verificar**, **Trazer leads antigos** (7/30/90 dias) e **Desligar**.
+3. Ligar = o servidor lê o token da Página na Meta (nunca passa pelo navegador), inscreve a Página no app
+   (`POST /{page-id}/subscribed_apps?subscribed_fields=leadgen`) e grava uma fonte de captação por Página
+   (`webhook_sources`: `meta_page_id`, `meta_page_token_encrypted` cifrado, `meta_lead_retrieval`). Uma
+   Página pertence a UMA empresa (índice único); ligada em outra empresa, a tela recusa.
+4. Erros da Meta viram frase em português que diz o que fazer (`lib/leads/lead-ads/erros-da-meta.ts`): acesso a
+   leads (Lead Access Manager) não liberado, permissão ainda não aprovada, login vencido, sem poder na Página.
 
-1. **Variáveis no `.env` do compose (EasyPanel), e reimplantar:**
-   - `ACELERA_LEADS_VERIFY_TOKEN`: um texto qualquer, inventado na hora; o mesmo vai no passo 2.
-   - `ACELERA_LEADS_PAGE_TOKEN`: token da Página Danilo gestor com `leads_retrieval`,
-     `pages_manage_metadata`, `pages_show_list`, `pages_read_engagement` e `ads_management`. Prefira o de
-     um usuário do sistema do portfólio (não vence).
-   - `ACELERA_LEADS_INBOUND_URL`: a URL da fonte de captação "Leads Inbound" (Configurações do CRM).
-   - `ACELERA_LEADS_APP_SECRET`: opcional; sem ela vale o `META_APP_SECRET` (mesmo app).
-   - Opcional: `ACELERA_LEADS_AVISO_URL` e `ACELERA_LEADS_AVISO_SECRET` (aviso no WhatsApp pelo OS).
-2. **App da Meta → Webhooks → Page:** URL `https://comercial.aceleradelivery.com/api/v1/webhooks/lead-ads`,
-   o verify token do passo 1, "Verificar e salvar", e **Assinar** o campo `leadgen`.
-3. **Inscrever a Página no app:** `POST /924300437422209/subscribed_apps?subscribed_fields=leadgen` com o token
-   da Página (Explorador da Graph API).
-4. **Acesso a leads:** Configurações do portfólio dono da Página → Integrações → Acesso a leads → Página Danilo
-   gestor → CRMs → incluir o app da Acelera. O Kommo pode continuar lá.
-5. **Testar** em developers.facebook.com/tools/lead-ads-testing (Página Danilo gestor): "Criar lead" e
-   "Acompanhar status" mostram se a entrega deu certo; o lead aparece em "Leads recebidos". Apague o lead de teste.
-6. **Trazer os leads antigos:** no console do serviço `worker` (o `app` não tem a pasta `scripts/`):
-   `npx tsx scripts/recuperar-leads-do-formulario.ts --desde 2026-11-01` conta; com `--aplicar`, importa sem
-   avisar o comercial.
+### Como o lead chega
+- **Uma URL só para todas as empresas:** `POST /api/v1/webhooks/lead-ads`. A empresa dona vem da Página
+  (`entry[].id` → `webhook_sources.meta_page_id`), nunca do corpo. Assinatura `x-hub-signature-256` com o
+  segredo do app (`appDaMeta()`: o da tela Admin → Meta, senão `META_APP_SECRET`), em falha fechada e ANTES de
+  qualquer leitura de banco. Página que ninguém ligou → 200 e só log. Lead que não entra (fonte pausada,
+  Meta recusou a leitura) → 200 e uma linha em **Leads recebidos** com o motivo. Só falha NOSSA → 500 (a Meta
+  reenvia; seguro, porque `leadgen_id` é único por empresa).
+- O CRM lê o lead na Graph (token da Página no cabeçalho; com os **nomes** de campanha/conjunto/anúncio) e cria
+  contato + card **direto** (`receber.ts` → `entrada.ts` → `createLeadHandler`), sem chamar a si mesmo por HTTP.
+  As UTMs levam o nome (`utm_campaign`, `utm_adset`, `utm_ad`), os ids ficam em `meta_*_id`. Origem do card:
+  `meta_ads`, tag `Meta_ads`.
+- Diferença para a captação por site: este caminho NÃO classifica o lead nem autoriza a IA a falar primeiro
+  (`authorize_ai_on_capture` fica como a fonte tiver, desligado por padrão) e não completa a ficha de um
+  contato que já existia. Regras de automação por fonte funcionam (o card emite `lead.created`).
+
+### O endereço no app da Meta (sem variável nova)
+Na primeira Página ligada de qualquer empresa o CRM cadastra sozinho o webhook do objeto `page` no app
+(`POST /{META_APP_ID}/subscriptions`, token do app `APP_ID|APP_SECRET` no cabeçalho): URL
+`<NEXT_PUBLIC_APP_URL>/api/v1/webhooks/lead-ads`, campo `leadgen` e a **senha de verificação derivada** do
+`META_APP_SECRET` (`lib/leads/lead-ads/verificacao.ts`: HMAC, 32 hex; o `GET` da rota recalcula e compara).
+É idempotente. A Meta confere a URL na hora, então só funciona com o CRM implantado e acessível.
+**Único passo manual, se a Meta recusar o cadastro:** painel do app → Webhooks → objeto **Página** → colar a
+URL acima e a senha de verificação e assinar o campo `leadgen` (a tela da empresa avisa quando isso acontece).
+
+### O que é preciso no EasyPanel / na Meta (uma vez)
+- Variáveis já existentes: `META_APP_ID`, `META_APP_SECRET`, `NEXT_PUBLIC_APP_URL`, `INTERNAL_SECRET`. Nenhuma nova.
+- Aplicar a migration `acelera_0009` (3 colunas em `webhook_sources`; também está no fim do `baseline.sql`).
+- App da Meta com o produto **Webhooks** adicionado.
+- **Acesso a leads** de cada Página (por empresa): Configurações do portfólio dono da Página → Integrações →
+  Acesso a leads → a Página → CRMs → incluir o app. O Kommo pode continuar lá.
+- Enquanto a Meta não aprovar `leads_retrieval` & cia. para todos (revisão do app, vídeo pendente), só quem tem
+  função no app (administrador, desenvolvedor, testador) consegue ligar.
+- Teste: developers.facebook.com/tools/lead-ads-testing (Página "Danilo gestor", `924300437422209`; app
+  `723939443513987`): "Criar lead"; ele aparece no CRM e em "Leads recebidos". Apague o lead de teste.
+- **Trazer leads antigos** pode exigir também `pages_manage_ads` na Meta (listar formulários). Se a Meta
+  recusar, a tela explica; o conserto é incluir essa permissão em `ESCOPO_DE_FORMULARIOS`.
+
+### Aviso no WhatsApp do comercial (legado, transitório)
+`ACELERA_LEADS_AVISO_URL` + `ACELERA_LEADS_AVISO_SECRET` (aviso pelo OS) continuam funcionando para o lead que
+ENTRA agora (nunca para lead antigo importado). É de UMA instalação, não por empresa: foi mantido só para não
+interromper o que já funciona. Substituto por empresa: regra de automação "lead novo" → "Mensagem para a equipe"
+(número da tela de Avisos). Quando isso estiver provado em produção, apagar `lib/leads/lead-ads/aviso-do-os.ts`.
+
+Arquivos: `lib/leads/lead-ads/*`, `app/api/v1/webhooks/lead-ads/route.ts`,
+`app/api/v1/meta-ads/formularios/paginas/**`, `app/app/settings/meta-ads/_formularios.tsx`; edições em
+`login/{estado,oauth}.ts`, `meta-ads/oauth/{connect,callback}/route.ts`, `lib/webhooks/captacao.ts` (3 motivos),
+`lib/audit/actions.ts` (2 ações), `lib/database.types.ts`, `lib/i18n/*`.
 
 ## Editar etapas direto no quadro do funil
 

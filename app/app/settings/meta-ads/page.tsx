@@ -36,6 +36,7 @@ import { existeConexaoDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { FormularioDeMetaAds } from "./_form";
+import { FormulariosDeAnuncio, type FunilParaEscolher } from "./_formularios";
 
 export const metadata = { title: "Meta Ads" };
 export const dynamic = "force-dynamic";
@@ -65,6 +66,28 @@ export default async function MetaAdsSettingsPage({
 
   const idioma = user.idioma;
   const t = (texto: string) => traduzir(texto, idioma);
+
+  // (Acelera) Funis e etapas da empresa para escolher a entrada dos formulários.
+  // Admin client com `organization_id` explícito (a RLS não vale para ele).
+  const [{ data: funisDb }, { data: etapasDb }] = await Promise.all([
+    admin
+      .from("crm_pipelines")
+      .select("id, name")
+      .eq("organization_id", activeOrg.orgId)
+      .eq("is_archived", false)
+      .order("position", { ascending: true }),
+    admin
+      .from("crm_stages")
+      .select("id, name, pipeline_id")
+      .eq("organization_id", activeOrg.orgId)
+      .eq("is_archived", false)
+      .order("position", { ascending: true }),
+  ]);
+  const funis: FunilParaEscolher[] = (funisDb ?? []).map((f) => ({
+    id: f.id,
+    nome: f.name,
+    etapas: (etapasDb ?? []).filter((e) => e.pipeline_id === f.id).map((e) => ({ id: e.id, nome: e.name })),
+  }));
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
@@ -104,6 +127,13 @@ export default async function MetaAdsSettingsPage({
         }
         expiraEmMs={conexao.expiraEm ? new Date(conexao.expiraEm).getTime() : null}
         retorno={{ ok: parametros.ok === "1", erro: parametros.erro ?? null }}
+      />
+
+      <FormulariosDeAnuncio
+        idioma={idioma}
+        loginDisponivel={loginDisponivel}
+        funis={funis.filter((f) => f.etapas.length > 0)}
+        retornoOk={parametros.ok === "formularios"}
       />
 
       {conexao.conectada && (
