@@ -40,6 +40,22 @@ import { TEXTOS_AGENDA_SERVICOS } from "./agenda-servicos";
 type Traducoes = Record<string, Partial<Record<Exclude<Idioma, "pt-BR">, string>>>;
 
 export const DICIONARIO: Traducoes = {
+  // (Acelera) Edição de etapas direto no quadro do funil.
+  "Opções da etapa": { es: "Opciones de la etapa" },
+  "Mover para a esquerda": { es: "Mover a la izquierda" },
+  "Mover para a direita": { es: "Mover a la derecha" },
+  "Arquivar etapa…": { es: "Archivar etapa…" },
+  "Mais ajustes do funil": { es: "Más ajustes del embudo" },
+  "A coluna sai do quadro. O histórico dos negócios que passaram por ela continua guardado.": { es: "La columna sale del tablero. El historial de los negocios que pasaron por ella sigue guardado." },
+  "1 negócio está nesta etapa. Para onde ele vai?": { es: "1 negocio está en esta etapa. ¿A dónde va?" },
+  "negócios estão nesta etapa. Para onde eles vão?": { es: "negocios están en esta etapa. ¿A dónde van?" },
+  "Mover e arquivar": { es: "Mover y archivar" },
+  "Você não tem permissão para mudar as etapas deste funil.": { es: "No tienes permiso para cambiar las etapas de este embudo." },
+  "entrou no funil.": { es: "entró al embudo." },
+  "entrou antes das etapas de fechamento.": { es: "entró antes de las etapas de cierre." },
+  "foi criada no fim do funil. Use o menu da coluna para mudá-la de lugar.": { es: "se creó al final del embudo. Usa el menú de la columna para cambiarla de lugar." },
+  "Nova etapa": { es: "Nueva etapa" },
+  "Criar etapa": { es: "Crear etapa" },
   // Servidores MCP por agente e OAuth por contato (migration 9095).
   "O link de autorização é automático: enquanto o cliente não autorizar, o agente recebe sozinho a ferramenta que gera o link. Não é preciso marcá-la aqui.": { es: "El enlace de autorización es automático: mientras el cliente no autorice, el agente recibe por sí solo la herramienta que genera el enlace. No hace falta marcarla aquí." },
   "0 = o acesso é revogado assim que a conversa é encerrada.": { es: "0 = el acceso se revoca en cuanto se cierra la conversación." },
