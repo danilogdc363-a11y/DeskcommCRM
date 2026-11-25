@@ -606,6 +606,11 @@ export const AUDIT_ACTIONS = [
   // O `metadata` carrega o id da conta padrão (identificador, não segredo) e um
   // booleano dizendo se o token foi trocado. O token, nem em metadata.
   "ad_insights_connection.updated",
+  // (Acelera) Uma Página do Facebook ligada ou desligada para receber os leads do
+  // formulário nativo da Meta. O `metadata` leva a Página e o destino (funil e
+  // etapa); o token da Página, nem em metadata.
+  "meta_lead_ads.page_connected",
+  "meta_lead_ads.page_disconnected",
   // O ENDEREÇO DE CAPTURA da landing page (0381): para qual WhatsApp a rota
   // pública manda quem clicou no botão, e com que texto. Ação separada das duas
   // acima pelo mesmo critério delas — aqui não há credencial nenhuma, e a

@@ -19836,6 +19836,24 @@ export const DICIONARIO: Traducoes = {
   "cliques": { es: "clics" },
   "com falha": { es: "con error" },
   "pulados": { es: "omitidos" },
+  // (Acelera) Formulário da Meta por empresa
+  "Facebook conectado para os formulários. Escolha as Páginas abaixo.": { es: "Facebook conectado para los formularios. Elige las Páginas abajo." },
+  "Página ligada. Os próximos formulários entram sozinhos.": { es: "Página activada. Los próximos formularios entran solos." },
+  "Desligar esta Página? Novos formulários deixam de entrar no CRM.": { es: "¿Desactivar esta Página? Los nuevos formularios dejan de entrar al CRM." },
+  "Página desligada.": { es: "Página desactivada." },
+  "Formulários de anúncio": { es: "Formularios de anuncio" },
+  "Os leads do formulário nativo do Instagram e do Facebook entram sozinhos no funil que você escolher. Entre com o Facebook, marque as Páginas e escolha a etapa de entrada.": { es: "Los leads del formulario nativo de Instagram y Facebook entran solos al embudo que elijas. Entra con Facebook, marca las Páginas y elige la etapa de entrada." },
+  "Reconectar formulários": { es: "Reconectar formularios" },
+  "Conectar formulários": { es: "Conectar formularios" },
+  "O login do Facebook ainda não foi configurado no servidor (META_APP_ID e META_APP_SECRET).": { es: "El inicio de sesión de Facebook aún no está configurado en el servidor (META_APP_ID y META_APP_SECRET)." },
+  "Nenhuma Página encontrada nesta conta do Facebook. É preciso ser administrador da Página.": { es: "No se encontró ninguna Página en esta cuenta de Facebook. Hay que ser administrador de la Página." },
+  "Salvar destino": { es: "Guardar destino" },
+  "Ligar esta Página": { es: "Activar esta Página" },
+  "Período dos leads antigos": { es: "Período de los leads antiguos" },
+  "Trazer leads antigos": { es: "Traer leads antiguos" },
+  "O aviso da Meta chegou sem as respostas do formulário e a leitura das respostas está desligada para esta Página. Desconecte e conecte a Página de novo em Configurações → Meta Ads → Formulários de anúncio.": { es: "El aviso de Meta llegó sin las respuestas del formulario y la lectura de respuestas está desactivada para esta Página. Desconecta y vuelve a conectar la Página en Configuración → Meta Ads → Formularios de anuncio." },
+  "A leitura das respostas na Meta não deu certo: o acesso pode ter vencido, a Página pode não ter liberado o acesso a leads para o app, ou a Meta não respondeu. Abra Configurações → Meta Ads → Formulários de anúncio e use “Verificar”.": { es: "La lectura de las respuestas en Meta falló: el acceso pudo vencer, la Página pudo no haber liberado el acceso a leads para la app, o Meta no respondió. Abre Configuración → Meta Ads → Formularios de anuncio y usa “Verificar”." },
+  "A Meta avisou um lead desta Página, mas a fonte está pausada. Reative-a para os próximos entrarem.": { es: "Meta avisó de un lead de esta Página, pero la fuente está en pausa. Reactívala para que entren los próximos." },
 };
 
 /**
