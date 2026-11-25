@@ -62,7 +62,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     baseDoApp: env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     requestId,
   });
-  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId });
+  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId, details: r.detalhe });
   return ok({ fonte_id: r.fonteId, aviso_do_app: r.avisoDoApp }, { requestId, status: 201 });
 }
 
@@ -82,6 +82,6 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     pageId: parsed.data.page_id,
     requestId,
   });
-  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId });
+  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId, details: r.detalhe });
   return ok({ desligada: true }, { requestId });
 }

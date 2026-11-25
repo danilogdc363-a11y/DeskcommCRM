@@ -24,6 +24,6 @@ export async function GET(
   const { pageId } = await ctx.params;
   if (!/^\d{1,32}$/.test(pageId)) return fail("validation_failed", "Página inválida.", 422, { requestId });
   const r = await verificarPagina(createAdminClient(), { organizationId: authz.org.orgId, pageId });
-  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId });
+  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId, details: r.detalhe });
   return ok({ mensagem: r.mensagem }, { requestId });
 }

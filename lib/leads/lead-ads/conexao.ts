@@ -35,9 +35,13 @@ import { COLUNAS_DA_FONTE_DA_PAGINA, fonteDaPagina, leadSoComIds, receberLead, t
 
 const PREFIXO_DO_NOME = "Formulário da Meta — ";
 
-export type Recusa = { ok: false; status: number; codigo: string; mensagem: string };
+export type Recusa = { ok: false; status: number; codigo: string; mensagem: string; detalhe?: string };
 const recusa = (status: number, codigo: string, mensagem: string): Recusa => ({ ok: false, status, codigo, mensagem });
-const daMeta = (e: ErroEmPortugues): Recusa => recusa(e.codigo === "limite_da_meta" ? 429 : 422, e.codigo, e.mensagem);
+const daMeta = (e: ErroEmPortugues): Recusa => ({
+  ...recusa(e.codigo === "limite_da_meta" ? 429 : 422, e.codigo, e.mensagem),
+  // O texto original da Meta, só para o admin (as rotas são de piso admin).
+  ...(e.detalheTecnico ? { detalhe: e.detalheTecnico } : {}),
+});
 
 const SEM_LOGIN =
   "A empresa ainda não entrou com o Facebook para os formulários. Clique em “Conectar formulários” e tente de novo.";

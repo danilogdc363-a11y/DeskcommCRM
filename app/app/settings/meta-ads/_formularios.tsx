@@ -34,11 +34,16 @@ interface ListaDePaginas {
 
 interface Envelope<T> {
   data?: T;
-  error?: { code: string; message: string };
+  error?: { code: string; message: string; details?: unknown };
 }
 
 const CLASSE_DO_CAMPO =
   "h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50";
+
+/** O texto técnico da Meta (só admin vê esta tela), para quem for diagnosticar. */
+function detalheDe(erro?: { details?: unknown }): string | undefined {
+  return typeof erro?.details === "string" && erro.details ? `Meta: ${erro.details}` : undefined;
+}
 
 async function chamar<T>(url: string, metodo: string, corpo?: unknown): Promise<Envelope<T>> {
   try {
@@ -117,7 +122,7 @@ export function FormulariosDeAnuncio({
     });
     setOcupada(null);
     if (r.error) {
-      toast.error(r.error.message);
+      toast.error(r.error.message, { description: detalheDe(r.error), duration: 20000 });
       return;
     }
     toast.success(t("Página ligada. Os próximos formulários entram sozinhos."));
@@ -130,7 +135,7 @@ export function FormulariosDeAnuncio({
     setOcupada(p.id);
     const r = await chamar("/api/v1/meta-ads/formularios/paginas", "DELETE", { page_id: p.id });
     setOcupada(null);
-    if (r.error) toast.error(r.error.message);
+    if (r.error) toast.error(r.error.message, { description: detalheDe(r.error), duration: 20000 });
     else toast.success(t("Página desligada."));
     await carregar();
   }
@@ -139,7 +144,7 @@ export function FormulariosDeAnuncio({
     setOcupada(p.id);
     const r = await chamar<{ mensagem: string }>(`/api/v1/meta-ads/formularios/paginas/${p.id}/verificar`, "GET");
     setOcupada(null);
-    if (r.error) toast.error(r.error.message);
+    if (r.error) toast.error(r.error.message, { description: detalheDe(r.error), duration: 20000 });
     else toast.success(r.data?.mensagem ?? "Tudo certo.");
   }
 
@@ -155,7 +160,7 @@ export function FormulariosDeAnuncio({
     }>(`/api/v1/meta-ads/formularios/paginas/${p.id}/importar`, "POST", { dias: dias[p.id] ?? 30 });
     setOcupada(null);
     if (r.error || !r.data) {
-      toast.error(r.error?.message ?? "Não consegui trazer os leads.");
+      toast.error(r.error?.message ?? "Não consegui trazer os leads.", { description: detalheDe(r.error), duration: 20000 });
       return;
     }
     const d = r.data;

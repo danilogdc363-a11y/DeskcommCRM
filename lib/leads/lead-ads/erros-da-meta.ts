@@ -22,13 +22,31 @@ export type CodigoDoErroDaMeta =
 export interface ErroEmPortugues {
   codigo: CodigoDoErroDaMeta;
   mensagem: string;
+  /**
+   * O texto ORIGINAL da Meta (curto, só para quem administra), para a Acelera
+   * diagnosticar quando a frase em português não basta. Nunca vai para a
+   * empresa-cliente em tela pública: só em respostas das rotas de admin.
+   */
+  detalheTecnico: string | null;
 }
 
 type Falha = Extract<RespostaDaGraph<never>, { ok: false }>;
 
-const PERMISSOES = ["leads_retrieval", "pages_manage_metadata", "pages_show_list", "pages_read_engagement"];
+const PERMISSOES = [
+  "leads_retrieval",
+  "pages_manage_metadata",
+  "pages_show_list",
+  "pages_read_engagement",
+  "pages_manage_ads",
+  "ads_management",
+];
 
-export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
+/** Nomes de permissão que a própria mensagem da Meta cita (ex.: pages_manage_ads). */
+function permissoesCitadas(texto: string): string[] {
+  return [...new Set(texto.match(/\b(?:pages|leads|ads|business|instagram)_[a-z_]+\b/g) ?? [])];
+}
+
+function traduzir(falha: Falha): Omit<ErroEmPortugues, "detalheTecnico"> {
   if (falha.motivo === "rede") {
     return {
       codigo: "meta_fora_do_ar",
@@ -38,6 +56,7 @@ export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
   const codigo = falha.erro?.codigo ?? null;
   const sub = falha.erro?.subcodigo ?? null;
   const texto = (falha.erro?.mensagem ?? "").toLowerCase();
+  const citadas = permissoesCitadas(texto);
   const sufixo = codigo !== null ? ` (código ${codigo}${sub !== null ? `.${sub}` : ""})` : ` (status ${falha.status ?? "?"})`;
 
   // 1. "Acesso a leads" (Lead Access Manager): a Página precisa liberar o app.
@@ -70,7 +89,8 @@ export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
     return {
       codigo: "permissao_nao_aprovada",
       mensagem:
-        "A Meta ainda não liberou esta permissão do app para todas as empresas. Por enquanto só quem tem função no app (administrador, desenvolvedor ou testador) consegue ligar. Peça à Acelera para te adicionar ou aguarde a aprovação da Meta." +
+        `A Meta pediu uma permissão que este login não tem${citadas.length > 0 ? ` (${citadas.join(", ")})` : ""}. ` +
+        "Se ela ainda não foi aprovada pela Meta para o app, só quem tem função no app (administrador, desenvolvedor ou testador) consegue. Peça à Acelera para conferir as permissões do app e depois clique em “Reconectar formulários”." +
         sufixo,
     };
   }
@@ -100,4 +120,8 @@ export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
     codigo: "erro_da_meta",
     mensagem: "A Meta recusou o pedido. Tente de novo; se repetir, avise a Acelera com este código." + sufixo,
   };
+}
+
+export function traduzirErroDaMeta(falha: Falha): ErroEmPortugues {
+  return { ...traduzir(falha), detalheTecnico: falha.erro?.mensagem ?? null };
 }

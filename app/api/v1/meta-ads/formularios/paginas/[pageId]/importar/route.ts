@@ -45,7 +45,7 @@ export async function POST(
     dias: parsed.data.dias,
     requestId,
   });
-  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId });
+  if (!r.ok) return fail(r.codigo, r.mensagem, r.status, { requestId, details: r.detalhe });
   return ok(
     {
       encontrados: r.encontrados,

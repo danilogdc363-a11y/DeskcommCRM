@@ -61,6 +61,14 @@ describe("traduzirErroDaMeta", () => {
     expect(e.mensagem).toContain("função no app");
   });
 
+  it("permissão pedida pela Meta aparece pelo NOME (ex.: pages_manage_ads) e o texto original fica no detalhe técnico", () => {
+    const e = traduzirErroDaMeta(recusada(200, "(#200) This endpoint requires the 'pages_manage_ads' permission", 403));
+    expect(e.codigo).toBe("permissao_nao_aprovada");
+    expect(e.mensagem).toContain("pages_manage_ads");
+    expect(e.mensagem).toContain("Reconectar formulários");
+    expect(e.detalheTecnico).toContain("requires the 'pages_manage_ads'");
+  });
+
   it("sem poder sobre a Página, limite e Meta fora do ar têm frase própria", () => {
     expect(traduzirErroDaMeta(recusada(10, "Application does not have permission", 403)).codigo).toBe("sem_permissao_na_pagina");
     expect(traduzirErroDaMeta(recusada(4, "rate", 400)).codigo).toBe("limite_da_meta");
