@@ -108,6 +108,11 @@ function fakeSupabase(dados: Record<string, Linha[]>, rpc: Resposta, erroEm?: st
         filtros.push((l) => !(coluna in l) || l[coluna] === valor);
         return builder;
       };
+      builder.is = (coluna: string, valor: unknown) => {
+        registro.filtros.push([`${coluna} is`, valor]);
+        filtros.push((l) => (l[coluna] ?? null) === valor);
+        return builder;
+      };
       builder.gte = (coluna: string, valor: unknown) => {
         registro.filtros.push([`${coluna} >=`, valor]);
         filtros.push(
@@ -313,11 +318,13 @@ describe("GET /api/v1/metrics/funil", () => {
     expect(leads).toHaveLength(2);
     expect(leads[0]?.filtros.map((f) => f[0])).toEqual([
       "organization_id",
+      "merged_into_lead_id is",
       "created_at >=",
       "created_at <",
     ]);
     expect(leads[1]?.filtros.map((f) => f[0])).toEqual([
       "organization_id",
+      "merged_into_lead_id is",
       "closed_at >=",
       "closed_at <",
     ]);
