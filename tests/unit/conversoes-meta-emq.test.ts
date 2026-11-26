@@ -17,6 +17,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { identidadeDosDados } from "@/lib/conversoes/identidade-para-meta";
 import { transporteMeta } from "@/lib/plataformas-de-anuncio/meta/conversions";
 import {
+  estadoPeloDdd,
   fbcDoClique,
   montarUserData,
   normalizarCidade,
@@ -102,6 +103,29 @@ describe("normalizações", () => {
     expect(normalizarEstado("Rio Grande do Sul")).toBe("rs");
     expect(normalizarEstado("Federal District")).toBe("df");
     expect(normalizarEstado("Paraíba")).toBe("pb");
+  });
+  it("estado pelo DDD de telefone brasileiro, fixo ou celular", () => {
+    expect(estadoPeloDdd("5511999998888")).toBe("sp");
+    expect(estadoPeloDdd("558133334444")).toBe("pe");
+    expect(estadoPeloDdd("5561999998888")).toBe("df");
+  });
+  it("estado pelo DDD não chuta: DDD que não existe, outro país ou sem telefone", () => {
+    expect(estadoPeloDdd("5520999998888")).toBeNull();
+    expect(estadoPeloDdd("351912345678")).toBeNull();
+    expect(estadoPeloDdd("5511")).toBeNull();
+    expect(estadoPeloDdd(null)).toBeNull();
+  });
+  it("sem estado no contato, o `st` sai do DDD do telefone", () => {
+    const ud = montarUserData({ telefone: "+55 (81) 99999-8888", identidade: {} });
+    expect(ud.st).toEqual([h("pe")]);
+  });
+  it("o estado do contato vence o DDD", () => {
+    const ud = montarUserData({ telefone: "5581999998888", identidade: { estado: "Bahia" } });
+    expect(ud.st).toEqual([h("ba")]);
+  });
+  it("telefone de fora do Brasil não ganha estado", () => {
+    const ud = montarUserData({ telefone: "351912345678", identidade: {} });
+    expect(ud).not.toHaveProperty("st");
   });
   it("cidade sem acento, espaço nem pontuação", () => {
     expect(normalizarCidade("Ribeirão Preto")).toBe("ribeiraopreto");
@@ -223,6 +247,8 @@ describe("o fio do transporte", () => {
       ph: [h("5581999990000")],
       fn: [h("ze")],
       ct: [h("recife")],
+      // O contato não tem estado: sai o do DDD 81.
+      st: [h("pe")],
       country: [h("br")],
       external_id: [h("contato-1")],
       fbc: `fb.1.1731250800000.${FBCLID}`,
@@ -241,6 +267,7 @@ describe("o fio do transporte", () => {
       ctwa_clid: "ARctwa123",
       page_id: "pagina-1",
       ph: [h("5581999990000")],
+      st: [h("pe")],
       country: [h("br")],
     });
   });
@@ -276,9 +303,13 @@ describe("o fio do transporte", () => {
     expect(etapa).not.toHaveProperty("custom_data");
   });
 
-  it("sem identidade, sai como antes: só o telefone", async () => {
+  it("sem identidade, sai só o que o telefone diz: número, país e estado", async () => {
     const ev = await corpoEnviado({ ...base, identidade: undefined });
-    expect(ev.user_data).toEqual({ ph: [h("5581999990000")], country: [h("br")] });
+    expect(ev.user_data).toEqual({
+      ph: [h("5581999990000")],
+      st: [h("pe")],
+      country: [h("br")],
+    });
   });
 });
 
