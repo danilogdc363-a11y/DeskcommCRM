@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  IDEAL,
   acharEtapasChave,
   contarFunil,
   custoPor,
@@ -18,7 +19,12 @@ import {
 } from "./funil-de-vendas";
 
 const nov = janelaLivre("2026-11-01", "2026-11-23")!;
-const etapas = { reuniao: new Set(["reu"]), ganha: new Set(["won"]) };
+// "Chegou até": reunião agendada inclui as etapas depois dela; realizada também.
+const etapas = {
+  reuniao: new Set(["reu", "feita", "won"]),
+  compareceu: new Set(["feita", "won"]),
+  ganha: new Set(["won"]),
+};
 
 function lead(id: string, criadoEm: string, etapaId: string, extra: Partial<LeadDoFunil> = {}): LeadDoFunil {
   return { id, contatoId: `c-${id}`, criadoEm, etapaId, doMeta: false, ...extra };
@@ -92,7 +98,7 @@ describe("contarFunil — coorte", () => {
   it("conta só os criados no período, onde estão hoje", () => {
     expect(
       contarFunil({ modo: "coorte", janela: nov, etapas, leads, entradas, primeiraResposta }),
-    ).toEqual({ novos: 4, responderam: 2, reuniao: 2, fecharam: 1 });
+    ).toEqual({ novos: 4, responderam: 2, reuniao: 3, compareceram: 1, fecharam: 1 });
   });
 
   it("aplica o filtro de origem", () => {
@@ -107,7 +113,7 @@ describe("contarFunil — coorte", () => {
         primeiraResposta,
         filtro: (l) => l.doMeta,
       }),
-    ).toEqual({ novos: 1, responderam: 1, reuniao: 0, fecharam: 1 });
+    ).toEqual({ novos: 1, responderam: 1, reuniao: 1, compareceram: 1, fecharam: 1 });
   });
 
   it("lead sem contato não conta como respondeu", () => {
@@ -143,7 +149,7 @@ describe("contarFunil — movimento", () => {
     ]);
     expect(
       contarFunil({ modo: "movimento", janela: nov, etapas, leads, entradas, primeiraResposta }),
-    ).toEqual({ novos: 1, responderam: 1, reuniao: 2, fecharam: 1 });
+    ).toEqual({ novos: 1, responderam: 1, reuniao: 2, compareceram: 1, fecharam: 1 });
   });
 });
 
@@ -163,14 +169,28 @@ describe("números do painel", () => {
     expect(custoPor(null, 10)).toBeNull();
   });
 
-  it("acha a etapa de reunião pelo nome, sem acento nem caixa", () => {
+  it("cada reunião conta a etapa e as que vêm depois, fora a perdida", () => {
     const k = acharEtapasChave([
-      { id: "1", name: "Reunião marcada", is_won: false },
-      { id: "2", name: "Reunião feita", is_won: false },
-      { id: "3", name: "Fechou", is_won: true },
+      { id: "0", name: "Em atendimento", is_won: false, position: 2000 },
+      { id: "1", name: "Reunião marcada", is_won: false, position: 3000 },
+      { id: "2", name: "REUNIAO FEITA", is_won: false, position: 4000 },
+      { id: "4", name: "Negociação", is_won: false, position: 5000 },
+      { id: "3", name: "Fechou", is_won: true, position: 6000 },
+      { id: "5", name: "Não fechou", is_won: false, is_lost: true, position: 7000 },
     ]);
-    expect([...k.reuniao]).toEqual(["1"]);
+    expect([...k.reuniao].sort()).toEqual(["1", "2", "3", "4"]);
+    expect([...k.compareceu].sort()).toEqual(["2", "3", "4"]);
     expect([...k.ganha]).toEqual(["3"]);
+  });
+
+  it("sem a etapa pelo nome, o degrau fica vazio", () => {
+    const k = acharEtapasChave([{ id: "3", name: "Fechou", is_won: true, position: 6000 }]);
+    expect(k.reuniao.size).toBe(0);
+    expect(k.compareceu.size).toBe(0);
+  });
+
+  it("referências do comercial", () => {
+    expect(IDEAL).toEqual({ agendamento: 20, comparecimento: 75, venda: 30 });
   });
 
   it("lê o destino nas duas grafias do payload", () => {

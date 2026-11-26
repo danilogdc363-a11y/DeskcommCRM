@@ -12,6 +12,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import { useFunilDeVendas, type Origem, type PeriodoDoFunil } from "@/hooks/reports/useFunilDeVendas";
 import {
+  IDEAL,
   custoPor,
   taxa,
   variacao,
@@ -58,6 +59,8 @@ const ETAPAS: Array<{
   rotulo: string;
   custo: string;
   passagem: string;
+  /** Conversão esperada da etapa anterior para esta, em %. */
+  ideal?: number;
   fundo: string;
   texto: string;
 }> = [
@@ -72,13 +75,31 @@ const ETAPAS: Array<{
   },
   {
     chave: "reuniao",
-    rotulo: "Reunião marcada",
-    custo: "por reunião",
-    passagem: "marcaram reunião",
-    fundo: "#b85500",
+    rotulo: "Reunião agendada",
+    custo: "por reunião agendada",
+    passagem: "agendaram reunião",
+    ideal: IDEAL.agendamento,
+    fundo: "#a34c00",
     texto: "#ffffff",
   },
-  { chave: "fecharam", rotulo: "Fecharam", custo: "por venda", passagem: "fecharam", fundo: LARANJA, texto: "#ffffff" },
+  {
+    chave: "compareceram",
+    rotulo: "Reunião realizada",
+    custo: "por reunião realizada",
+    passagem: "compareceram",
+    ideal: IDEAL.comparecimento,
+    fundo: "#d45f00",
+    texto: "#ffffff",
+  },
+  {
+    chave: "fecharam",
+    rotulo: "Fecharam",
+    custo: "por venda",
+    passagem: "fecharam",
+    ideal: IDEAL.venda,
+    fundo: LARANJA,
+    texto: "#ffffff",
+  },
 ];
 
 const EXPLICACAO: Record<Origem, string> = {
@@ -238,13 +259,14 @@ export function FunilDeVendasClient() {
                         <span className="rounded-full border border-[#3d3d3d] bg-[#262626] px-3 py-0.5 text-xs text-[#b5b5b5]">
                           <strong className="text-[#f2f2f2]">{conv === null ? "—" : `${umaCasa.format(conv)}%`}</strong>{" "}
                           {t(e.passagem)}
+                          {e.ideal !== undefined && <Ideal real={conv} ideal={e.ideal} />}
                         </span>
                       </div>
                     )}
                     <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
                       <div className="flex w-full justify-center md:w-[66%]">
                         <Trapezio
-                          largura={100 - i * 16}
+                          largura={100 - i * 13}
                           fundo={e.fundo}
                           texto={e.texto}
                           numero={recorte.atual[e.chave]}
@@ -305,6 +327,21 @@ function Trapezio(props: {
         <Variacao agora={props.numero} antes={props.antes} />
       </span>
     </div>
+  );
+}
+
+/** "ideal 20%": verde quando a conversão chegou lá, laranja quando ficou abaixo. */
+function Ideal({ real, ideal }: { real: number | null; ideal: number }) {
+  const t = useT();
+  const bateu = real !== null && real >= ideal;
+  return (
+    <span
+      className="ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      style={bateu ? { backgroundColor: "#1f3a2a", color: "#7ddc9f" } : { backgroundColor: "#3a2616", color: "#ffb27a" }}
+      title={t(bateu ? "Acima do ideal" : "Abaixo do ideal")}
+    >
+      {t("ideal {n}%").replace("{n}", String(ideal))}
+    </span>
   );
 }
 

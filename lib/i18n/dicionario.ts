@@ -19880,6 +19880,15 @@ export const DICIONARIO: Traducoes = {
   "pulados": { es: "omitidos" },
 
   // ─── Acelera: Análise › Funil do comercial ───
+  "Reunião agendada": { es: "Reunión agendada" },
+  "Reunião realizada": { es: "Reunión realizada" },
+  "por reunião agendada": { es: "por reunión agendada" },
+  "por reunião realizada": { es: "por reunión realizada" },
+  "agendaram reunião": { es: "agendaron reunión" },
+  "compareceram": { es: "asistieron" },
+  "ideal {n}%": { es: "ideal {n}%" },
+  "Acima do ideal": { es: "Por encima del ideal" },
+  "Abaixo do ideal": { es: "Por debajo del ideal" },
   "Funil do comercial": { es: "Embudo comercial" },
   "Do lead novo à venda no período, com o custo do Meta em cada etapa.": { es: "Del lead nuevo a la venta en el período, con el costo de Meta en cada etapa." },
   "Funil do": { es: "Embudo" },

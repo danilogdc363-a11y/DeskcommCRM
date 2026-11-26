@@ -97,12 +97,20 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     const { data: stages, error: erroEtapas } = await admin
       .from("crm_stages")
-      .select("id, name, is_won")
+      .select("id, name, is_won, is_lost, position, is_archived")
       .eq("organization_id", orgId)
       .eq("pipeline_id", funil.id);
     if (erroEtapas) throw new Error(erroEtapas.message);
     const etapas = acharEtapasChave(
-      (stages ?? []).map((s) => ({ id: s.id as string, name: s.name as string, is_won: Boolean(s.is_won) })),
+      (stages ?? [])
+        .filter((s) => !s.is_archived)
+        .map((s) => ({
+          id: s.id as string,
+          name: s.name as string,
+          is_won: Boolean(s.is_won),
+          is_lost: Boolean(s.is_lost),
+          position: Number(s.position),
+        })),
     );
     const doFunil = new Set((stages ?? []).map((s) => s.id as string));
 
