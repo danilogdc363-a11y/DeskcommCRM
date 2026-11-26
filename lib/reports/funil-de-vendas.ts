@@ -165,8 +165,14 @@ export interface EntradaEmEtapa {
   em: string;
 }
 
+/**
+ * Cada conjunto é "chegou até aqui": a etapa-chave e as que vêm depois dela
+ * no funil (menos perdida). Lead que pulou direto para "Fechou" também
+ * marcou e fez reunião.
+ */
 export interface EtapasChave {
   reuniao: Set<string>;
+  compareceu: Set<string>;
   ganha: Set<string>;
 }
 
@@ -174,6 +180,7 @@ export interface ContagemDoFunil {
   novos: number;
   responderam: number;
   reuniao: number;
+  compareceram: number;
   fecharam: number;
 }
 
@@ -210,6 +217,7 @@ export function contarFunil(input: {
       novos: novos.length,
       responderam: novos.filter((l) => l.contatoId && primeiraResposta.has(l.contatoId)).length,
       reuniao: novos.filter((l) => passouPor(l, etapas.reuniao)).length,
+      compareceram: novos.filter((l) => passouPor(l, etapas.compareceu)).length,
       fecharam: novos.filter((l) => etapas.ganha.has(l.etapaId)).length,
     };
   }
@@ -234,6 +242,7 @@ export function contarFunil(input: {
     novos: novos.length,
     responderam: contatos.size,
     reuniao: entrouNo(etapas.reuniao),
+    compareceram: entrouNo(etapas.compareceu),
     fecharam: entrouNo(etapas.ganha),
   };
 }
@@ -262,9 +271,15 @@ export function somarGasto(linhas: Array<{ spend?: string | null }>): number {
   return linhas.reduce((s, l) => s + (Number(l.spend) || 0), 0);
 }
 
-/** Etapas-chave pelo nome ("Reunião marcada") e pela flag de ganho. */
+/** Referência do comercial: a conversão que se espera em cada passagem. */
+export const IDEAL = { agendamento: 20, comparecimento: 75, venda: 30 } as const;
+
+/**
+ * Etapas-chave: "Reunião marcada" e "Reunião feita" pelo nome, e cada uma
+ * junto com as que vêm depois dela (posição maior, fora as perdidas).
+ */
 export function acharEtapasChave(
-  etapas: Array<{ id: string; name: string; is_won: boolean }>,
+  etapas: Array<{ id: string; name: string; is_won: boolean; is_lost?: boolean; position?: number }>,
 ): EtapasChave {
   const normal = (s: string) =>
     s
@@ -272,8 +287,17 @@ export function acharEtapasChave(
       .replace(/[̀-ͯ]/g, "")
       .trim()
       .toLowerCase();
+  const daqui = (nome: string) => {
+    const chave = etapas.find((e) => normal(e.name) === nome);
+    if (!chave) return new Set<string>();
+    const pos = chave.position ?? 0;
+    return new Set(
+      etapas.filter((e) => !e.is_lost && (e.id === chave.id || (e.position ?? -1) > pos)).map((e) => e.id),
+    );
+  };
   return {
-    reuniao: new Set(etapas.filter((e) => normal(e.name) === "reuniao marcada").map((e) => e.id)),
+    reuniao: daqui("reuniao marcada"),
+    compareceu: daqui("reuniao feita"),
     ganha: new Set(etapas.filter((e) => e.is_won).map((e) => e.id)),
   };
 }
