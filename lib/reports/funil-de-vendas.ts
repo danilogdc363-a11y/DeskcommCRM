@@ -326,3 +326,131 @@ export function somarLeadsDoMeta(
     return s;
   }, 0);
 }
+
+// ─── Eventos que o Meta recebeu ─────────────────────────────────────────────
+
+/** Um envio da API de Conversões (`ad_conversion_dispatches`). */
+export interface EnvioAoMeta {
+  leadId: string | null;
+  /** `MetaEtapa:<id da etapa>` ou o evento de venda (ex.: `Purchase`). */
+  eventName: string;
+  status: string;
+  /** Quando foi tentado; cai em `criadoEm` se ainda não foi. */
+  em: string;
+}
+
+export interface EventosDoDegrau {
+  /** Leads com evento aceito pelo Meta (`sent`). */
+  recebidos: number;
+  /** Leads cujo evento falhou e não foi aceito depois. */
+  falharam: number;
+  /** Leads cujo evento o CRM pulou (sem dado para casar, regra desligada…). */
+  pulados: number;
+}
+
+export type Degrau = keyof ContagemDoFunil;
+
+/**
+ * Qual etapa do funil dispara o evento de cada degrau. "Novos" é a etapa de
+ * entrada (menor posição); "responderam" é "Em atendimento" (pelo nome: o
+ * funil pode ter etapas no meio, como uma de teste);
+ * reunião e comparecimento são as próprias etapas-chave; venda é a etapa
+ * ganha, mais o evento de venda que não carrega etapa.
+ */
+export function etapasDosEventos(
+  etapas: Array<{ id: string; name: string; is_won: boolean; is_lost?: boolean; position?: number }>,
+): Record<Degrau, Set<string>> {
+  const normal = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+  const abertas = etapas
+    .filter((e) => !e.is_lost && !e.is_won)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const pelo = (nome: string) => new Set(etapas.filter((e) => normal(e.name) === nome).map((e) => e.id));
+  return {
+    novos: new Set(abertas.slice(0, 1).map((e) => e.id)),
+    responderam: pelo("em atendimento"),
+    reuniao: pelo("reuniao marcada"),
+    compareceram: pelo("reuniao feita"),
+    fecharam: new Set(etapas.filter((e) => e.is_won).map((e) => e.id)),
+  };
+}
+
+/** Conta, por degrau, os leads com evento aceito e com evento falho no período. */
+export function contarEventosDoMeta(input: {
+  envios: EnvioAoMeta[];
+  etapasPorDegrau: Record<Degrau, Set<string>>;
+  janela: Janela;
+}): Record<Degrau, EventosDoDegrau> {
+  const PREFIXO = "MetaEtapa:";
+  const degrauDo = (evento: string): Degrau | null => {
+    if (!evento.startsWith(PREFIXO)) return "fecharam"; // evento de venda
+    const etapa = evento.slice(PREFIXO.length);
+    for (const [degrau, ids] of Object.entries(input.etapasPorDegrau) as Array<[Degrau, Set<string>]>) {
+      if (ids.has(etapa)) return degrau;
+    }
+    return null;
+  };
+  const aceitos = new Map<Degrau, Set<string>>();
+  const falhos = new Map<Degrau, Set<string>>();
+  const pulados = new Map<Degrau, Set<string>>();
+  for (const e of input.envios) {
+    if (!e.leadId || !dentro(e.em, input.janela)) continue;
+    const degrau = degrauDo(e.eventName);
+    if (!degrau) continue;
+    const alvo =
+      e.status === "sent" ? aceitos : e.status === "failed" ? falhos : e.status === "skipped" ? pulados : null;
+    if (!alvo) continue;
+    if (!alvo.has(degrau)) alvo.set(degrau, new Set());
+    alvo.get(degrau)?.add(e.leadId);
+  }
+  const degraus: Degrau[] = ["novos", "responderam", "reuniao", "compareceram", "fecharam"];
+  return Object.fromEntries(
+    degraus.map((d) => {
+      const ok = aceitos.get(d) ?? new Set<string>();
+      const fora = (m: Map<Degrau, Set<string>>) => [...(m.get(d) ?? [])].filter((id) => !ok.has(id)).length;
+      return [d, { recebidos: ok.size, falharam: fora(falhos), pulados: fora(pulados) }];
+    }),
+  ) as Record<Degrau, EventosDoDegrau>;
+}
+
+/**
+ * Leads que ENTRARAM na etapa do evento dentro do período e não têm envio
+ * nenhum ao Meta para ela (nem aceito, nem falho, nem pulado). É o "o CRM
+ * esqueceu de avisar". "Novos" fica de fora: criação não é mudança de etapa.
+ */
+export function contarSemEnvio(input: {
+  envios: EnvioAoMeta[];
+  entradas: EntradaEmEtapa[];
+  etapasPorDegrau: Record<Degrau, Set<string>>;
+  janela: Janela;
+}): Partial<Record<Degrau, number>> {
+  const PREFIXO = "MetaEtapa:";
+  const comEnvio = new Map<Degrau, Set<string>>();
+  for (const e of input.envios) {
+    if (!e.leadId) continue;
+    const etapa = e.eventName.startsWith(PREFIXO) ? e.eventName.slice(PREFIXO.length) : null;
+    for (const [degrau, ids] of Object.entries(input.etapasPorDegrau) as Array<[Degrau, Set<string>]>) {
+      const casa = etapa ? ids.has(etapa) : degrau === "fecharam";
+      if (!casa) continue;
+      if (!comEnvio.has(degrau)) comEnvio.set(degrau, new Set());
+      comEnvio.get(degrau)?.add(e.leadId);
+    }
+  }
+  const out: Partial<Record<Degrau, number>> = {};
+  for (const degrau of ["responderam", "reuniao", "compareceram", "fecharam"] as const) {
+    const alvo = input.etapasPorDegrau[degrau];
+    if (alvo.size === 0) continue;
+    const entraram = new Set(
+      input.entradas
+        .filter((x) => alvo.has(x.paraEtapaId) && dentro(x.em, input.janela))
+        .map((x) => x.leadId),
+    );
+    const enviados = comEnvio.get(degrau) ?? new Set<string>();
+    out[degrau] = [...entraram].filter((id) => !enviados.has(id)).length;
+  }
+  return out;
+}

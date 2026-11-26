@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   IDEAL,
   acharEtapasChave,
+  contarEventosDoMeta,
   contarFunil,
+  contarSemEnvio,
+  etapasDosEventos,
   custoPor,
   destinoDaMudanca,
   ehDoMeta,
@@ -210,5 +213,70 @@ describe("somarLeadsDoMeta", () => {
         {},
       ]),
     ).toBe(128);
+  });
+});
+
+describe("eventos que o Meta recebeu", () => {
+  const etapasDoFunil = [
+    { id: "novo", name: "Pedido novo", is_won: false, position: 1000 },
+    { id: "debug", name: "lead meta (debug)", is_won: false, position: 1500 },
+    { id: "atend", name: "Em atendimento", is_won: false, position: 2000 },
+    { id: "reu", name: "Reunião marcada", is_won: false, position: 3000 },
+    { id: "feita", name: "Reunião feita", is_won: false, position: 4000 },
+    { id: "won", name: "Fechou", is_won: true, position: 6000 },
+    { id: "lost", name: "Não fechou", is_won: false, is_lost: true, position: 7000 },
+  ];
+  const porDegrau = etapasDosEventos(etapasDoFunil);
+  const env = (leadId: string, eventName: string, status: string, em = "2026-11-10T12:00:00Z") => ({
+    leadId,
+    eventName,
+    status,
+    em,
+  });
+
+  it("liga cada degrau à etapa que dispara o evento", () => {
+    expect([...porDegrau.novos]).toEqual(["novo"]);
+    expect([...porDegrau.responderam]).toEqual(["atend"]);
+    expect([...porDegrau.reuniao]).toEqual(["reu"]);
+    expect([...porDegrau.compareceram]).toEqual(["feita"]);
+    expect([...porDegrau.fecharam]).toEqual(["won"]);
+  });
+
+  it("conta leads aceitos e falhos, sem repetir, e só dentro do período", () => {
+    const r = contarEventosDoMeta({
+      etapasPorDegrau: porDegrau,
+      janela: nov,
+      envios: [
+        env("a", "MetaEtapa:reu", "sent"),
+        env("a", "MetaEtapa:reu", "sent"),
+        env("b", "MetaEtapa:reu", "failed"),
+        env("c", "MetaEtapa:reu", "failed"),
+        env("c", "MetaEtapa:reu", "sent"),
+        env("d", "MetaEtapa:reu", "sent", "2026-10-20T12:00:00Z"),
+        env("e", "Purchase", "sent"),
+        env("f", "Purchase", "skipped"),
+        env("g", "MetaEtapa:outra", "sent"),
+      ],
+    });
+    expect(r.reuniao).toEqual({ recebidos: 2, falharam: 1, pulados: 0 });
+    expect(r.fecharam).toEqual({ recebidos: 1, falharam: 0, pulados: 1 });
+    expect(r.novos).toEqual({ recebidos: 0, falharam: 0, pulados: 0 });
+  });
+
+  it("aponta quem entrou na etapa e ficou sem evento", () => {
+    const r = contarSemEnvio({
+      etapasPorDegrau: porDegrau,
+      janela: nov,
+      entradas: [
+        { leadId: "a", paraEtapaId: "reu", em: "2026-11-05T12:00:00Z" },
+        { leadId: "b", paraEtapaId: "reu", em: "2026-11-06T12:00:00Z" },
+        { leadId: "c", paraEtapaId: "reu", em: "2026-10-06T12:00:00Z" },
+        { leadId: "w", paraEtapaId: "won", em: "2026-11-07T12:00:00Z" },
+      ],
+      envios: [env("a", "MetaEtapa:reu", "sent"), env("w", "Purchase", "skipped")],
+    });
+    expect(r.reuniao).toBe(1);
+    expect(r.fecharam).toBe(0);
+    expect(r.novos).toBeUndefined();
   });
 });
