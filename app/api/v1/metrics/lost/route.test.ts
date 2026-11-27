@@ -94,6 +94,11 @@ function fakeSupabase(dados: Record<string, Linha[]>, erroEm?: string) {
         filtros.push((l) => !(coluna in l) || l[coluna] === valor);
         return builder;
       };
+      builder.is = (coluna: string, valor: unknown) => {
+        registro.filtros.push([`${coluna} is`, valor]);
+        filtros.push((l) => (l[coluna] ?? null) === valor);
+        return builder;
+      };
       builder.gte = (coluna: string, valor: unknown) => {
         registro.filtros.push([`${coluna} >=`, valor]);
         filtros.push(
@@ -211,6 +216,7 @@ describe("GET /api/v1/metrics/lost", () => {
     expect(paginas[0]?.filtros).toEqual([
       ["organization_id", ORG_ID],
       ["status", "lost"],
+      ["merged_into_lead_id is", null],
       ["closed_at >=", "2026-09-01T00:00:00.000Z"],
       ["closed_at <", "2026-10-01T00:00:00.000Z"],
     ]);
@@ -263,6 +269,21 @@ describe("GET /api/v1/metrics/lost", () => {
     expect(data.porMotivo as Array<{ chave: string; quantidade: number }>).toEqual([
       { chave: "price", quantidade: 1 },
     ]);
+  });
+
+  it("(Acelera) negócio unificado em outro não conta como perda", async () => {
+    permitido();
+    const dados = dado();
+    dados.crm_leads = [
+      perda(1, { merged_into_lead_id: "lead-que-ficou" }), // a fusão só o tirou da frente
+      perda(2, { merged_into_lead_id: null }),
+    ];
+    const { client } = fakeSupabase(dados);
+    vi.mocked(createAdminClient).mockReturnValue(client as never);
+
+    const res = await chamar();
+    expect(res.status).toBe(200);
+    expect((await corpo(res)).total).toBe(1);
   });
 
   it("erro de leitura vira 500", async () => {

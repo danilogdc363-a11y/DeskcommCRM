@@ -95,6 +95,8 @@ export async function GET(req: NextRequest): Promise<Response> {
       )
       .eq("organization_id", activeOrg.orgId)
       .eq("status", "lost")
+      // (Acelera) Negócio unificado em outro não é perda: a fusão só o tira da frente.
+      .is("merged_into_lead_id", null)
       .gte("closed_at", from.toISOString())
       .lt("closed_at", to.toISOString())
       .order("closed_at", { ascending: false })

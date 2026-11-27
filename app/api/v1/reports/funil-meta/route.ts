@@ -244,6 +244,7 @@ async function lerAbertos(
         .from("crm_leads")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", orgId)
+        .is("merged_into_lead_id", null)
         .eq("stage_id", id);
       if (error) throw new Error(error.message);
       return [id, count ?? 0] as const;

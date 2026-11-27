@@ -183,6 +183,8 @@ export async function GET(req: NextRequest): Promise<Response> {
           contar ? { count: "exact" } : undefined,
         )
         .eq("organization_id", orgId)
+        // (Acelera) Unificado em outro negócio não conta: é a mesma pessoa.
+        .is("merged_into_lead_id", null)
         .gte("created_at", de)
         .lt("created_at", ate)
         .order("created_at", { ascending: false })
@@ -197,6 +199,8 @@ export async function GET(req: NextRequest): Promise<Response> {
           contar ? { count: "exact" } : undefined,
         )
         .eq("organization_id", orgId)
+        // (Acelera) Unificado em outro negócio não conta: é a mesma pessoa.
+        .is("merged_into_lead_id", null)
         .gte("closed_at", de)
         .lt("closed_at", ate)
         .order("closed_at", { ascending: false })
