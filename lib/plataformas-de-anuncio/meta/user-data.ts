@@ -170,6 +170,57 @@ export function normalizarEstado(v: string | null | undefined): string | null {
   return UF_POR_NOME[s] ?? null;
 }
 
+/** Os 67 DDDs em uso (plano de numeração da Anatel), por estado. */
+const DDDS_POR_UF: Record<string, number[]> = {
+  sp: [11, 12, 13, 14, 15, 16, 17, 18, 19],
+  rj: [21, 22, 24],
+  es: [27, 28],
+  mg: [31, 32, 33, 34, 35, 37, 38],
+  pr: [41, 42, 43, 44, 45, 46],
+  sc: [47, 48, 49],
+  rs: [51, 53, 54, 55],
+  df: [61],
+  go: [62, 64],
+  to: [63],
+  mt: [65, 66],
+  ms: [67],
+  ac: [68],
+  ro: [69],
+  ba: [71, 73, 74, 75, 77],
+  se: [79],
+  pe: [81, 87],
+  al: [82],
+  pb: [83],
+  rn: [84],
+  ce: [85, 88],
+  pi: [86, 89],
+  pa: [91, 93, 94],
+  am: [92, 97],
+  rr: [95],
+  ap: [96],
+  ma: [98, 99],
+};
+const UF_POR_DDD = new Map(
+  Object.entries(DDDS_POR_UF).flatMap(([uf, ddds]) => ddds.map((ddd) => [String(ddd), uf])),
+);
+
+/**
+ * O estado de um telefone brasileiro, pelo DDD. Espera o telefone já
+ * normalizado (só dígitos, com o 55).
+ *
+ * Existe porque hoje nenhum contato tem estado gravado, e sem ele os eventos
+ * de etapa saem com um campo de match a menos. O DDD diz onde a linha foi
+ * habilitada, não onde a pessoa mora: quem se mudou sai com o estado antigo.
+ * Por isso é só a reserva de `normalizarEstado`, nunca o substituto. O 61
+ * cobre também cidades goianas do entorno de Brasília e sai como `df`.
+ */
+export function estadoPeloDdd(telefone: string | null | undefined): string | null {
+  if (!telefone?.startsWith("55") || (telefone.length !== 12 && telefone.length !== 13)) {
+    return null;
+  }
+  return UF_POR_DDD.get(telefone.slice(2, 4)) ?? null;
+}
+
 export function normalizarCep(v: string | null | undefined): string | null {
   if (!v) return null;
   const d = v.replace(/\D/g, "");
@@ -252,7 +303,7 @@ export function montarUserData(entrada: EntradaDoUserData): Record<string, unkno
   emHash("fn", fn);
   emHash("ln", ln);
   emHash("ct", normalizarCidade(i.cidade));
-  emHash("st", normalizarEstado(i.estado));
+  emHash("st", normalizarEstado(i.estado) ?? estadoPeloDdd(ph));
   emHash("zp", normalizarCep(i.cep));
   emHash("country", normalizarPais(i.pais, ph));
   emHash("external_id", i.externalId?.trim() || null);
