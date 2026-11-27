@@ -8,7 +8,7 @@
 -- O corpo das duas funções é o vigente (0326 e 0754), com UMA linha a mais no
 -- bloco que lê `crm_leads`: `and merged_into_lead_id is null`. Mesma assinatura,
 -- mesmos grants. Idempotente (`create or replace`); sem BEGIN/COMMIT.
--- Espelho no fim do `baseline.sql` (bloco "acelera_0009").
+-- Espelho no fim do `baseline.sql` (bloco "acelera_0011").
 
 create or replace function public.fn_atrito_metrics(
   p_org uuid,
@@ -234,7 +234,7 @@ as $$
            ) as perdidos
       from public.crm_leads
      where organization_id = p_org and status in ('won', 'lost')
-      -- (acelera_0009) Negócio unificado em outro não é ganho nem perda.
+      -- (acelera_0011) Negócio unificado em outro não é ganho nem perda.
       and merged_into_lead_id is null
        and closed_at >= p_from and closed_at < p_to
   )
@@ -360,7 +360,7 @@ as $$
     from public.crm_leads
     where organization_id = p_org
       and status in ('won', 'lost')
-      -- (acelera_0009) Negócio unificado em outro não é ganho nem perda.
+      -- (acelera_0011) Negócio unificado em outro não é ganho nem perda.
       and merged_into_lead_id is null
       and closed_at >= p_from and closed_at < p_to
       and owner_user_id is not null

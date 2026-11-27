@@ -68128,7 +68128,7 @@ $$;
 
 revoke execute on function public.fn_limpar_navegador_de_contato_anonimizado() from public, anon, authenticated;
 
--- ---- função da fonte do formulário da Meta (migration acelera_0009; colunas e gatilho ficam no apêndice) ----
+-- ---- função da fonte do formulário da Meta (migration acelera_0011; colunas e gatilho ficam no apêndice) ----
 create or replace function public.fn_fonte_do_lead_ads_so_pelo_servidor()
 returns trigger
 language plpgsql
@@ -73133,7 +73133,7 @@ create trigger trg_limpar_navegador_de_contato_anonimizado
   execute function public.fn_limpar_navegador_de_contato_anonimizado();
 
 
--- ---- negócio unificado não é ganho nem perda (migration acelera_0009) ----
+-- ---- negócio unificado não é ganho nem perda (migration acelera_0011) ----
 -- Redefine as duas funções com o filtro merged_into_lead_id. Funções INVOKER:
 -- fora da VARREDURA anon, por isso o revoke/grant explícito vai junto.
 
@@ -73361,7 +73361,7 @@ as $$
            ) as perdidos
       from public.crm_leads
      where organization_id = p_org and status in ('won', 'lost')
-      -- (acelera_0009) Negócio unificado em outro não é ganho nem perda.
+      -- (acelera_0011) Negócio unificado em outro não é ganho nem perda.
       and merged_into_lead_id is null
        and closed_at >= p_from and closed_at < p_to
   )
@@ -73487,7 +73487,7 @@ as $$
     from public.crm_leads
     where organization_id = p_org
       and status in ('won', 'lost')
-      -- (acelera_0009) Negócio unificado em outro não é ganho nem perda.
+      -- (acelera_0011) Negócio unificado em outro não é ganho nem perda.
       and merged_into_lead_id is null
       and closed_at >= p_from and closed_at < p_to
       and owner_user_id is not null
@@ -73656,7 +73656,7 @@ grant execute on function public.fn_attendant_metrics(uuid, timestamptz, timesta
 
 notify pgrst, 'reload schema';
 
--- ---- formulário da Meta por empresa: página, token e busca na fonte (migration acelera_0009) ----
+-- ---- formulário da Meta por empresa: página, token e busca na fonte (migration acelera_0011) ----
 alter table public.webhook_sources
   add column if not exists meta_page_id text;
 
