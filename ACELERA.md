@@ -29,8 +29,13 @@ assinado. **Qualquer workspace do OS** pode entrar — cada um na SUA organizaç
    — o mesmo marcador que o provisionamento por sistema externo do próprio CRM usa
    (`provisionExternalTenant`). **Sem migration.**
    - achou → usa;
-   - não achou e quem chega é **dono/admin** no OS → cria a organização com o nome do workspace
-     (slug `acelera-os-<hash>`, mesma regra de `slugDoProvisionamento`) e essa pessoa vira `admin`;
+   - não achou e o workspace **não está** em `ACELERA_SSO_ORGS_PERMITIDAS` → recusado
+     (`org_nao_autorizada`), com o id do workspace no log (`[acelera.sso] organização nova recusada`).
+     Fechado por padrão: lista vazia = nenhuma organização nova. Sem isto, qualquer pessoa que se
+     cadastra no OS e cria um workspace virava admin de uma organização nova aqui;
+   - não achou, o workspace está na lista e quem chega é **dono/admin** no OS → cria a organização
+     com o nome do workspace (slug `acelera-os-<hash>`, mesma regra de `slugDoProvisionamento`) e
+     essa pessoa vira `admin`;
    - não achou e quem chega é **membro** → recusado (`org_sem_dono`): o dono/admin entra primeiro.
 6. Vínculo em `user_organizations`: dono/admin do OS → `admin`; membro → `ACELERA_SSO_MEMBER_ROLE`
    (padrão `agent`). Papel diferente é realinhado a cada entrada. Vínculo **revogado** no CRM
@@ -68,6 +73,7 @@ update public.organizations
 | `ACELERA_SSO_SECRET` | 64+ caracteres aleatórios | Mesma chave que `CRM_SSO_SECRET` no OS. Sem ela, `/sso` responde 404. |
 | `ACELERA_SSO_MEMBER_ROLE` | `agent` | Papel de quem é *membro* no OS (`viewer`/`agent`/`manager`/`admin`). |
 | `ACELERA_SSO_ONLY` | `true` | Desliga a tela de login/cadastro própria. |
+| `ACELERA_SSO_ORGS_PERMITIDAS` | `id-do-workspace,outro-slug` | Workspaces do OS (id ou slug, separados por vírgula) que podem abrir organização **nova** no CRM. Vazio = nenhum. Não afeta quem já tem organização ligada. |
 | `ACELERA_OS_LOGIN_URL` | `https://os.aceleradelivery.com/login` | Para onde vai quem chega sem sessão (com `ACELERA_SSO_ONLY=true`) e quem chega com passe inválido/recusado. |
 
 **Saída de emergência:** com `ACELERA_SSO_ONLY=true`, `/login?acesso_local=1` ainda mostra o

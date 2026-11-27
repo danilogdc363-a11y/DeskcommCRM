@@ -21,7 +21,11 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { configAcelera } from "@/lib/acelera-sso/config";
-import { INTEGRACAO_ACELERA_OS, planejarEntrada } from "@/lib/acelera-sso/entrada";
+import {
+  INTEGRACAO_ACELERA_OS,
+  planejarEntrada,
+  workspacePodeCriarOrganizacao,
+} from "@/lib/acelera-sso/entrada";
 import { conferirPasse, NoncesUsados } from "@/lib/acelera-sso/pass";
 import { audit } from "@/lib/audit";
 import { pontaDeCarregamento } from "@/lib/acelera-sso/ponte";
@@ -29,6 +33,7 @@ import { invalidarUsuario } from "@/lib/auth/cache-curto";
 import { slugDoProvisionamento } from "@/lib/auth/provision";
 import { marcaDaSaida } from "@/lib/branding/saida";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cookieSecure } from "@/lib/supabase/cookie-secure";
 import { createClient } from "@/lib/supabase/server";
@@ -138,8 +143,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const plano = planejarEntrada(passe, org, vinculo, cfg.papelDeMembro);
-    if (plano.tipo === "recusar") return voltar(plano.motivo);
+    const plano = planejarEntrada(
+      passe,
+      org,
+      vinculo,
+      cfg.papelDeMembro,
+      workspacePodeCriarOrganizacao(passe.org, cfg.workspacesQueCriamOrganizacao),
+    );
+    if (plano.tipo === "recusar") {
+      if (plano.motivo === "org_nao_autorizada") {
+        // Quem bate aqui é um workspace fora de ACELERA_SSO_ORGS_PERMITIDAS. O id do
+        // workspace vai para o log para o Danilo poder liberar, se for de verdade.
+        logger.warn("[acelera.sso] organização nova recusada", {
+          workspace_do_os: passe.org.id,
+          requestId,
+        });
+      }
+      return voltar(plano.motivo);
+    }
 
     if (plano.criarOrganizacao) {
       org = await criarOrganizacao(admin, passe.org, usuarioId);

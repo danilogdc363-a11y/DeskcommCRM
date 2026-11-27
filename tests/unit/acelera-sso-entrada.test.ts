@@ -3,7 +3,8 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
-import { planejarEntrada } from "@/lib/acelera-sso/entrada";
+import { planejarEntrada, workspacePodeCriarOrganizacao } from "@/lib/acelera-sso/entrada";
+import { configAcelera } from "@/lib/acelera-sso/config";
 import { conferirPasse } from "@/lib/acelera-sso/pass";
 
 const CHAVE = "k";
@@ -40,13 +41,13 @@ describe("planejarEntrada", () => {
     const a = passe(ORG_A, "owner");
     const b = passe(ORG_B, "admin");
     expect(a.org.id).not.toBe(b.org.id);
-    expect(planejarEntrada(a, null, null, undefined)).toEqual({
+    expect(planejarEntrada(a, null, null, undefined, true)).toEqual({
       tipo: "entrar",
       criarOrganizacao: true,
       vinculo: "criar",
       papel: "admin",
     });
-    expect(planejarEntrada(b, null, null, undefined)).toMatchObject({
+    expect(planejarEntrada(b, null, null, undefined, true)).toMatchObject({
       criarOrganizacao: true,
       papel: "admin",
     });
@@ -74,7 +75,7 @@ describe("planejarEntrada", () => {
   });
 
   it("membro não abre organização que ainda não existe no CRM", () => {
-    expect(planejarEntrada(passe(ORG_B, "member"), null, null, undefined)).toEqual({
+    expect(planejarEntrada(passe(ORG_B, "member"), null, null, undefined, true)).toEqual({
       tipo: "recusar",
       motivo: "org_sem_dono",
     });
@@ -89,6 +90,38 @@ describe("planejarEntrada", () => {
         undefined,
       ),
     ).toEqual({ tipo: "recusar", motivo: "revogado" });
+  });
+
+  it("(Acelera) workspace fora da lista não abre organização nova, mesmo sendo dono", () => {
+    expect(planejarEntrada(passe(ORG_A, "owner"), null, null, undefined)).toEqual({
+      tipo: "recusar",
+      motivo: "org_nao_autorizada",
+    });
+    expect(planejarEntrada(passe(ORG_A, "owner"), null, null, undefined, false)).toEqual({
+      tipo: "recusar",
+      motivo: "org_nao_autorizada",
+    });
+  });
+
+  it("(Acelera) a lista não barra quem já tem organização ligada", () => {
+    expect(
+      planejarEntrada(passe(ORG_A, "member"), { id: "crm-a" }, null, undefined, false),
+    ).toMatchObject({
+      tipo: "entrar",
+      criarOrganizacao: false,
+    });
+  });
+
+  it("(Acelera) a lista aceita o id ou o slug do workspace; vazia não libera ninguém", () => {
+    const lista = configAcelera({
+      ACELERA_SSO_ORGS_PERMITIDAS: " aaaa , agencia-b ,,",
+    }).workspacesQueCriamOrganizacao;
+    expect(workspacePodeCriarOrganizacao(ORG_A, lista)).toBe(true);
+    expect(workspacePodeCriarOrganizacao(ORG_B, lista)).toBe(true);
+    expect(workspacePodeCriarOrganizacao({ id: "cccc", slug: "" }, lista)).toBe(false);
+    expect(workspacePodeCriarOrganizacao({ id: "cccc", slug: "" }, new Set([""]))).toBe(false);
+    const vazia = configAcelera({}).workspacesQueCriamOrganizacao;
+    expect(workspacePodeCriarOrganizacao(ORG_A, vazia)).toBe(false);
   });
 
   it("passe sem org.id é recusado", () => {

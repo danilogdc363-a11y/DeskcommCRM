@@ -8,6 +8,8 @@ export type ConfigAcelera = {
   papelDeMembro: string | undefined;
   soSso: boolean;
   urlDeLoginDoOs: string | null;
+  /** (Acelera) Workspaces do OS (id ou slug) que podem abrir organização NOVA no CRM. */
+  workspacesQueCriamOrganizacao: ReadonlySet<string>;
 };
 
 export function configAcelera(e: Record<string, string | undefined> = process.env): ConfigAcelera {
@@ -17,6 +19,12 @@ export function configAcelera(e: Record<string, string | undefined> = process.en
     papelDeMembro: e.ACELERA_SSO_MEMBER_ROLE?.trim() || undefined,
     soSso: e.ACELERA_SSO_ONLY?.trim() === "true",
     urlDeLoginDoOs: url && /^https?:\/\//.test(url) ? url : null,
+    workspacesQueCriamOrganizacao: new Set(
+      (e.ACELERA_SSO_ORGS_PERMITIDAS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
   };
 }
 
