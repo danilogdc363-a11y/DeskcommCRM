@@ -18,7 +18,7 @@ export type OrgNoCrm = { id: string } | null;
 export type VinculoNoCrm = { id: string; role: string; revogado: boolean } | null;
 
 export type PlanoDeEntrada =
-  | { tipo: "recusar"; motivo: "revogado" | "org_sem_dono" }
+  | { tipo: "recusar"; motivo: "revogado" | "org_sem_dono" | "org_nao_autorizada" }
   | {
       tipo: "entrar";
       /** Organização ainda não existe no CRM: criar com o nome vindo do OS. */
@@ -36,12 +36,17 @@ export function planejarEntrada(
   org: OrgNoCrm,
   vinculo: VinculoNoCrm,
   papelDeMembro: string | undefined,
+  // (Acelera) Organização NOVA só nasce para workspace da lista `ACELERA_SSO_ORGS_PERMITIDAS`.
+  // Sem isto, qualquer pessoa que se cadastra no OS e cria um workspace virava admin
+  // de uma organização nova no CRM (canais, IA e e-mail da instalação). Fechado por padrão.
+  podeCriarOrganizacao = false,
 ): PlanoDeEntrada {
   const papel = papelNoCrm(passe.role, papelDeMembro);
 
   if (!org) {
     // Só dono/admin do workspace abre a organização no CRM — e vira admin dela.
     // Membro que chega antes fica de fora, senão a org nasceria sem admin.
+    if (!podeCriarOrganizacao) return { tipo: "recusar", motivo: "org_nao_autorizada" };
     if (!ehDonoOuAdmin(passe.role)) return { tipo: "recusar", motivo: "org_sem_dono" };
     return { tipo: "entrar", criarOrganizacao: true, vinculo: "criar", papel: "admin" };
   }
@@ -52,4 +57,16 @@ export function planejarEntrada(
     return { tipo: "entrar", criarOrganizacao: false, vinculo: "atualizar", papel };
   }
   return { tipo: "entrar", criarOrganizacao: false, vinculo: "manter", papel };
+}
+
+/**
+ * (Acelera) O workspace do OS pode abrir organização nova no CRM? Vale o id OU o
+ * slug do workspace, como vieram no passe. Lista vazia = ninguém abre (só entra
+ * quem já tem organização ligada).
+ */
+export function workspacePodeCriarOrganizacao(
+  org: { id: string; slug: string },
+  permitidos: ReadonlySet<string>,
+): boolean {
+  return permitidos.has(org.id) || (org.slug !== "" && permitidos.has(org.slug));
 }
