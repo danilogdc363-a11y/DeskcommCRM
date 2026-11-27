@@ -58,7 +58,10 @@ describe("(Acelera) valor preenchido depois do fechamento", () => {
       update public.crm_leads set value_cents=250000 where id='${GOV_LEAD}';
       ${pedidosDeReenvio}
       rollback;`);
-    expect(out).toContain("0");
+    // Ancorado no fim: o `INSERT 0 1` do psql também contém "0".
+    expect(out).toMatch(/
+0
+ROLLBACK$/);
   });
 
   it("negócio que não é ganho não pede nada", () => {
@@ -68,7 +71,10 @@ describe("(Acelera) valor preenchido depois do fechamento", () => {
       update public.crm_leads set value_cents=250000 where id='${GOV_LEAD}';
       ${pedidosDeReenvio}
       rollback;`);
-    expect(out).toContain("0");
+    // Ancorado no fim: o `INSERT 0 1` do psql também contém "0".
+    expect(out).toMatch(/
+0
+ROLLBACK$/);
   });
 
   it("a função do gatilho não é executável pelos papéis do navegador", () => {
