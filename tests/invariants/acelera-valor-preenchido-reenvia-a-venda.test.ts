@@ -40,7 +40,8 @@ describe("(Acelera) valor preenchido depois do fechamento", () => {
       rollback;`);
     // Corrigir o valor de novo não empilha outro pedido: o gatilho só dispara
     // quando o valor SAI de vazio, e a pendência já deixou de ser `sem_valor`.
-    expect(out).toContain("1\nreprocessamento_solicitado\n1");
+    // O `UPDATE 1` é a linha que o psql imprime para a segunda edição.
+    expect(out).toContain("1\nreprocessamento_solicitado\nUPDATE 1\n1\nROLLBACK");
   });
 
   it("o pedido nasce pendente — é comando, e o envio da venda o consome", () => {
@@ -59,9 +60,7 @@ describe("(Acelera) valor preenchido depois do fechamento", () => {
       ${pedidosDeReenvio}
       rollback;`);
     // Ancorado no fim: o `INSERT 0 1` do psql também contém "0".
-    expect(out).toMatch(/
-0
-ROLLBACK$/);
+    expect(out.endsWith("\n0\nROLLBACK")).toBe(true);
   });
 
   it("negócio que não é ganho não pede nada", () => {
@@ -72,9 +71,7 @@ ROLLBACK$/);
       ${pedidosDeReenvio}
       rollback;`);
     // Ancorado no fim: o `INSERT 0 1` do psql também contém "0".
-    expect(out).toMatch(/
-0
-ROLLBACK$/);
+    expect(out.endsWith("\n0\nROLLBACK")).toBe(true);
   });
 
   it("a função do gatilho não é executável pelos papéis do navegador", () => {
