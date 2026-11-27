@@ -68153,6 +68153,43 @@ $$;
 
 revoke execute on function public.fn_fonte_do_lead_ads_so_pelo_servidor() from public, anon;
 
+-- ---- valor preenchido reenvia a venda (migration acelera_0012; gatilho fica no apêndice) ----
+create or replace function public.fn_valor_preenchido_reenvia_a_venda()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+as $fn$
+begin
+  -- Só a venda que parou POR FALTA DE VALOR. Venda recusada pela plataforma, ou
+  -- negócio que nunca gerou envio, não é reenviada por uma edição: para isso
+  -- existe o botão de reprocessar.
+  if exists (
+    select 1 from public.ad_conversion_dispatches d
+     where d.organization_id = new.organization_id
+       and d.lead_id = new.id
+       and d.event_name = 'Purchase'
+       and d.status = 'skipped'
+       and d.reason = 'sem_valor'
+  ) then
+    -- A mesma porta do botão: confere ganho, recusa pedido repetido na fila e
+    -- emite `ad_conversion.retry_requested`, que o envio da venda já consome.
+    perform public.fn_solicitar_reenvio_conversao(new.organization_id, new.id, 'Purchase');
+  end if;
+  return new;
+exception when others then
+  -- Preencher o valor do negócio NUNCA falha por causa de conversão: a venda
+  -- continua pendente na tela de Conversões e o botão segue valendo.
+  raise warning 'fn_valor_preenchido_reenvia_a_venda: % (negocio %)', sqlerrm, new.id;
+  return new;
+end$fn$;
+
+comment on function public.fn_valor_preenchido_reenvia_a_venda() is
+  'Acelera: quando o valor de um negócio ganho é preenchido depois do fechamento e a venda está pendente por `sem_valor`, pede o reenvio da compra (mesma porta do botão de reprocessar).';
+
+revoke execute on function public.fn_valor_preenchido_reenvia_a_venda() from public, anon, authenticated;
+grant execute on function public.fn_valor_preenchido_reenvia_a_venda() to service_role;
+
 -- ---- unificar fichas de negócio (migration acelera_0008) ----
 
 alter table public.crm_leads
@@ -73726,5 +73763,17 @@ end $temperatura_manual$;
 
 comment on column public.crm_leads.temperatura_manual is
   'Temperatura marcada à mão pelo operador (frio|morno|quente). NULL = automático (vale a faixa da IA em crm_lead_scores, se houver). Marcação humana: vence a da IA e a IA nunca a escreve.';
+
+notify pgrst, 'reload schema';
+
+-- ---- valor preenchido reenvia a venda: gatilho (migration acelera_0012) ----
+drop trigger if exists trg_valor_preenchido_reenvia_a_venda on public.crm_leads;
+create trigger trg_valor_preenchido_reenvia_a_venda
+  after update of value_cents on public.crm_leads
+  for each row
+  when (new.status = 'won'
+        and new.value_cents > 0
+        and coalesce(old.value_cents, 0) <= 0)
+  execute function public.fn_valor_preenchido_reenvia_a_venda();
 
 notify pgrst, 'reload schema';
