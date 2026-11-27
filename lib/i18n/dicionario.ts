@@ -19880,6 +19880,11 @@ export const DICIONARIO: Traducoes = {
   "pulados": { es: "omitidos" },
 
   // ─── Acelera: Análise › Funil do comercial ───
+  "Meta recebeu {n}": { es: "Meta recibió {n}" },
+  "{n} falharam": { es: "{n} fallaron" },
+  "{n} sem envio": { es: "{n} sin envío" },
+  "{n} pulados": { es: "{n} omitidos" },
+  "Eventos que o CRM mandou ao Meta no período, de todas as origens.": { es: "Eventos que el CRM envió a Meta en el período, de todos los orígenes." },
   "Reunião agendada": { es: "Reunión agendada" },
   "Reunião realizada": { es: "Reunión realizada" },
   "por reunião agendada": { es: "por reunión agendada" },

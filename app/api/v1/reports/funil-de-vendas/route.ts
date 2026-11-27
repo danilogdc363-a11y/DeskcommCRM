@@ -23,7 +23,10 @@ import { lerCredencialDeLeitura } from "@/lib/plataformas-de-anuncio/credenciais
 import { lerInsights } from "@/lib/plataformas-de-anuncio/meta/insights";
 import {
   acharEtapasChave,
+  contarEventosDoMeta,
   contarFunil,
+  contarSemEnvio,
+  etapasDosEventos,
   destinoDaMudanca,
   diaNoFuso,
   ehDoMeta,
@@ -33,6 +36,7 @@ import {
   somarGasto,
   somarLeadsDoMeta,
   type EntradaEmEtapa,
+  type EnvioAoMeta,
   type Janela,
   type LeadDoFunil,
 } from "@/lib/reports/funil-de-vendas";
@@ -45,7 +49,7 @@ const querySchema = z.object({
   preset: z.enum(["este_mes", "mes_passado", "7d", "14d", "28d"]).optional(),
   de: z.string().optional(),
   ate: z.string().optional(),
-  modo: z.enum(["coorte", "movimento"]).default("coorte"),
+  modo: z.enum(["coorte", "movimento"]).default("movimento"),
 });
 
 const LOTE = 200;
@@ -101,17 +105,17 @@ export async function GET(req: NextRequest): Promise<Response> {
       .eq("organization_id", orgId)
       .eq("pipeline_id", funil.id);
     if (erroEtapas) throw new Error(erroEtapas.message);
-    const etapas = acharEtapasChave(
-      (stages ?? [])
-        .filter((s) => !s.is_archived)
-        .map((s) => ({
-          id: s.id as string,
-          name: s.name as string,
-          is_won: Boolean(s.is_won),
-          is_lost: Boolean(s.is_lost),
-          position: Number(s.position),
-        })),
-    );
+    const etapasAtivas = (stages ?? [])
+      .filter((s) => !s.is_archived)
+      .map((s) => ({
+        id: s.id as string,
+        name: s.name as string,
+        is_won: Boolean(s.is_won),
+        is_lost: Boolean(s.is_lost),
+        position: Number(s.position),
+      }));
+    const etapas = acharEtapasChave(etapasAtivas);
+    const etapasPorDegrau = etapasDosEventos(etapasAtivas);
     const doFunil = new Set((stages ?? []).map((s) => s.id as string));
 
     const dados = await carregar(admin, orgId, funil.id as string, doFunil, {
@@ -138,7 +142,14 @@ export async function GET(req: NextRequest): Promise<Response> {
       organico: { atual: contar(janela, organico), antes: contar(anterior, organico) },
     };
 
-    const anuncios = await lerMeta(admin, orgId, janela, anterior, agora);
+    const [anuncios, envios] = await Promise.all([
+      lerMeta(admin, orgId, janela, anterior, agora),
+      lerEnviosAoMeta(admin, orgId, janela.de),
+    ]);
+    const eventosDoMeta = {
+      porEtapa: contarEventosDoMeta({ envios, etapasPorDegrau, janela }),
+      semEnvio: contarSemEnvio({ envios, entradas: dados.entradas, etapasPorDegrau, janela }),
+    };
 
     return ok(
       {
@@ -148,6 +159,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         janela: { primeiroDia: janela.primeiroDia, ultimoDia: janela.ultimoDia },
         anterior: { primeiroDia: anterior.primeiroDia, ultimoDia: anterior.ultimoDia },
         origens,
+        eventosDoMeta,
         meta: anuncios.ok
           ? {
               ok: true as const,
@@ -366,4 +378,36 @@ async function lerMeta(
     atual: { gasto: somarGasto(atual.dados), leads: somarLeadsDoMeta(atual.dados) },
     antes: { gasto: somarGasto(antes.dados), leads: somarLeadsDoMeta(antes.dados) },
   };
+}
+
+/**
+ * Envios à API de Conversões a partir do início do período (até agora: o
+ * envio de quem entrou no último dia pode sair logo depois). A tabela é
+ * revogada de `authenticated`, por isso o admin client, com a organização no
+ * filtro.
+ */
+async function lerEnviosAoMeta(admin: SupabaseClient, orgId: string, de: Date): Promise<EnvioAoMeta[]> {
+  const linhas = await lerTudo<{
+    id: string;
+    lead_id: string | null;
+    event_name: string;
+    status: string;
+    created_at: string;
+    attempted_at: string | null;
+  }>((a, b) =>
+    admin
+      .from("ad_conversion_dispatches")
+      .select("id, lead_id, event_name, status, created_at, attempted_at")
+      .eq("organization_id", orgId)
+      .eq("platform", "meta_ads")
+      .gte("created_at", de.toISOString())
+      .order("id")
+      .range(a, b),
+  );
+  return linhas.map((l) => ({
+    leadId: l.lead_id,
+    eventName: l.event_name,
+    status: l.status,
+    em: l.attempted_at ?? l.created_at,
+  }));
 }

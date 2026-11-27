@@ -131,7 +131,7 @@ function hojeEmBrasilia(): string {
 export function FunilDeVendasClient() {
   const t = useT();
   const [periodo, setPeriodo] = useState<PeriodoDoFunil>({ preset: "este_mes" });
-  const [modo, setModo] = useState<Modo>("coorte");
+  const [modo, setModo] = useState<Modo>("movimento");
   const [origem, setOrigem] = useState<Origem>("geral");
   const [livre, setLivre] = useState({ de: "", ate: hojeEmBrasilia() });
   const consulta = useFunilDeVendas(periodo, modo);
@@ -282,6 +282,10 @@ export function FunilDeVendasClient() {
                         />
                       )}
                     </div>
+                    <EventosNoMeta
+                      eventos={dados.eventosDoMeta.porEtapa[e.chave]}
+                      semEnvio={dados.eventosDoMeta.semEnvio[e.chave]}
+                    />
                   </div>
                 );
               })}
@@ -342,6 +346,36 @@ function Ideal({ real, ideal }: { real: number | null; ideal: number }) {
     >
       {t("ideal {n}%").replace("{n}", String(ideal))}
     </span>
+  );
+}
+
+/**
+ * O que o Meta recebeu desta etapa no período (todas as origens): aceitos e,
+ * se houver, falhas e leads que entraram na etapa sem evento enviado.
+ */
+function EventosNoMeta({
+  eventos,
+  semEnvio,
+}: {
+  eventos: { recebidos: number; falharam: number; pulados: number };
+  semEnvio?: number;
+}) {
+  const t = useT();
+  const problema = eventos.falharam > 0 || eventos.pulados > 0 || (semEnvio ?? 0) > 0;
+  return (
+    <div className="flex w-full justify-center pt-1 md:w-[66%]">
+      <span
+        className="rounded-full px-3 py-0.5 text-[11px]"
+        style={problema ? { backgroundColor: "#3a2616", color: "#ffb27a" } : { backgroundColor: "#262626", color: "#b5b5b5" }}
+        title={t("Eventos que o CRM mandou ao Meta no período, de todas as origens.")}
+      >
+        {t("Meta recebeu {n}").replace("{n}", inteiro.format(eventos.recebidos))}
+        {eventos.falharam > 0 && ` · ${t("{n} falharam").replace("{n}", inteiro.format(eventos.falharam))}`}
+        {eventos.pulados > 0 && ` · ${t("{n} pulados").replace("{n}", inteiro.format(eventos.pulados))}`}
+        {(semEnvio ?? 0) > 0 && ` · ${t("{n} sem envio").replace("{n}", inteiro.format(semEnvio ?? 0))}`}
+        {!problema && " ✓"}
+      </span>
+    </div>
   );
 }
 

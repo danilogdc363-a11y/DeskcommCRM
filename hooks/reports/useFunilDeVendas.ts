@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "@/lib/api/client";
-import type { ContagemDoFunil, Modo, Preset } from "@/lib/reports/funil-de-vendas";
+import type { ContagemDoFunil, Degrau, EventosDoDegrau, Modo, Preset } from "@/lib/reports/funil-de-vendas";
 
 export type PeriodoDoFunil = { preset: Preset } | { de: string; ate: string };
 
@@ -21,6 +21,12 @@ export interface FunilDeVendas {
   janela: { primeiroDia: string; ultimoDia: string };
   anterior: { primeiroDia: string; ultimoDia: string };
   origens: Record<Origem, Comparado>;
+  /** Eventos que o Meta recebeu no período (todas as origens). */
+  eventosDoMeta: {
+    porEtapa: Record<Degrau, EventosDoDegrau>;
+    /** Entraram na etapa e o CRM não mandou evento nenhum. */
+    semEnvio: Partial<Record<Degrau, number>>;
+  };
   meta:
     | { ok: true; contaId: string; atual: NumerosDoMeta; antes: NumerosDoMeta }
     | { ok: false; motivo: string };
