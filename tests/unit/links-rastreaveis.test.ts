@@ -1,3 +1,4 @@
+import { textoSemRef } from "@/lib/plataformas-de-anuncio/texto-do-ref";
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
@@ -7,7 +8,6 @@ import {
 } from "@/lib/plataformas-de-anuncio/rastreio/links";
 import {
   linkSchema,
-  mensagemComRef,
   utmsDoLink,
   type LinkRastreavel,
 } from "@/lib/plataformas-de-anuncio/rastreio/contrato";
@@ -47,7 +47,7 @@ describe("links rastreáveis", () => {
       expect(row[key]).toBe("clique-real");
       expect(row.query_raw).not.toHaveProperty("email");
       expect(dest.origin + dest.pathname).toBe("https://wa.me/5511999999999");
-      expect(dest.searchParams.get("text")).toBe(`Quero saber mais [ref:${row.token}]`);
+      expect(dest.searchParams.get("text")).toBe("Quero saber mais");
     },
   );
   it("macro não vira identificador pago; tráfego orgânico recebe apenas UTMs", async () => {
@@ -72,8 +72,8 @@ describe("links rastreáveis", () => {
       expect(dest.searchParams.get("text")).toBe("Quero saber mais");
     },
   );
-  it("elimina marcadores antigos e mantém só um ref", () =>
-    expect(mensagemComRef("Olá [ref:AAAAAA] [ref:{token}] {token}")).toBe("Olá [ref:{token}]"));
+  it("a mensagem não leva código nenhum, nem marcador antigo escrito à mão", () =>
+    expect(textoSemRef("Olá [ref:AAAAAA] [ref:{token}] {token}")).toBe("Olá"));
   it("rejeita telefone inválido e aplica lista permitida de UTMs", () => {
     expect(linkSchema.safeParse({ ...link, whatsapp_e164: "5511" }).success).toBe(false);
     expect(utmsDoLink(link, new URLSearchParams("email=privado&utm_campaign=nova"))).toEqual({

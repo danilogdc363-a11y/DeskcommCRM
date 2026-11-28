@@ -52,7 +52,7 @@ describe("formulários de conversão", () => {
         expect.objectContaining({
           plataforma: "google_ads",
           whatsapp_e164: "+5511999999999",
-          message_template: expect.stringContaining("[ref:{token}]"),
+          message_template: "Olá! Vim pelo site.",
         }),
       ),
     );

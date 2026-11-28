@@ -12,13 +12,11 @@ import { randomId } from "@/lib/random-id";
 import { useTelefoneExemplo } from "@/hooks/contacts/useTelefoneExemplo";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
-import {
-  mensagemComRef,
-  SUFIXO_GOOGLE,
+import { SUFIXO_GOOGLE,
   type LinkInput,
   type LinkRastreavel,
-  type MetricasLink,
-} from "@/lib/plataformas-de-anuncio/rastreio/contrato";
+  type MetricasLink } from "@/lib/plataformas-de-anuncio/rastreio/contrato";
+import { textoSemRef } from "@/lib/plataformas-de-anuncio/texto-do-ref";
 
 const subscribe = () => () => {};
 const initial: LinkInput = {
@@ -276,7 +274,7 @@ export function LinksRastreaveis({
         </label>
         <p className="text-sm break-words">
           {t("Prévia da mensagem")}:{" "}
-          {mensagemComRef(form.message_template).replace("{token}", "ABC234")}
+          {textoSemRef(form.message_template)}
         </p>
         <div className="flex gap-2">
           <Button type="submit" disabled={pending}>

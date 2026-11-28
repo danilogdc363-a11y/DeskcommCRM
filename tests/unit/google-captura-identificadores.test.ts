@@ -54,7 +54,8 @@ describe("captura de identificadores Google", () => {
         { [tipo]: "click-1" },
         { utm_campaign: "teste" },
       );
-      expect(decodeURIComponent(response.headers.get("location") ?? "")).toContain("[ref:2ABCDE]");
+      // Desde 27/11/2026 o clique é gravado, mas o código não vai na mensagem.
+      expect(decodeURIComponent(response.headers.get("location") ?? "")).not.toContain("[ref:");
     },
   );
   it.each(["", "gclid=%7Bgclid%7D", "wbraid=%3Cscript%3E", `gclid=${"a".repeat(513)}`])(

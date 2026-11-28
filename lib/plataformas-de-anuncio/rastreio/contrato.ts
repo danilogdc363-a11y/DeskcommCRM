@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { normalizarUtm } from "@/lib/leads/origem-do-site";
-import { textoSemRef } from "../texto-do-ref";
 
 export const linkSchema = z.object({
   id: z.uuid().optional(),
@@ -18,11 +17,6 @@ export type LinkInput = z.infer<typeof linkSchema>;
 export type LinkRastreavel = LinkInput & { id: string; organization_id: string };
 export type MetricasLink = { link_id: string; clicks: number; contacts: number; leads: number };
 
-export function mensagemComRef(texto: string): string {
-  return `${textoSemRef(texto)
-    .replace(/\[ref:[^\]]*\]/g, "")
-    .trim()} [ref:{token}]`;
-}
 export function utmsDoLink(
   link: Pick<LinkRastreavel, "utm" | "use_case" | "name">,
   search: URLSearchParams,

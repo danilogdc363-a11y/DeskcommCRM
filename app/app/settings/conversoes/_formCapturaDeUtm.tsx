@@ -27,6 +27,7 @@ import { useTelefoneExemplo } from "@/hooks/contacts/useTelefoneExemplo";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
 import type { EstadoDaCaptura } from "@/lib/plataformas-de-anuncio/landing-config";
+import { textoSemRef } from "@/lib/plataformas-de-anuncio/texto-do-ref";
 
 const ERRO_EM_PORTUGUES: Record<string, string> = {
   validation_failed: "Confira os campos: algum valor não está no formato esperado.",
@@ -37,7 +38,7 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   erro_ao_gravar: "Não consegui gravar agora. Tente de novo em instantes.",
 };
 
-const TEXTO_PADRAO = "Olá! Vim pelo site. [ref:{token}]";
+const TEXTO_PADRAO = "Olá! Vim pelo site.";
 
 /**
  * As macros de URL da plataforma, no exemplo que a tela manda copiar.
@@ -84,12 +85,12 @@ export function FormularioDeCapturaDeUtm({
   const [isPending, startTransition] = useTransition();
 
   const [numero, setNumero] = useState(estado?.whatsappE164 ?? numerosConectados[0] ?? "");
-  const [texto, setTexto] = useState(estado?.messageTemplate ?? TEXTO_PADRAO);
+  const [texto, setTexto] = useState(textoSemRef(estado?.messageTemplate ?? TEXTO_PADRAO));
   const [habilitada, setHabilitada] = useState(estado?.habilitada ?? true);
 
   const origem = useSyncExternalStore(assinarOrigem, origemDoNavegador, origemNoServidor);
   const urlParaColar = `${enderecoDeCaptura(slug, plataforma, origem)}${plataforma === "meta" ? `?${EXEMPLO_DE_PARAMETROS}` : ""}`;
-  const podeSalvar = numero.trim().length >= 8 && texto.includes("{token}");
+  const podeSalvar = numero.trim().length >= 8 && texto.trim().length > 0;
 
   function salvar(evento: React.FormEvent) {
     evento.preventDefault();
@@ -129,7 +130,7 @@ export function FormularioDeCapturaDeUtm({
           </p>
           <p className="text-sm text-muted-foreground">
             {t(
-              "Em vez do link do WhatsApp, o botão da sua página aponta para este endereço. Ele guarda a origem, cria um código curto e abre o WhatsApp com esse código no texto — o visitante não vê nada além do botão de sempre.",
+              "Em vez do link do WhatsApp, o botão da sua página aponta para este endereço. Ele guarda o clique e abre o WhatsApp com o texto abaixo — o visitante não vê nada além do botão de sempre.",
             )}
           </p>
         </div>
@@ -169,7 +170,7 @@ export function FormularioDeCapturaDeUtm({
           />
           <p className="text-xs text-muted-foreground">
             {t(
-              "Precisa conter o campo do código — é onde o código curto entra antes de abrir o WhatsApp.",
+              "O texto vai sem código. A conversa só ganha a origem quando a pessoa também preenche um formulário com o mesmo telefone.",
             )}
           </p>
         </div>

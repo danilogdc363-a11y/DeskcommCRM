@@ -103,6 +103,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<Response
     return paginaDeSaida(whatsAppUrl(config.whatsappE164, textoSemRef(config.messageTemplate)));
   }
 
-  const mensagem = config.messageTemplate.replaceAll("{token}", criado.token);
+  // A mensagem vai sem o código desde 27/11/2026 (ver `textoSemRef`).
+  const mensagem = textoSemRef(config.messageTemplate);
   return paginaDeSaida(whatsAppUrl(config.whatsappE164, mensagem));
 }

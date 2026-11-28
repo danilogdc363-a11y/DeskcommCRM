@@ -15964,16 +15964,16 @@ export const DICIONARIO: Traducoes = {
   "Endereço de captura (sem script na página)": {
     es: "Dirección de captura (sin script en la página)",
   },
-  "Em vez do link do WhatsApp, o botão da sua página aponta para este endereço. Ele guarda a origem, cria um código curto e abre o WhatsApp com esse código no texto — o visitante não vê nada além do botão de sempre.": {
-    es: "En lugar del enlace de WhatsApp, el botón de tu página apunta a esta dirección. Ella guarda el origen, crea un código corto y abre WhatsApp con ese código en el texto — el visitante no ve nada más que el botón de siempre.",
+  "Em vez do link do WhatsApp, o botão da sua página aponta para este endereço. Ele guarda o clique e abre o WhatsApp com o texto abaixo — o visitante não vê nada além do botão de sempre.": {
+    es: "En lugar del enlace de WhatsApp, el botón de tu página apunta a esta dirección. Guarda el clic y abre WhatsApp con el texto de abajo — el visitante no ve nada más que el botón de siempre.",
   },
   "Para qual WhatsApp mandar": { es: "A qué WhatsApp enviar" },
   "Formato internacional, com o código do país. Os números já conectados aparecem como sugestão.": {
     es: "Formato internacional, con el código del país. Los números ya conectados aparecen como sugerencia.",
   },
   "Texto que a pessoa vai enviar": { es: "Texto que la persona va a enviar" },
-  "Precisa conter o campo do código — é onde o código curto entra antes de abrir o WhatsApp.": {
-    es: "Tiene que contener el campo del código — es donde entra el código corto antes de abrir WhatsApp.",
+  "O texto vai sem código. A conversa só ganha a origem quando a pessoa também preenche um formulário com o mesmo telefone.": {
+    es: "El texto va sin código. La conversación solo recibe el origen cuando la persona también llena un formulario con el mismo teléfono.",
   },
   "Endereço de captura ligado": { es: "Dirección de captura activada" },
   "Desligar faz o endereço parar de responder. Quem já usa o link do WhatsApp direto não é afetado.": {

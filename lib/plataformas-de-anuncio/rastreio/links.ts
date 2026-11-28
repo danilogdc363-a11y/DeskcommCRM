@@ -1,5 +1,5 @@
 import { logger } from "@/lib/logger";
-import { mensagemComRef, utmsDoLink, type LinkRastreavel, type MetricasLink } from "./contrato";
+import { utmsDoLink, type LinkRastreavel, type MetricasLink } from "./contrato";
 export type { LinkRastreavel } from "./contrato";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { criarClickRef } from "../captura-de-clique";
@@ -38,9 +38,10 @@ export async function destinoDoLink(
         query_raw: { ...utm, ...ids },
       }
     : { utm, query_raw: utm, ...navegador };
-  let ref = null;
+  // O clique continua gravado (contagem do link e UTMs); só o código não vai
+  // mais na mensagem — ver `textoSemRef`.
   try {
-    ref = await criarClickRef(
+    await criarClickRef(
       admin,
       ids ? "google_ads_click_refs" : "meta_ads_click_refs",
       link.organization_id,
@@ -52,10 +53,5 @@ export async function destinoDoLink(
       linkId: link.id,
     });
   }
-  return whatsAppUrl(
-    link.whatsapp_e164,
-    ref
-      ? mensagemComRef(link.message_template).replaceAll("{token}", ref.token)
-      : textoSemRef(mensagemComRef(link.message_template)),
-  );
+  return whatsAppUrl(link.whatsapp_e164, textoSemRef(link.message_template));
 }

@@ -60,14 +60,15 @@ const entradaSchema = z.object({
     .transform((v) => v.replace(/[^\d+]/g, ""))
     .transform((v) => (v.startsWith("+") || v.length < 12 ? v : `+${v}`))
     .pipe(z.string().regex(/^\+[1-9]\d{9,14}$/, "precisa ser um número com código do país")),
-  // O `{token}` é o que o `check` da migration 0381 também cobra: sem ele o
-  // ref não tem onde entrar, e a captura viraria um redirecionador mudo.
+  // Desde 27/11/2026 a mensagem vai sem o código (`textoSemRef` tira na hora
+  // de abrir o WhatsApp). O `check` das migrations 0306/0381 ainda cobra o
+  // `{token}` no banco, então o marcador é guardado aqui, longe da tela.
   message_template: z
     .string()
     .trim()
     .min(1)
-    .max(500)
-    .refine((v) => v.includes("{token}"), "precisa conter {token}"),
+    .max(480)
+    .transform((v) => (v.includes("{token}") ? v : `${v} [ref:{token}]`)),
   enabled: z.boolean(),
 });
 

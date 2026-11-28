@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * O ENDEREÇO DE CAPTURA SÓ MUDA COM ADMIN, MFA E `{token}` NO TEXTO.
+ * O ENDEREÇO DE CAPTURA SÓ MUDA COM ADMIN E MFA.
  *
  * ─── Por que cada guarda está aqui ──────────────────────────────────────────
  *
@@ -12,11 +12,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * pelo telefone que parou de tocar. Por isso o mesmo par admin+MFA das outras
  * conexões desta tela.
  *
- * O `{token}` no texto é a outra guarda, e ela não é estética: sem ele a
- * mensagem chega sem ref, a conversa entra sem origem, e a tela teria dito
- * "salvo". O `check` da migration 0381 cobra a mesma coisa no banco — aqui a
- * recusa acontece ANTES de qualquer escrita, com motivo que a tela sabe
- * mostrar.
+ * Desde 27/11/2026 a mensagem vai sem o código `[ref:]`. O `check` da
+ * migration 0381 ainda cobra `{token}` no banco, então a action guarda o
+ * marcador sozinha e o envio tira (`textoSemRef`).
  */
 
 const USUARIO = "11111111-1111-4111-8111-111111111111";
@@ -91,15 +89,14 @@ describe("updateCapturaDeUtm", () => {
     expect(auditorias[0]?.action).toBe("captura_de_utm.updated");
   });
 
-  it("texto sem o campo do código é recusado ANTES de escrever", async () => {
+  it("texto sem o campo do código grava com o marcador que o banco ainda cobra", async () => {
     const resultado = await updateCapturaDeUtm({
       ...ENTRADA,
       message_template: "Olá! Vim pelo site.",
     });
 
-    expect(resultado.ok).toBe(false);
-    expect(resultado.ok === false && resultado.error).toBe("validation_failed");
-    expect(upserts).toHaveLength(0);
+    expect(resultado.ok).toBe(true);
+    expect(upserts[0]?.valores.message_template).toBe("Olá! Vim pelo site. [ref:{token}]");
   });
 
   it("número fora do formato internacional é recusado", async () => {

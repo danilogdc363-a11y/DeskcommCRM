@@ -76,13 +76,14 @@ beforeEach(() => {
 });
 
 describe("GET /api/v1/anuncios/meta/[org]", () => {
-  it("guarda as UTMs e manda para o WhatsApp com o ref no texto", async () => {
+  it("guarda as UTMs e manda para o WhatsApp sem código no texto", async () => {
     const resposta = await chamar(UTM_COMPLETA);
 
     expect(resposta.status).toBe(302);
     const destino = decodeURIComponent(resposta.headers.get("location") ?? "");
     expect(destino).toContain("https://wa.me/5511999999999");
-    expect(destino).toMatch(/\[ref:[2-9A-HJ-NP-Z]{6}\]/);
+    expect(destino).not.toContain("[ref:");
+    expect(destino).toContain("text=Olá! Vim pelo site.");
 
     expect(estado.inserts).toHaveLength(1);
     const linha = estado.inserts[0]!;
